@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <title>FreeCorrector · page de test</title>
+  <style>
+    body { font: 16px/1.5 system-ui, sans-serif; max-width: 760px; margin: 40px auto; padding: 0 16px; color: #222; }
+    label { display: block; font-weight: 600; margin: 24px 0 6px; }
+    textarea, input { width: 100%; font: inherit; padding: 10px 12px; border: 1px solid #c9ced6; border-radius: 8px; box-sizing: border-box; }
+    textarea { min-height: 140px; resize: vertical; }
+    .serif { font: 18px/1.7 Georgia, serif; padding: 18px; }
+    .scroll { height: 90px; }
+    .small { width: 320px; padding: 4px 8px; font-size: 13px; }
+  </style>
+</head>
+<body>
+  <h1>Page de test FreeCorrector</h1>
+  <p>Cliquez dans un champ : les fautes sont soulignées et le compteur apparaît en bas à droite. Cliquez sur un mot souligné pour voir les suggestions.</p>
+
+  <label for="t1">Zone de texte</label>
+  <textarea id="t1">Je suis aller au marché hier et j'ai acheter des pomme.
+Les enfant mange des gâteau , c'est trés bon.
+
+Il faut que tu vien demain.</textarea>
+
+  <label for="t2">Police différente, grandes marges</label>
+  <textarea id="t2" class="serif">Ces problème sont résolu depuis longtemp, mais personne ne les a remarqué.</textarea>
+
+  <label for="t3">Texte qui défile</label>
+  <textarea id="t3" class="scroll">Première ligne correcte.
+Deuxième ligne correcte.
+Troisième ligne correcte.
+Quatrième ligne avec un faute.
+Cinquième ligne avec des erreur.</textarea>
+
+  <label for="i1">Champ texte sur une ligne</label>
+  <input id="i1" type="text" value="Bonjour, je voudrai réservé une table pour ce soir s'il vous plais.">
+
+  <label for="i2">Petit champ de recherche</label>
+  <input id="i2" class="small" type="search" value="meilleur restaurent paris">
+
+  <label for="i3">Champ exclu (data-freecorrector="off")</label>
+  <input id="i3" type="text" data-freecorrector="off" value="Ici les fautes sont ignorrées.">
+  <script src="../lib/settings.js"></script>
+  <script src="../content/styles.js"></script>
+  <script src="../content/field.js"></script>
+  <script src="../content/ui.js"></script>
+  <script src="../content/main.js"></script>
+</body>
+</html>

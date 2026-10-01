@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <title>Options · FreeCorrector</title>
+  <link rel="stylesheet" href="../lib/common.css">
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+  <main>
+    <header>
+      <img src="../icons/icon.svg" alt="" width="40" height="40">
+      <div>
+        <h1>FreeCorrector</h1>
+        <p class="muted">Correcteur libre et gratuit. L’analyse se fait sur votre ordinateur : aucun texte n’est envoyé sur Internet.</p>
+      </div>
+    </header>
+
+    <section>
+      <h2>Correction</h2>
+      <label class="row">
+        <span>
+          <strong>Correction activée</strong>
+          <span class="muted">Souligne les fautes dans les champs de texte.</span>
+        </span>
+        <input type="checkbox" id="enabled" class="switch">
+      </label>
+      <label class="row">
+        <span>
+          <strong>Langue</strong>
+          <span class="muted">D’autres langues arriveront dans les prochaines versions.</span>
+        </span>
+        <select id="language" disabled>
+          <option value="fr">Français</option>
+        </select>
+      </label>
+      <label class="row">
+        <span>
+          <strong>Majuscule et ponctuation de fin de phrase</strong>
+          <span class="muted">Signale un paragraphe qui ne commence pas par une majuscule ou ne finit pas par un point. Jamais dans les champs de recherche.</span>
+        </span>
+        <input type="checkbox" id="sentence-rules" class="switch">
+      </label>
+      <label class="row">
+        <span>
+          <strong>Mode exigeant</strong>
+          <span class="muted">Ajoute les règles typographiques strictes (apostrophes courbes, espaces insécables, doubles espaces), les négations incomplètes et les répétitions.</span>
+        </span>
+        <input type="checkbox" id="picky" class="switch">
+      </label>
+    </section>
+
+    <section>
+      <h2>Dictionnaire personnel</h2>
+      <p class="muted">Ces mots ne seront jamais signalés comme fautes d’orthographe.</p>
+      <form id="add-word">
+        <input type="text" id="new-word" placeholder="Ajouter un mot…" autocomplete="off" data-freecorrector="off">
+        <button type="submit">Ajouter</button>
+      </form>
+      <ul id="words"></ul>
+      <p id="no-words" class="muted">Aucun mot pour l’instant.</p>
+    </section>
+
+    <section>
+      <h2>Sites désactivés</h2>
+      <ul id="sites"></ul>
+      <p id="no-sites" class="muted">FreeCorrector est actif sur tous les sites.</p>
+    </section>
+
+    <footer class="muted">
+      Créé par <strong>BenjiBurn</strong> · Logiciel libre (GPL v3) · Moteur de correction : Grammalecte, d’Olivier R.
+    </footer>
+  </main>
+
+  <script src="../lib/settings.js"></script>
+  <script src="options.js"></script>
+</body>
+</html>
