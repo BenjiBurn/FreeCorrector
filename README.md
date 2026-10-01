@@ -6,7 +6,8 @@ FreeCorrector souligne les fautes directement dans les champs de texte des sites
 font les correcteurs du commerce, mais sans abonnement, sans compte et sans envoyer une seule
 ligne de vos textes sur Internet : toute l’analyse tourne dans votre navigateur.
 
-- Soulignement des fautes dans les `<textarea>` et les champs texte
+- Soulignement des fautes dans les `<textarea>`, les champs texte et les éditeurs riches
+  (`contenteditable` : Gmail, Outlook, Discord, Notion…)
   - rouge : orthographe
   - orange : grammaire (accords, conjugaison, homophones…)
   - bleu : typographie et style
@@ -55,7 +56,8 @@ src/
     sentence-rules.js      Majuscule en début et ponctuation en fin de phrase
   data/fr-freq.txt         Fréquence des 50 000 mots français les plus courants
   content/                 Scripts injectés dans les pages
-    field.js               Un vérificateur par champ : calque miroir, soulignements, compteur
+    field.js               Base commune des champs + textarea/input (calque miroir)
+    rich-field.js          Éditeurs riches contenteditable (soulignements par Range)
     ui.js                  Shadow DOM : bulle de suggestions et panneau des fautes
     styles.js              CSS du shadow DOM
     main.js                Détection des champs, réglages
@@ -110,7 +112,7 @@ sur des phrases correctes. À lancer après chaque modification du moteur.
 ## Feuille de route
 
 - [ ] Chrome, Edge, Opera, Brave (Manifest V3 avec document hors écran pour le worker)
-- [ ] Champs `contenteditable` (Gmail, éditeurs riches, réseaux sociaux)
+- [x] Champs `contenteditable` (Gmail, Outlook, Discord, Notion, éditeurs Quill, ProseMirror…)
 - [ ] Autres langues (anglais, espagnol, allemand…) via des moteurs libres
 - [ ] Publication sur addons.mozilla.org, Chrome Web Store, Edge Add-ons
 - [ ] Site web de présentation et d’installation

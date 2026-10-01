@@ -1,4 +1,4 @@
-/* global fcApi, fcGetSettings, FcField, FcUi */
+/* global fcApi, fcGetSettings, FcTextField, FcRichField, FcUi */
 
 // Entry point: attach a checker to each text field the user focuses.
 
@@ -10,26 +10,38 @@
   const isActive = () =>
     settings.enabled && !settings.disabledSites.includes(location.hostname);
 
-  function isEligible(el) {
-    if (!el || el.nodeType !== Node.ELEMENT_NODE) return false;
-    if (el.disabled || el.readOnly) return false;
-    if (el.getAttribute("data-freecorrector") === "off") return false;
-    if (el.localName === "textarea") return true;
+  // Code editors are contenteditable too, but their text is not prose.
+  const CODE_EDITORS = ".CodeMirror, .cm-editor, .monaco-editor, .ace_editor, .code-editor, [data-language]";
+
+  // The element to check for a focused element, or null: the field itself
+  // for <textarea>/<input>, the editing host (outermost editable ancestor)
+  // for contenteditable.
+  function editableTarget(el) {
+    if (!el || el.nodeType !== Node.ELEMENT_NODE) return null;
+    if (el.closest("[data-freecorrector='off']")) return null;
+    if (el.localName === "textarea") return el.disabled || el.readOnly ? null : el;
     if (el.localName === "input") {
       const type = (el.getAttribute("type") || "text").toLowerCase();
-      return type === "text" || type === "search";
+      if (type !== "text" && type !== "search") return null;
+      return el.disabled || el.readOnly ? null : el;
     }
-    return false;
+    if (!el.isContentEditable) return null;
+    let host = el;
+    while (host.parentElement?.isContentEditable) host = host.parentElement;
+    if (host.getAttribute("spellcheck") === "false" || host.closest(CODE_EDITORS)) return null;
+    return host;
   }
 
-  function attach(el) {
-    if (!isActive() || !isEligible(el) || attached.has(el)) return;
+  function attach(focused) {
+    const el = editableTarget(focused);
+    if (!el || !isActive() || attached.has(el)) return;
     if (!ui) {
       ui = new FcUi();
       ui.sentenceRules = settings.sentenceRules;
       ui.onFieldRemoved = (field) => attached.delete(field.el);
     }
-    const field = new FcField(el, ui);
+    const Field = el.isContentEditable ? FcRichField : FcTextField;
+    const field = new Field(el, ui);
     attached.set(el, field);
     ui.addField(field);
   }

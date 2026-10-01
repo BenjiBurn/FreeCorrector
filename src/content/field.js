@@ -1,9 +1,12 @@
-/* exported FcField */
+/* exported FcFieldBase, FcTextField, FC_RULE_CAPITAL, FC_RULE_FINAL_PUNCT */
 /* global fcApi */
 
-// One FcField per <textarea>/<input> the user has focused. It draws the
-// underlines with a "mirror": a transparent copy of the field's text laid
-// exactly over it, where each error is wrapped in an underlined <span>.
+// A checker attached to one editable element. FcFieldBase holds what every
+// kind of field shares (checking, the counter badge, keeping underlines in
+// place while typing, applying fixes); subclasses know how to read the text,
+// draw the underlines and change the text:
+//   - FcTextField: <textarea> and <input>, drawn with a "mirror";
+//   - FcRichField (rich-field.js): contenteditable editors.
 
 const FC_CHECK_DELAY = 600;
 const FC_BADGE_SIZE = 22;
@@ -14,25 +17,14 @@ const FC_SVG_NS = "http://www.w3.org/2000/svg";
 const FC_RULE_CAPITAL = "FC_CAPITAL_START";
 const FC_RULE_FINAL_PUNCT = "FC_FINAL_PUNCT";
 
-// Computed properties that affect where glyphs land.
-const FC_MIRRORED_PROPS = [
-  "fontFamily", "fontSize", "fontWeight", "fontStyle", "fontVariant",
-  "fontStretch", "fontFeatureSettings", "fontKerning", "letterSpacing",
-  "wordSpacing", "lineHeight", "textTransform", "textIndent", "textAlign",
-  "direction", "tabSize", "whiteSpace", "wordBreak", "overflowWrap",
-  "paddingTop", "paddingRight", "paddingBottom", "paddingLeft",
-];
-
-class FcField {
+class FcFieldBase {
   constructor(el, ui) {
     this.el = el;
     this.ui = ui;
-    this.isInput = el.localName === "input";
-    this.isSearch = this.isInput && (el.getAttribute("type") || "").toLowerCase() === "search";
-    this.text = el.value;
+    this.isSearch = false;
+    this.text = "";
     this.allMatches = [];
     this.matches = [];
-    this.spans = [];
     this.state = "idle";
     this.error = "";
     this.reqId = 0;
@@ -40,14 +32,8 @@ class FcField {
     this.destroyed = false;
 
     this.root = document.createElement("div");
-    this.mirror = document.createElement("div");
-    this.mirror.className = "fc-mirror";
-    this.inner = document.createElement("div");
-    this.inner.className = "fc-mirror-inner";
-    this.mirror.append(this.inner);
     this.badge = document.createElement("div");
     this.badge.className = "fc-badge";
-    this.root.append(this.mirror, this.badge);
     ui.layer.append(this.root);
 
     // Keep focus in the field when the badge is clicked.
@@ -62,152 +48,82 @@ class FcField {
       this.renderBadge();
     };
     this.onCaretMove = () => this.refreshVisible();
-    el.addEventListener("input", this.onInput);
-    el.addEventListener("click", this.onClick);
-    el.addEventListener("focus", this.onFocusChange);
-    el.addEventListener("blur", this.onFocusChange);
-    el.addEventListener("keyup", this.onCaretMove);
-    el.addEventListener("mouseup", this.onCaretMove);
+    this.listen(el, "input", this.onInput);
+    this.listen(el, "click", this.onClick);
+    this.listen(el, "focus", this.onFocusChange);
+    this.listen(el, "blur", this.onFocusChange);
+    this.listen(el, "keyup", this.onCaretMove);
+    this.listen(el, "mouseup", this.onCaretMove);
 
     // Our underlines replace the browser's, so avoid drawing both.
     this.originalSpellcheck = el.getAttribute("spellcheck");
     el.spellcheck = false;
 
     this.resizeObserver = new ResizeObserver(() => {
-      this.copyStyles();
+      this.onResize();
       ui.schedule();
     });
     this.resizeObserver.observe(el);
+  }
 
-    this.copyStyles();
-    this.renderMirror();
+  // Subclasses call this at the end of their constructor.
+  start() {
+    this.text = this.readText();
+    this.root.append(this.badge);
+    this.onResize();
+    this.renderMarks();
     this.renderBadge();
     this.scheduleCheck(0);
+  }
+
+  listen(target, type, handler) {
+    target.addEventListener(type, handler);
+    (this.listeners ??= []).push([target, type, handler]);
   }
 
   destroy() {
     this.destroyed = true;
     clearTimeout(this.timer);
     this.resizeObserver.disconnect();
+    for (const [target, type, handler] of this.listeners ?? []) target.removeEventListener(type, handler);
     const el = this.el;
-    el.removeEventListener("input", this.onInput);
-    el.removeEventListener("click", this.onClick);
-    el.removeEventListener("focus", this.onFocusChange);
-    el.removeEventListener("blur", this.onFocusChange);
-    el.removeEventListener("keyup", this.onCaretMove);
-    el.removeEventListener("mouseup", this.onCaretMove);
     if (this.originalSpellcheck === null) el.removeAttribute("spellcheck");
     else el.setAttribute("spellcheck", this.originalSpellcheck);
     this.root.remove();
   }
 
-  // ---------- Geometry ----------
+  // ---------- To implement in subclasses ----------
 
-  copyStyles() {
-    const cs = getComputedStyle(this.el);
-    // Firefox reports clientLeft/clientTop/clientWidth of an <input> relative
-    // to its content box, so measure the padding box from the borders instead.
-    this.borders = {
-      left: parseFloat(cs.borderLeftWidth) || 0,
-      top: parseFloat(cs.borderTopWidth) || 0,
-      right: parseFloat(cs.borderRightWidth) || 0,
-      bottom: parseFloat(cs.borderBottomWidth) || 0,
-    };
-    const style = this.mirror.style;
-    for (const prop of FC_MIRRORED_PROPS) style[prop] = cs[prop];
-    if (this.isInput) {
-      // Single-line inputs never wrap and center their line vertically.
-      style.whiteSpace = "pre";
-      style.overflowWrap = "normal";
-      const contentHeight =
-        this.paddingBox().height - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
-      style.lineHeight = `${Math.max(contentHeight, 0)}px`;
-    }
-  }
+  readText() { return ""; }
+  caretOffset() { return null; } // text offset of the caret, or null
+  hasSelection() { return false; }
+  isFocused() { return document.activeElement === this.el; }
+  onResize() {}
+  layout(_hostRect) {}
+  renderMarks() {}
+  matchAt(_x, _y) { return -1; }
+  anchorRect(_index) { return null; }
+  setActive(_index, _on) {}
+  replaceText(_offset, _length, _replacement) {}
+  selectText(_offset, _length) {}
 
-  // Size of the area text is drawn in: inside the borders, minus scrollbars.
-  paddingBox() {
-    const el = this.el;
-    if (!this.isInput) return { width: el.clientWidth, height: el.clientHeight };
-    const b = this.borders;
-    return {
-      width: el.offsetWidth - b.left - b.right,
-      height: el.offsetHeight - b.top - b.bottom,
-    };
-  }
+  // ---------- Badge ----------
 
-  // Called by the UI on every animation frame that needs a reposition.
-  layout(hostRect) {
-    const el = this.el;
-    const r = el.getBoundingClientRect();
-    const visible = r.width > 0 && r.height > 0;
-    this.root.hidden = !visible;
-    if (!visible) return;
-
-    const left = r.left - hostRect.left + this.borders.left;
-    const top = r.top - hostRect.top + this.borders.top;
-    const box = this.paddingBox();
-    const ms = this.mirror.style;
-    ms.left = `${left}px`;
-    ms.top = `${top}px`;
-    ms.width = `${box.width}px`;
-    ms.height = `${box.height}px`;
-    this.inner.style.transform = `translate(${-el.scrollLeft}px, ${-el.scrollTop}px)`;
-
+  // Places the badge at the bottom right of `box` (viewport coordinates of the
+  // area text is drawn in), or vertically centered on single-line fields.
+  placeBadge(box, hostRect, centered) {
     const bs = this.badge.style;
-    bs.left = `${left + box.width - FC_BADGE_SIZE - 4}px`;
-    // Centered on single-line fields, bottom-right corner on text areas.
-    bs.top =
-      this.isInput || box.height < FC_BADGE_SIZE + 12
-        ? `${top + (box.height - FC_BADGE_SIZE) / 2}px`
-        : `${top + box.height - FC_BADGE_SIZE - 4}px`;
-  }
-
-  // Index of the match drawn under viewport point (x, y), or -1.
-  matchAt(x, y) {
-    for (const span of this.spans) {
-      for (const rect of span.getClientRects()) {
-        if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom + 4) {
-          return Number(span.dataset.index);
-        }
-      }
-    }
-    return -1;
-  }
-
-  spanFor(index) {
-    return this.spans.find((s) => Number(s.dataset.index) === index) ?? null;
-  }
-
-  // ---------- Rendering ----------
-
-  renderMirror() {
-    const text = this.text;
-    const frag = document.createDocumentFragment();
-    this.spans = [];
-    let pos = 0;
-    this.matches.forEach((m, index) => {
-      if (m.offset < pos || m.length <= 0) return;
-      if (m.offset > pos) frag.append(text.slice(pos, m.offset));
-      const span = document.createElement("span");
-      span.className = `fc-err fc-${m.category}`;
-      span.dataset.index = String(index);
-      span.textContent = text.slice(m.offset, m.offset + m.length);
-      frag.append(span);
-      this.spans.push(span);
-      pos = m.offset + m.length;
-    });
-    // The zero-width space keeps a trailing newline from collapsing.
-    frag.append(text.slice(pos) + "​");
-    this.inner.replaceChildren(frag);
+    bs.left = `${box.right - hostRect.left - FC_BADGE_SIZE - 4}px`;
+    bs.top = centered || box.height < FC_BADGE_SIZE + 12
+      ? `${box.top - hostRect.top + (box.height - FC_BADGE_SIZE) / 2}px`
+      : `${box.bottom - hostRect.top - FC_BADGE_SIZE - 4}px`;
   }
 
   renderBadge() {
     const badge = this.badge;
     const n = this.matches.length;
-    const focused = document.activeElement === this.el;
-    const hasText = this.el.value.trim() !== "";
-    badge.hidden = !(focused || this.ui.panelField === this || (n > 0 && hasText));
+    const hasText = this.text.trim() !== "";
+    badge.hidden = !(this.isFocused() || this.ui.panelField === this || (n > 0 && hasText));
 
     badge.classList.remove("fc-only-minor");
     badge.replaceChildren();
@@ -240,9 +156,10 @@ class FcField {
   }
 
   async check() {
-    const text = this.el.value;
+    const text = this.readText();
     const id = ++this.reqId;
     if (!text.trim()) {
+      this.text = text;
       this.setMatches([]);
       return;
     }
@@ -256,7 +173,7 @@ class FcField {
       res = { error: String(err?.message ?? err) };
     }
     // A newer edit has already scheduled another check.
-    if (this.destroyed || id !== this.reqId || this.el.value !== text) return;
+    if (this.destroyed || id !== this.reqId || this.readText() !== text) return;
 
     if (res?.error) {
       this.state = "error";
@@ -280,8 +197,9 @@ class FcField {
     if (m.ruleId !== FC_RULE_CAPITAL && m.ruleId !== FC_RULE_FINAL_PUNCT) return true;
     if (!this.ui.sentenceRules || this.isSearch) return false;
     // Don't ask for a final period while the user is still writing the sentence.
-    if (m.ruleId === FC_RULE_FINAL_PUNCT && document.activeElement === this.el) {
-      return this.el.selectionEnd < m.offset + m.length;
+    if (m.ruleId === FC_RULE_FINAL_PUNCT && this.isFocused()) {
+      const caret = this.caretOffset();
+      return caret !== null && caret < m.offset + m.length;
     }
     return true;
   }
@@ -292,16 +210,17 @@ class FcField {
       visible.length === this.matches.length && visible.every((m, i) => m === this.matches[i]);
     if (same && !force) return;
     this.matches = visible;
-    this.renderMirror();
+    this.renderMarks();
     this.renderBadge();
     this.ui.fieldChanged(this);
+    this.ui.schedule();
   }
 
   // Keep existing underlines in place while the user types: shift the ones
   // after the edit, drop the ones it touched, then re-check after a pause.
   onInput() {
     const oldText = this.text;
-    const newText = this.el.value;
+    const newText = this.readText();
     if (oldText === newText) return;
 
     let start = 0;
@@ -328,12 +247,11 @@ class FcField {
     });
     this.text = newText;
     this.refreshVisible(true);
-    this.ui.schedule();
     this.scheduleCheck();
   }
 
   onClick(event) {
-    if (this.el.selectionStart !== this.el.selectionEnd) return;
+    if (this.hasSelection()) return;
     const index = this.matchAt(event.clientX, event.clientY);
     if (index >= 0) this.ui.openCard(this, index);
     else this.ui.closeCard();
@@ -342,12 +260,174 @@ class FcField {
   // ---------- Corrections ----------
 
   apply(match, replacement) {
-    const el = this.el;
     const { offset, length, word } = match;
-    if (el.value.slice(offset, offset + length) !== word) {
+    if (this.readText().slice(offset, offset + length) !== word) {
       this.scheduleCheck(0);
       return;
     }
+    this.replaceText(offset, length, replacement);
+    // Some editors apply the change asynchronously: catch up afterwards.
+    setTimeout(() => this.poll(), 50);
+  }
+
+  select(match) {
+    this.selectText(match.offset, match.length);
+  }
+
+  // Remove matches locally (after "ignore" or "add to dictionary").
+  removeMatches(predicate) {
+    const kept = this.allMatches.filter((m) => !predicate(m));
+    if (kept.length !== this.allMatches.length) this.setMatches(kept);
+  }
+
+  // Catch changes that fire no input event (scripts, some editors).
+  poll() {
+    if (!this.destroyed && this.readText() !== this.text) this.onInput();
+  }
+}
+
+// ---------------------------------------------------------------------------
+
+// Computed properties that affect where glyphs land.
+const FC_MIRRORED_PROPS = [
+  "fontFamily", "fontSize", "fontWeight", "fontStyle", "fontVariant",
+  "fontStretch", "fontFeatureSettings", "fontKerning", "letterSpacing",
+  "wordSpacing", "lineHeight", "textTransform", "textIndent", "textAlign",
+  "direction", "tabSize", "whiteSpace", "wordBreak", "overflowWrap",
+  "paddingTop", "paddingRight", "paddingBottom", "paddingLeft",
+];
+
+// <textarea> and <input>: the underlines are drawn with a "mirror", a
+// transparent copy of the field's text laid exactly over it, where each error
+// is wrapped in an underlined <span>.
+class FcTextField extends FcFieldBase {
+  constructor(el, ui) {
+    super(el, ui);
+    this.isInput = el.localName === "input";
+    this.isSearch = this.isInput && (el.getAttribute("type") || "").toLowerCase() === "search";
+    this.spans = [];
+    this.mirror = document.createElement("div");
+    this.mirror.className = "fc-mirror";
+    this.inner = document.createElement("div");
+    this.inner.className = "fc-mirror-inner";
+    this.mirror.append(this.inner);
+    this.root.append(this.mirror);
+    this.start();
+  }
+
+  readText() {
+    return this.el.value;
+  }
+
+  caretOffset() {
+    return this.el.selectionEnd;
+  }
+
+  hasSelection() {
+    return this.el.selectionStart !== this.el.selectionEnd;
+  }
+
+  onResize() {
+    const cs = getComputedStyle(this.el);
+    // Firefox reports clientLeft/clientTop/clientWidth of an <input> relative
+    // to its content box, so measure the padding box from the borders instead.
+    this.borders = {
+      left: parseFloat(cs.borderLeftWidth) || 0,
+      top: parseFloat(cs.borderTopWidth) || 0,
+      right: parseFloat(cs.borderRightWidth) || 0,
+      bottom: parseFloat(cs.borderBottomWidth) || 0,
+    };
+    const style = this.mirror.style;
+    for (const prop of FC_MIRRORED_PROPS) style[prop] = cs[prop];
+    if (this.isInput) {
+      // Single-line inputs never wrap and center their line vertically.
+      style.whiteSpace = "pre";
+      style.overflowWrap = "normal";
+      const contentHeight =
+        this.paddingBox().height - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
+      style.lineHeight = `${Math.max(contentHeight, 0)}px`;
+    }
+  }
+
+  // Size of the area text is drawn in: inside the borders, minus scrollbars.
+  paddingBox() {
+    const el = this.el;
+    if (!this.isInput) return { width: el.clientWidth, height: el.clientHeight };
+    const b = this.borders;
+    return {
+      width: el.offsetWidth - b.left - b.right,
+      height: el.offsetHeight - b.top - b.bottom,
+    };
+  }
+
+  layout(hostRect) {
+    const el = this.el;
+    const r = el.getBoundingClientRect();
+    const visible = r.width > 0 && r.height > 0;
+    this.root.hidden = !visible;
+    if (!visible) return;
+
+    const left = r.left + this.borders.left;
+    const top = r.top + this.borders.top;
+    const box = this.paddingBox();
+    const ms = this.mirror.style;
+    ms.left = `${left - hostRect.left}px`;
+    ms.top = `${top - hostRect.top}px`;
+    ms.width = `${box.width}px`;
+    ms.height = `${box.height}px`;
+    this.inner.style.transform = `translate(${-el.scrollLeft}px, ${-el.scrollTop}px)`;
+
+    const area = { left, top, right: left + box.width, bottom: top + box.height, height: box.height };
+    this.placeBadge(area, hostRect, this.isInput);
+  }
+
+  renderMarks() {
+    const text = this.text;
+    const frag = document.createDocumentFragment();
+    this.spans = [];
+    let pos = 0;
+    this.matches.forEach((m, index) => {
+      if (m.offset < pos || m.length <= 0) return;
+      if (m.offset > pos) frag.append(text.slice(pos, m.offset));
+      const span = document.createElement("span");
+      span.className = `fc-err fc-${m.category}`;
+      span.dataset.index = String(index);
+      span.textContent = text.slice(m.offset, m.offset + m.length);
+      frag.append(span);
+      this.spans.push(span);
+      pos = m.offset + m.length;
+    });
+    // The zero-width space keeps a trailing newline from collapsing.
+    frag.append(text.slice(pos) + "​");
+    this.inner.replaceChildren(frag);
+  }
+
+  // Index of the match drawn under viewport point (x, y), or -1.
+  matchAt(x, y) {
+    for (const span of this.spans) {
+      for (const rect of span.getClientRects()) {
+        if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom + 4) {
+          return Number(span.dataset.index);
+        }
+      }
+    }
+    return -1;
+  }
+
+  spanFor(index) {
+    return this.spans.find((s) => Number(s.dataset.index) === index) ?? null;
+  }
+
+  anchorRect(index) {
+    return this.spanFor(index)?.getClientRects()[0] ?? null;
+  }
+
+  setActive(index, on) {
+    this.spanFor(index)?.classList.toggle("fc-active", on);
+  }
+
+  replaceText(offset, length, replacement) {
+    const el = this.el;
     el.focus();
     el.setSelectionRange(offset, offset + length);
     // execCommand keeps the browser's undo history and fires a real input
@@ -364,20 +444,9 @@ class FcField {
     }
   }
 
-  select(match) {
+  selectText(offset, length) {
     this.el.focus();
-    this.el.setSelectionRange(match.offset, match.offset + match.length);
-  }
-
-  // Remove matches locally (after "ignore" or "add to dictionary").
-  removeMatches(predicate) {
-    const kept = this.allMatches.filter((m) => !predicate(m));
-    if (kept.length !== this.allMatches.length) this.setMatches(kept);
-  }
-
-  // Catch value changes made by scripts, which fire no input event.
-  poll() {
-    if (this.el.value !== this.text) this.onInput();
+    this.el.setSelectionRange(offset, offset + length);
   }
 }
 

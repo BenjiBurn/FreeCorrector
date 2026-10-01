@@ -141,27 +141,26 @@ class FcUi {
     this.closeCard();
     this.closePanel();
     const match = field.matches[index];
-    const span = field.spanFor(index);
-    if (!match || !span) return;
-    span.classList.add("fc-active");
+    if (!match || !field.anchorRect(index)) return;
+    field.setActive(index, true);
 
     const el = fcEl("div", "fc-card");
     el.addEventListener("mousedown", (e) => e.preventDefault());
     el.append(this.buildMatchBody(field, match, () => this.closeCard()));
     this.layer.append(el);
-    this.card = { field, index, el, span };
+    this.card = { field, index, el };
     this.positionCard(this.host.getBoundingClientRect());
   }
 
   closeCard() {
     if (!this.card) return;
-    this.card.span.classList.remove("fc-active");
+    this.card.field.setActive(this.card.index, false);
     this.card.el.remove();
     this.card = null;
   }
 
   positionCard(hostRect) {
-    const rect = this.card.span.getClientRects()[0];
+    const rect = this.card.field.anchorRect(this.card.index);
     if (!rect) return this.closeCard();
     fcPlace(this.card.el, rect, hostRect);
   }

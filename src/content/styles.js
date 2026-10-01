@@ -71,6 +71,25 @@ const FC_CSS = `
 .fc-err.fc-active.fc-grammar { background: color-mix(in srgb, var(--fc-grammar) 22%, transparent); }
 .fc-err.fc-active.fc-style, .fc-err.fc-active.fc-typo { background: color-mix(in srgb, var(--fc-style) 18%, transparent); }
 
+/* ---------- Underlines for rich editors (contenteditable) ---------- */
+
+.fc-clip {
+  position: absolute;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.fc-mark {
+  position: absolute;
+  border-bottom: 2px solid var(--fc-grammar);
+  border-radius: 2px;
+}
+.fc-mark.fc-spelling { border-bottom-color: var(--fc-spelling); }
+.fc-mark.fc-style, .fc-mark.fc-typo { border-bottom-color: var(--fc-style); }
+.fc-mark.fc-active.fc-spelling { background: color-mix(in srgb, var(--fc-spelling) 18%, transparent); }
+.fc-mark.fc-active.fc-grammar { background: color-mix(in srgb, var(--fc-grammar) 22%, transparent); }
+.fc-mark.fc-active.fc-style, .fc-mark.fc-active.fc-typo { background: color-mix(in srgb, var(--fc-style) 18%, transparent); }
+
 /* ---------- Error counter badge ---------- */
 
 .fc-badge {

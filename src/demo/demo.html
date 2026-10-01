@@ -11,6 +11,9 @@
     .serif { font: 18px/1.7 Georgia, serif; padding: 18px; }
     .scroll { height: 90px; }
     .small { width: 320px; padding: 4px 8px; font-size: 13px; }
+    .rich { min-height: 120px; padding: 10px 12px; border: 1px solid #c9ced6; border-radius: 8px; outline: none; }
+    .rich:focus { border-color: #2563eb; }
+    .rich p { margin: 0 0 8px; }
   </style>
 </head>
 <body>
@@ -39,11 +42,18 @@ Cinquième ligne avec des erreur.</textarea>
   <label for="i2">Petit champ de recherche</label>
   <input id="i2" class="small" type="search" value="meilleur restaurent paris">
 
+  <label>Éditeur riche (contenteditable, comme Notion ou LinkedIn)</label>
+  <div id="r1" class="rich" contenteditable="true"><p>Bonjour, <strong>je suis aller</strong> au marché hier.</p><p>Les enfant mange des gâteau , c'est trés bon.</p></div>
+
+  <label>Éditeur façon messagerie (lignes en div et br, comme Gmail)</label>
+  <div id="r2" class="rich" contenteditable="true"><div>Salut Marie,</div><div><br></div><div>Jai bien reçu ton message, merci a toi. On se voit demain ?</div><div>Il faut que tu vien a la réunion.</div></div>
+
   <label for="i3">Champ exclu (data-freecorrector="off")</label>
   <input id="i3" type="text" data-freecorrector="off" value="Ici les fautes sont ignorrées.">
   <script src="../lib/settings.js"></script>
   <script src="../content/styles.js"></script>
   <script src="../content/field.js"></script>
+  <script src="../content/rich-field.js"></script>
   <script src="../content/ui.js"></script>
   <script src="../content/main.js"></script>
 </body>
