@@ -226,7 +226,8 @@ class FcUi {
     const frag = document.createDocumentFragment();
 
     const head = fcEl("div", "fc-head");
-    head.append(fcEl("span", `fc-dot fc-${match.category}`), fcEl("span", "", match.label));
+    const label = match.lang === "en" ? `${match.label} · anglais` : match.label;
+    head.append(fcEl("span", `fc-dot fc-${match.category}`), fcEl("span", "", label));
     frag.append(head);
 
     if (withContext) {

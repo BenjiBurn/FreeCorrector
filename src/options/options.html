@@ -28,10 +28,24 @@
       <label class="row">
         <span>
           <strong>Langue</strong>
-          <span class="muted">D’autres langues arriveront dans les prochaines versions.</span>
+          <span class="muted">En automatique, chaque paragraphe est corrigé dans sa langue.</span>
         </span>
-        <select id="language" disabled>
+        <select id="language">
+          <option value="auto">Automatique</option>
           <option value="fr">Français</option>
+          <option value="en">Anglais</option>
+        </select>
+      </label>
+      <label class="row">
+        <span>
+          <strong>Variante de l’anglais</strong>
+          <span class="muted">Pour l’orthographe : color ou colour, organize ou organise…</span>
+        </span>
+        <select id="english-dialect">
+          <option value="us">Américain</option>
+          <option value="gb">Britannique</option>
+          <option value="ca">Canadien</option>
+          <option value="au">Australien</option>
         </select>
       </label>
       <label class="row">
@@ -68,7 +82,7 @@
     </section>
 
     <footer class="muted">
-      Créé par <strong>BenjiBurn</strong> · Logiciel libre (GPL v3) · Moteur de correction : Grammalecte, d’Olivier R.
+      Créé par <strong>BenjiBurn</strong> · Logiciel libre (GPL v3) · Moteurs : Grammalecte (français), d’Olivier R., et Harper (anglais), d’Automattic.
     </footer>
   </main>
 

@@ -35,7 +35,12 @@ async function fcCheck(text) {
     target: "fc-offscreen",
     type: "check",
     text,
-    settings: { picky: settings.picky, dictionary: settings.dictionary },
+    settings: {
+      language: settings.language,
+      englishDialect: settings.englishDialect,
+      picky: settings.picky,
+      dictionary: settings.dictionary,
+    },
   });
 }
 

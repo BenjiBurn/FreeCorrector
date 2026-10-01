@@ -14,10 +14,12 @@ ligne de vos textes sur Internet : toute l’analyse tourne dans votre navigateu
 - Compteur de fautes en bas à droite du champ ; un clic ouvre la liste complète
 - Clic sur un mot souligné : suggestions de correction, « Ignorer », « Ajouter au dictionnaire »
 - Dictionnaire personnel, désactivation par site, mode exigeant
-- Langue : français (d’autres langues sont prévues)
+- Langues : français et anglais, détectées automatiquement paragraphe par paragraphe
 
-Le moteur de correction est [Grammalecte](https://grammalecte.net/), le correcteur grammatical
-libre de référence pour le français.
+Les moteurs de correction sont [Grammalecte](https://grammalecte.net/), le correcteur grammatical
+libre de référence pour le français, et [Harper](https://github.com/Automattic/harper) pour
+l’anglais (WebAssembly). FreeCorrector ajoute par-dessus ses propres règles et son classement des
+suggestions.
 
 ## Navigateurs pris en charge
 
@@ -78,12 +80,16 @@ src/
   background.js            Arrière-plan Firefox
   chromium/                Arrière-plan Chromium : service worker + document hors écran
   engine/
-    host.js                Pilote le moteur (worker), cache, dictionnaire personnel
+    host.js                Pilote les moteurs (workers), répartit les paragraphes par langue
+    language.js            Détection français / anglais par paragraphe
+    english.js             Moteur anglais (Harper) : conversion, classement, règles
+    english-rules.js       Règles maison anglaises (your/you're, loose/lose, contractions…)
+    english-worker.js      Worker (module ES) du moteur anglais
     grammalecte-worker.js  Fait tourner Grammalecte dans un Web Worker
     suggestions.js         Reclasse les suggestions selon le contexte
     rules.js               Règles maison : homophones et accords que Grammalecte rate
     sentence-rules.js      Majuscule en début et ponctuation en fin de phrase
-  data/fr-freq.txt         Fréquence des 50 000 mots français les plus courants
+  data/                    Fréquence des 50 000 mots français et anglais les plus courants
   content/                 Scripts injectés dans les pages
     field.js               Base commune des champs + textarea/input (calque miroir)
     rich-field.js          Éditeurs riches contenteditable (soulignements par Range)
@@ -95,11 +101,13 @@ src/
   lib/                     Réglages et styles partagés
   demo/demo.html           Page de test avec des fautes (ouverte depuis le popup)
   vendor/grammalecte/      Moteur Grammalecte 2.3.0 (sous-ensemble non modifié)
+  vendor/harper/           Moteur Harper 2.10.0 (harper.js, binaire WebAssembly)
 scripts/build.js           Construit dist/firefox et dist/chromium (+ zips pour les stores)
 tests/
   run.js                   Fait tourner le moteur sous Node et le note sur les corpus
   fr-corpus.js             Corpus de fautes courantes (homophones, accords, accents…)
   fr-holdout.js            Second corpus, pour vérifier que les réglages se généralisent
+  en-corpus.js             Corpus de fautes anglaises courantes
 ```
 
 ### Fonctionnement
@@ -144,7 +152,8 @@ sur des phrases correctes. À lancer après chaque modification du moteur.
 - [x] Chrome, Edge, Opera, Brave, Vivaldi (Manifest V3 avec document hors écran pour le worker)
 - [ ] Safari (conversion Xcode sur macOS)
 - [x] Champs `contenteditable` (Gmail, Outlook, Discord, Notion, éditeurs Quill, ProseMirror…)
-- [ ] Autres langues (anglais, espagnol, allemand…) via des moteurs libres
+- [x] Anglais (Harper)
+- [ ] Autres langues (espagnol, allemand…) via des moteurs libres
 - [ ] Publication sur addons.mozilla.org, Chrome Web Store, Edge Add-ons
 - [ ] Site web de présentation et d’installation
 
@@ -157,6 +166,7 @@ Créé par **BenjiBurn**.
 FreeCorrector est un logiciel libre distribué sous licence **GNU GPL v3** (voir [LICENSE](LICENSE)).
 
 Il intègre Grammalecte © Olivier R., également sous GPL v3, sans modification
-(`src/vendor/grammalecte/`), et la liste de fréquence
+(`src/vendor/grammalecte/`), Harper © Automattic sous licence Apache 2.0 (`src/vendor/harper/`),
+et la liste de fréquence
 [FrequencyWords](https://github.com/hermitdave/FrequencyWords) de Hermit Dave, sous licence
 CC BY-SA 4.0 (`src/data/`).

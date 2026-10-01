@@ -3,18 +3,31 @@
   "name": "FreeCorrector",
   "version": "0.1.0",
   "author": "BenjiBurn",
-  "description": "Correcteur orthographique et grammatical intégré aux champs de saisie (français), 100 % local, propulsé par Grammalecte.",
+  "description": "Correcteur orthographique et grammatical gratuit pour le français et l’anglais, 100 % local, propulsé par Grammalecte et Harper.",
   "icons": {
     "48": "icons/icon.svg",
     "96": "icons/icon.svg"
   },
-  "permissions": ["storage", "activeTab"],
+  "permissions": [
+    "storage",
+    "activeTab"
+  ],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'"
+  },
   "background": {
-    "scripts": ["lib/settings.js", "engine/host.js", "background.js"]
+    "scripts": [
+      "lib/settings.js",
+      "engine/language.js",
+      "engine/host.js",
+      "background.js"
+    ]
   },
   "content_scripts": [
     {
-      "matches": ["<all_urls>"],
+      "matches": [
+        "<all_urls>"
+      ],
       "js": [
         "lib/settings.js",
         "content/styles.js",
@@ -42,7 +55,9 @@
       "id": "freecorrector@freecorrector.local",
       "strict_min_version": "128.0",
       "data_collection_permissions": {
-        "required": ["none"]
+        "required": [
+          "none"
+        ]
       }
     }
   }

@@ -21,6 +21,7 @@
     $("picky").checked = settings.picky;
     $("sentence-rules").checked = settings.sentenceRules;
     $("language").value = settings.language;
+    $("english-dialect").value = settings.englishDialect;
 
     $("words").replaceChildren(
       ...settings.dictionary.map((word) =>
@@ -43,6 +44,8 @@
 
   $("enabled").addEventListener("change", (e) => fcSetSettings({ enabled: e.target.checked }));
   $("picky").addEventListener("change", (e) => fcSetSettings({ picky: e.target.checked }));
+  $("language").addEventListener("change", (e) => fcSetSettings({ language: e.target.value }));
+  $("english-dialect").addEventListener("change", (e) => fcSetSettings({ englishDialect: e.target.value }));
   $("sentence-rules").addEventListener("change", (e) =>
     fcSetSettings({ sentenceRules: e.target.checked })
   );

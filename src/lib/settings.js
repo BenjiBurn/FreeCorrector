@@ -8,7 +8,8 @@ const fcApi = globalThis.browser ?? globalThis.chrome;
 const FC_DEFAULTS = Object.freeze({
   enabled: true,
   disabledSites: [],
-  language: "fr",
+  language: "auto",
+  englishDialect: "us",
   picky: false,
   sentenceRules: true,
   dictionary: [],

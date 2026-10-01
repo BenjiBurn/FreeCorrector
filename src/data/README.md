@@ -1,6 +1,6 @@
 # Données
 
-`fr-freq.txt` : les 50 000 mots français les plus fréquents, avec leur nombre d’occurrences
+`fr-freq.txt` et `en-freq.txt` : les 50 000 mots français et anglais les plus fréquents, avec leur nombre d’occurrences
 (« mot nombre » par ligne). Sert à classer les suggestions de correction.
 
 Source : [FrequencyWords](https://github.com/hermitdave/FrequencyWords) de Hermit Dave, construit

@@ -50,14 +50,14 @@ function loadWorker(file) {
 
 const norm = (s) => (s ?? "").replace(/'/g, "’").replace(/[  ]/g, " ");
 
-function score(call, corpus, verbose) {
+async function score(call, corpus, verbose) {
   const stats = { cases: 0, errors: 0, detected: 0, top1: 0, top3: 0, clean: 0, falsePos: 0 };
   const failures = [];
   const t0 = Date.now();
 
   for (const [text, wrong, expected] of corpus) {
     stats.cases++;
-    const matches = call("check", { text });
+    const matches = await call("check", { text });
     const show = (m) => `${JSON.stringify(m.word)} -> ${m.replacements.slice(0, 4).join(" | ")}`;
 
     if (wrong === null) {
@@ -103,14 +103,30 @@ function score(call, corpus, verbose) {
 
 module.exports = { loadWorker, score };
 
+// The English engine is an ES module: import it with a worker-like global.
+async function loadEnglish() {
+  globalThis.self = globalThis;
+  const english = await import(pathToFileURL(path.join(SRC, "engine", "english.js")).href);
+  await english.init({ dialect: "us" });
+  return (_type, { text }) => english.check(text);
+}
+
 if (require.main === module) {
-  const verbose = process.argv.includes("--all");
-  const call = loadWorker("engine/grammalecte-worker.js");
-  call("init", { options: { apos: false, num: false } });
-  for (const corpus of ["./fr-corpus.js", "./fr-holdout.js"]) {
-    if (!fs.existsSync(path.join(__dirname, corpus))) continue;
-    console.log(`
-=== ${corpus}`);
-    score(call, require(corpus), verbose);
-  }
+  (async () => {
+    const verbose = process.argv.includes("--all");
+    const only = process.argv.find((a) => a === "fr" || a === "en");
+    if (only !== "en") {
+      const call = loadWorker("engine/grammalecte-worker.js");
+      call("init", { options: { apos: false, num: false } });
+      for (const corpus of ["./fr-corpus.js", "./fr-holdout.js"]) {
+        if (!fs.existsSync(path.join(__dirname, corpus))) continue;
+        console.log(`\n=== ${corpus}`);
+        await score(call, require(corpus), verbose);
+      }
+    }
+    if (only !== "fr") {
+      console.log("\n=== ./en-corpus.js");
+      await score(await loadEnglish(), require("./en-corpus.js"), verbose);
+    }
+  })();
 }

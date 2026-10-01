@@ -1,10 +1,11 @@
-// Sentence-level rules Grammalecte does not apply on its own: a capital
+// Sentence-level rules the engines do not apply on their own: a capital
 // letter on the first word of a paragraph, and punctuation at its end.
 // (Grammalecte only checks the first capital once the sentence ends with a
 // period, and its final-punctuation rule almost never fires.)
 //
 // Both rules skip what is not a plain sentence: list items, titles,
-// references, signatures.
+// references, signatures. Used by the French worker (classic script) and the
+// English worker (ES module, through self.fcSentenceRules).
 
 /* exported fcSentenceRules, FC_RULE_CAPITAL, FC_RULE_FINAL_PUNCT */
 
@@ -15,23 +16,37 @@ const FC_MIN_WORDS_FOR_PUNCT = 3;
 const FC_FIRST_WORD = /^\s*(\p{Ll}[\p{L}\p{M}'’-]*)/u;
 const FC_LAST_WORD = /(\p{L}[\p{L}\p{M}\p{N}'’-]*)\s*$/u;
 const FC_LIST_MARKER = /^\s*([-*•–—>]|\d+[.)]|[a-z][.)])\s/u;
-const FC_QUESTION_START =
-  /^\s*(pourquoi|comment|quand|où|qui|quoi|que|qu['’]|quel|quelle|quels|quelles|combien|lequel|laquelle|lesquels|lesquelles|est-ce)(?![\p{L}])/iu;
-const FC_ET_TOI = /^\s*et (toi|vous|lui|elle|eux|elles)(?![\p{L}])/iu;
-const FC_INVERSION = /-(t-)?(je|tu|il|elle|on|nous|vous|ils|elles)(?![\p{L}])/iu;
-const FC_SUBJECT_PRONOUN = /(^|[\s’'])(je|j['’]|tu|il|elle|on|nous|vous|ils|elles|c['’]est|ça|cela)(?![\p{L}])/iu;
 const FC_FINITE_VERB = /:(Ip|Iq|Is|If|K|Sp|Sq|E)/;
 
+const FC_SENTENCE_LANG = {
+  fr: {
+    question: [
+      /^\s*(pourquoi|comment|quand|où|qui|quoi|que|qu['’]|quel|quelle|quels|quelles|combien|lequel|laquelle|lesquels|lesquelles|est-ce)(?![\p{L}])/iu,
+      /^\s*et (toi|vous|lui|elle|eux|elles)(?![\p{L}])/iu,
+      /-(t-)?(je|tu|il|elle|on|nous|vous|ils|elles)(?![\p{L}])/iu,
+    ],
+    subject: /(^|[\s’'])(je|j['’]|tu|il|elle|on|nous|vous|ils|elles|c['’]est|ça|cela)(?![\p{L}])/iu,
+  },
+  en: {
+    question: [
+      /^\s*(what|why|how|when|where|who|whom|whose|which|do|does|did|is|are|was|were|am|can|could|would|will|shall|should|may|might|have|has|had|isn't|aren't|don't|doesn't|didn't|won't|can't|couldn't|wouldn't|shouldn't)(?![\p{L}'’])/iu,
+      /^\s*(and|what about|how about) (you|him|her|them|us)(?![\p{L}])/iu,
+    ],
+    subject: /(^|\s)(i|i'm|i’m|you|he|she|it|it's|it’s|we|they|there|this|that|let's|let’s)(?![\p{L}])/iu,
+  },
+};
+
 // Looks at the last sentence only: "Je vais bien ! Et toi" is a question.
-function fcIsQuestion(paragraph) {
+function fcIsQuestion(paragraph, lang) {
   const sentence = paragraph.split(/[.!?…]/).pop();
-  return FC_QUESTION_START.test(sentence) || FC_ET_TOI.test(sentence) || FC_INVERSION.test(sentence);
+  return FC_SENTENCE_LANG[lang].question.some((re) => re.test(sentence));
 }
 
 // A real sentence has a subject pronoun or a conjugated verb; titles,
 // references and list items usually have neither.
-function fcLooksLikeSentence(paragraph, spellChecker) {
-  if (FC_SUBJECT_PRONOUN.test(paragraph)) return true;
+function fcLooksLikeSentence(paragraph, spellChecker, lang) {
+  if (FC_SENTENCE_LANG[lang].subject.test(paragraph)) return true;
+  if (!spellChecker) return (paragraph.match(/\p{L}+/gu) ?? []).length >= 5;
   for (const word of paragraph.match(/\p{L}+/gu) ?? []) {
     if (word[0] !== word[0].toLowerCase()) continue; // names are not verbs
     try {
@@ -46,7 +61,8 @@ function fcLooksLikeSentence(paragraph, spellChecker) {
 // `existing` are the matches already found in the paragraph: we never stack
 // a sentence rule on top of another error. `prevEnd` is the last visible
 // character of the previous paragraph ("" at the start of the text).
-function fcSentenceRules(paragraph, existing, spellChecker, prevEnd) {
+// `spellChecker` (French only) helps tell sentences from titles.
+function fcSentenceRules(paragraph, existing, spellChecker, prevEnd, lang = "fr") {
   const out = [];
   const free = (start, end) => !existing.some((m) => m.offset < end && start < m.offset + m.length);
   const listItem =
@@ -80,11 +96,14 @@ function fcSentenceRules(paragraph, existing, spellChecker, prevEnd) {
 
   const words = paragraph.match(/[\p{L}\p{N}]+/gu) ?? [];
   const last = FC_LAST_WORD.exec(paragraph);
-  if (last && !listItem && words.length >= FC_MIN_WORDS_FOR_PUNCT && fcLooksLikeSentence(paragraph, spellChecker)) {
+  if (last && !listItem && words.length >= FC_MIN_WORDS_FOR_PUNCT &&
+      fcLooksLikeSentence(paragraph, spellChecker, lang)) {
     const word = last[1];
     const start = last.index;
     if (free(start, start + word.length)) {
-      const marks = fcIsQuestion(paragraph) ? [" ?", ".", " !"] : [".", " !", " ?"];
+      // French puts a space before "?" and "!", English does not.
+      const sp = lang === "fr" ? " " : "";
+      const marks = fcIsQuestion(paragraph, lang) ? [`${sp}?`, ".", `${sp}!`] : [".", `${sp}!`, `${sp}?`];
       out.push({
         offset: start,
         length: word.length,
@@ -99,3 +118,6 @@ function fcSentenceRules(paragraph, existing, spellChecker, prevEnd) {
   }
   return out;
 }
+
+// Module workers have no shared global scope: expose the entry point.
+self.fcSentenceRules = fcSentenceRules;
