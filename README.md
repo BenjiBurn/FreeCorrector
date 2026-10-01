@@ -108,6 +108,7 @@ tests/
   fr-corpus.js             Corpus de fautes courantes (homophones, accords, accents…)
   fr-holdout.js            Second corpus, pour vérifier que les réglages se généralisent
   en-corpus.js             Corpus de fautes anglaises courantes
+  fr-blind.js, en-holdout.js  Corpus écrits après les réglages, pour une mesure honnête
 ```
 
 ### Fonctionnement

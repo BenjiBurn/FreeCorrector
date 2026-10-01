@@ -15,6 +15,11 @@ const CONTRACTIONS = new Map(Object.entries({
 }));
 
 const SUBJECT_FOR = { me: "I", him: "he", her: "she", them: "they", us: "we" };
+const LETS_VERBS = /^(go|do|see|try|start|make|get|talk|meet|eat|have|take|be|move|play|watch|find|keep|call|check|discuss|hope|work|think|look|wait|plan|celebrate|grab|head|catch|leave|stay|begin|focus|keep)$/;
+const IRREGULAR_PLURALS = /^(children|people|men|women|feet|teeth|mice|geese|police)$/;
+const YOUR_NOUNS = /^(help|time|message|email|e-mail|support|patience|answer|reply|feedback|response|understanding|attention|kindness|advice|work|effort|efforts|order|question|questions|interest|call|letter|gift|hospitality|cooperation|consideration|trust|comments|input|invitation|offer|application)$/;
+// Nouns typed where the verb was meant, after "to" or a modal.
+const VERB_FOR_NOUN = { discus: "discuss", breath: "breathe", advice: "advise", loose: "lose", belief: "believe", proof: "prove", choise: "choose", chose: "choose" };
 const TOO_WORDS = /^(much|many|late|early|soon|bad|big|small|hard|far|long|often|fast|slow|expensive|cheap|hot|cold|tired|busy|young|old|good|difficult|easy|high|low|loud|quiet|close)$/;
 
 function tokens(text) {
@@ -60,6 +65,33 @@ export function englishRules(paragraph, existing) {
     const contraction = CONTRACTIONS.get(t.lower);
     if (contraction) add(t.start, t.end, contraction, "Apostrophe missing in this contraction.");
 
+    // "Lets go" -> "Let's go" (only before a verb, at the start of a clause)
+    if (clauseStart && t.lower === "lets" && next && LETS_VERBS.test(next.lower)) {
+      add(t.start, t.end, "let's", "Did you mean “let's” (let us)?");
+    }
+
+    // "the children is" -> "are" (irregular plurals)
+    if (IRREGULAR_PLURALS.test(t.lower) && next && /^(is|was|has)$/.test(next.lower) &&
+        !(prev && /^(a|an|one|this|that)$/.test(prev.lower))) {
+      const fix = { is: "are", was: "were", has: "have" }[next.lower];
+      add(next.start, next.end, fix, `“${t.lower}” is plural: use “${fix}”.`);
+    }
+
+    // "thanks for you help" -> "your"
+    if (t.lower === "you" && prev && /^(for|of|with|in|on|about|to)$/.test(prev.lower) && next && YOUR_NOUNS.test(next.lower)) {
+      add(t.start, t.end, "your", "Did you mean the possessive “your”?");
+    }
+
+    // "really exited about" -> "excited"
+    if (t.lower === "exited" && next && /^(about|for|to|that)$/.test(next.lower)) {
+      add(t.start, t.end, "excited", "Did you mean “excited” (eager)? “Exited” means “went out”.");
+    }
+
+    // "need to discus", "to breath" -> the verb
+    if (prev && /^(to|will|can|could|would|should|must|might|may|please|let's|lets)$/.test(prev.lower) && VERB_FOR_NOUN[t.lower]) {
+      add(t.start, t.end, VERB_FOR_NOUN[t.lower], `After “${prev.lower}”, use the verb “${VERB_FOR_NOUN[t.lower]}”.`);
+    }
+
     // "Your welcome", "your right" -> "you're"
     if (t.lower === "your" && next && /^(welcome|right|wrong|going|not|so|very|too|always|never|being|doing|getting|making|coming|the|a|an|kidding|joking|amazing|awesome|beautiful|crazy|lucky|sure|done|late|early)$/.test(next.lower) &&
         !(next.lower === "right" && next2 && /^(hand|side|arm|leg|eye|ear|foot|now)$/.test(next2.lower))) {
@@ -103,6 +135,9 @@ export function englishRules(paragraph, existing) {
 }
 
 // The apostrophe form of a contraction typed without it, or null.
-export function contractionFor(word) {
-  return CONTRACTIONS.get(word.toLowerCase()) ?? null;
+// `prevWord` picks the right agreement: "she dont" -> "doesn't".
+export function contractionFor(word, prevWord = "") {
+  const lower = word.toLowerCase();
+  if (lower === "dont" && /^(he|she|it|this|that|everyone|nobody|somebody|someone)$/i.test(prevWord)) return "doesn't";
+  return CONTRACTIONS.get(lower) ?? null;
 }

@@ -197,7 +197,8 @@ function sentenceAround(text, start, end) {
 // cheapest to type, most frequent, Harper's own order.
 async function rankSpelling(paragraph, m) {
   const harper = m.replacements;
-  const contraction = contractionFor(m.word);
+  const prevWord = paragraph.slice(0, m.offset).match(/([A-Za-z]+)[^A-Za-z]*$/)?.[1] ?? "";
+  const contraction = contractionFor(m.word, prevWord);
   const candidates = [...new Set([
     ...(contraction ? [matchCase(m.word, contraction)] : []),
     ...harper,
@@ -230,7 +231,14 @@ async function rankSpelling(paragraph, m) {
     const after = paragraph.slice(m.offset + m.length, e);
     for (const x of scored) x.errors = await lintCount(before + x.c + after);
   }
-  return scored.sort((a, b) => a.errors - b.errors || a.cost - b.cost).map((x) => x.c);
+  const ranked = scored.sort((a, b) => a.errors - b.errors || a.cost - b.cost).map((x) => x.c);
+  // A known contraction ("dont" -> "don't", "she dont" -> "doesn't") is
+  // what was meant, whatever the scores say.
+  if (contraction) {
+    const fixed = matchCase(m.word, contraction);
+    return [fixed, ...ranked.filter((c) => c !== fixed)];
+  }
+  return ranked;
 }
 
 // ---------- Harper -> matches ----------
@@ -285,6 +293,11 @@ async function lintParagraph(paragraph) {
         if (!replacements.includes(r)) replacements.push(r);
       }
       if (!picky && kind === "Formatting" && TYPOGRAPHY_ONLY(word, replacements)) continue;
+      // Guesses with nothing to offer ("You may be missing a preposition").
+      if (kind === "Miscellaneous" && !replacements.length) continue;
+      // Never lowercase the first word of a sentence ("Who's coming?").
+      const sentenceStart = /(^|[.!?…]\s+)$/.test(paragraph.slice(0, offset));
+      if (kind === "Capitalization" && sentenceStart && replacements[0] === word.toLowerCase()) continue;
       out.push({
         offset,
         length: end - offset,
