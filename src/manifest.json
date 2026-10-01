@@ -10,7 +10,7 @@
   },
   "permissions": ["storage", "activeTab"],
   "background": {
-    "scripts": ["lib/settings.js", "background.js"]
+    "scripts": ["lib/settings.js", "engine/host.js", "background.js"]
   },
   "content_scripts": [
     {

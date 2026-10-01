@@ -19,37 +19,66 @@ ligne de vos textes sur Internet : toute l’analyse tourne dans votre navigateu
 Le moteur de correction est [Grammalecte](https://grammalecte.net/), le correcteur grammatical
 libre de référence pour le français.
 
+## Navigateurs pris en charge
+
+| Navigateur | Paquet | Store |
+|---|---|---|
+| Firefox 128+ | `dist/freecorrector-<version>-firefox.zip` | addons.mozilla.org |
+| Chrome, Brave, Vivaldi (116+) | `dist/freecorrector-<version>-chromium.zip` | Chrome Web Store |
+| Edge | `dist/freecorrector-<version>-chromium.zip` | Edge Add-ons |
+| Opera | `dist/freecorrector-<version>-chromium.zip` | Opera add-ons |
+| Safari | à convertir sur macOS avec Xcode (`xcrun safari-web-extension-converter dist/chromium`) | App Store |
+
+Les paquets se construisent avec Node.js (aucune dépendance) :
+
+```sh
+npm run build        # ou : node scripts/build.js [firefox|chromium]
+```
+
+Sous Chromium, l’arrière-plan d’une extension MV3 est un service worker, qui ne peut pas lancer
+de Web Worker : le moteur y tourne dans un document hors écran (`src/chromium/`). Sous Firefox, il
+tourne directement dans la page d’arrière-plan. Le reste du code est commun.
+
 ## Installer (développement)
 
-Firefox 128 ou plus récent :
+**Firefox** (128 ou plus récent) :
 
 1. Ouvrir `about:debugging#/runtime/this-firefox`
 2. Cliquer sur **Charger un module complémentaire temporaire…**
-3. Choisir le fichier `src/manifest.json`
-4. Cliquer sur l’icône FreeCorrector puis **Page de test**, ou aller sur n’importe quel site et
-   cliquer dans un champ de texte
-
-Les fichiers locaux (`file://`) ne sont pas corrigés : Firefox n’y injecte pas les extensions.
+3. Choisir le fichier `src/manifest.json` (ou `dist/firefox/manifest.json`)
 
 Le module reste chargé jusqu’à la fermeture de Firefox. Après une modification du code, cliquer
 sur **Recharger** dans `about:debugging`.
 
-Avec Node.js, [`web-ext`](https://github.com/mozilla/web-ext) permet de lancer un Firefox
-de test qui recharge l’extension automatiquement, et de valider le paquet :
+**Chrome, Edge, Brave, Opera, Vivaldi** :
+
+1. Lancer `npm run build`
+2. Ouvrir `chrome://extensions` (ou `edge://extensions`, `brave://extensions`…)
+3. Activer le **mode développeur**
+4. Cliquer sur **Charger l’extension non empaquetée** et choisir le dossier `dist/chromium`
+
+Ensuite, cliquer sur l’icône FreeCorrector puis **Page de test**, ou aller sur n’importe quel
+site et cliquer dans un champ de texte. Les fichiers locaux (`file://`) ne sont pas corrigés :
+les navigateurs n’y injectent pas les extensions par défaut.
+
+Avec Node.js, [`web-ext`](https://github.com/mozilla/web-ext) permet de lancer un Firefox de test
+qui recharge l’extension automatiquement, et de valider le paquet Firefox :
 
 ```sh
-npx web-ext run   --source-dir src
-npx web-ext lint  --source-dir src
-npx web-ext build --source-dir src
+npx web-ext run  --source-dir src
+npx web-ext lint --source-dir dist/firefox
 ```
 
 ## Structure
 
+
 ```
 src/
-  manifest.json            Manifest V3 (Firefox)
-  background.js            Pilote le moteur, cache, dictionnaire personnel
+  manifest.json            Manifest V3 (base Firefox ; adapté pour Chromium au build)
+  background.js            Arrière-plan Firefox
+  chromium/                Arrière-plan Chromium : service worker + document hors écran
   engine/
+    host.js                Pilote le moteur (worker), cache, dictionnaire personnel
     grammalecte-worker.js  Fait tourner Grammalecte dans un Web Worker
     suggestions.js         Reclasse les suggestions selon le contexte
     rules.js               Règles maison : homophones et accords que Grammalecte rate
@@ -66,6 +95,7 @@ src/
   lib/                     Réglages et styles partagés
   demo/demo.html           Page de test avec des fautes (ouverte depuis le popup)
   vendor/grammalecte/      Moteur Grammalecte 2.3.0 (sous-ensemble non modifié)
+scripts/build.js           Construit dist/firefox et dist/chromium (+ zips pour les stores)
 tests/
   run.js                   Fait tourner le moteur sous Node et le note sur les corpus
   fr-corpus.js             Corpus de fautes courantes (homophones, accords, accents…)
@@ -111,7 +141,8 @@ sur des phrases correctes. À lancer après chaque modification du moteur.
 
 ## Feuille de route
 
-- [ ] Chrome, Edge, Opera, Brave (Manifest V3 avec document hors écran pour le worker)
+- [x] Chrome, Edge, Opera, Brave, Vivaldi (Manifest V3 avec document hors écran pour le worker)
+- [ ] Safari (conversion Xcode sur macOS)
 - [x] Champs `contenteditable` (Gmail, Outlook, Discord, Notion, éditeurs Quill, ProseMirror…)
 - [ ] Autres langues (anglais, espagnol, allemand…) via des moteurs libres
 - [ ] Publication sur addons.mozilla.org, Chrome Web Store, Edge Add-ons

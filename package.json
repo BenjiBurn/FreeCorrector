@@ -7,9 +7,9 @@
   "author": "BenjiBurn",
   "scripts": {
     "test": "node tests/run.js",
-    "lint": "web-ext lint --source-dir src",
-    "start": "web-ext run --source-dir src",
-    "build": "web-ext build --source-dir src --overwrite-dest"
+    "build": "node scripts/build.js",
+    "lint": "node scripts/build.js firefox && web-ext lint --source-dir dist/firefox",
+    "start": "web-ext run --source-dir src"
   },
   "devDependencies": {
     "web-ext": "^8.0.0"
