@@ -6,7 +6,7 @@ const MAX_TEXT_LENGTH = 50000;
 const CACHE_SIZE = 50;
 
 // Extra Grammalecte rules turned on by the "picky" setting.
-const PICKY_OPTIONS = ["apos", "esp", "nbsp", "unit", "poncfin", "neg", "redon1", "redon2"];
+const PICKY_OPTIONS = ["apos", "num", "esp", "nbsp", "unit", "poncfin", "neg", "redon1", "redon2"];
 
 const cache = new Map();
 let worker = null;
@@ -17,6 +17,7 @@ const pending = new Map();
 function engineOptions(settings) {
   const options = {};
   for (const name of PICKY_OPTIONS) options[name] = settings.picky;
+  options.fcPicky = settings.picky;
   return options;
 }
 

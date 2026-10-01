@@ -27,11 +27,13 @@ importScripts(
   VENDOR + "fr/gc_rules_graph.js",
   VENDOR + "fr/gc_engine.js",
   "suggestions.js",
+  "rules.js",
   "sentence-rules.js"
 );
 
 /* global helpers, conj, mfsp, phonet, gc_engine, fcRankSuggestions, fcClearRankingCache,
-   fcIsCascadeError, fcHasErrorAt, fcSentenceRules */
+   fcIsCascadeError, fcHasErrorAt, fcSentenceRules, fcLoadFrequencies, fcSpellSuggestions,
+   fcCustomRules, fcIsTypographicOnly, fcLooksLikeProperNoun, fcUrlRanges */
 
 // A wider pool than we show: the ranking step picks the best ones in context.
 const MAX_SPELL_SUGGESTIONS = 10;
@@ -58,6 +60,7 @@ const CATEGORY_LABEL = {
 
 let spellChecker = null;
 const paragraphCache = new Map();
+let picky = false; // show printer's typography fixes too
 
 function init(options) {
   if (!spellChecker) {
@@ -68,9 +71,12 @@ function init(options) {
     gc_engine.load("JavaScript", "aHSL", base + "graphspell/_dictionaries");
     spellChecker = gc_engine.getSpellChecker();
     if (!spellChecker) throw new Error("Grammalecte failed to load its dictionary");
+    fcLoadFrequencies(helpers.loadFile(new URL("../data/fr-freq.txt", self.location.href).href));
   }
   if (options) {
-    gc_engine.setOptions(new Map(Object.entries(options)));
+    const { fcPicky = false, ...grammalecteOptions } = options;
+    picky = fcPicky;
+    gc_engine.setOptions(new Map(Object.entries(grammalecteOptions)));
     fcClearRankingCache();
     paragraphCache.clear();
   }
@@ -78,14 +84,7 @@ function init(options) {
 }
 
 function spellSuggestions(word) {
-  const out = [];
-  for (const list of spellChecker.suggest(word, MAX_SPELL_SUGGESTIONS)) {
-    for (const s of list) {
-      if (!out.includes(s)) out.push(s);
-      if (out.length >= MAX_SPELL_SUGGESTIONS) return out;
-    }
-  }
-  return out;
+  return fcSpellSuggestions(spellChecker, word, MAX_SPELL_SUGGESTIONS);
 }
 
 function overlaps(a, b) {
@@ -160,6 +159,7 @@ function checkParagraph(paragraph) {
   let suggested = 0;
   for (const token of spellChecker.parseParagraph(paragraph)) {
     const word = token.sValue;
+    if (fcLooksLikeProperNoun(paragraph, token.nStart, word)) continue;
     spelling.push({
       offset: token.nStart,
       length: token.nEnd - token.nStart,
@@ -186,13 +186,17 @@ function checkParagraph(paragraph) {
       label: CATEGORY_LABEL[category],
       url: err.URL || "",
     };
+    if (!picky && fcIsTypographicOnly(m.word, m.replacements)) continue;
     // An unknown word is the more useful report; drop grammar noise on top of it.
     if (!spelling.some((s) => overlaps(s, m))) grammar.push(m);
   }
 
-  const found = [...spelling, ...grammar].sort((a, b) => a.offset - b.offset);
-  const ranked = rankParagraph(paragraph, 0, found);
-  const result = [...ranked, ...fcSentenceRules(paragraph, ranked)].sort((a, b) => a.offset - b.offset);
+  const custom = fcCustomRules(paragraph, spellChecker, [...spelling, ...grammar]);
+  const urls = fcUrlRanges(paragraph);
+  const found = [...spelling, ...grammar, ...custom]
+    .filter((m) => !urls.some(([a, b]) => m.offset < b && a < m.offset + m.length))
+    .sort((a, b) => a.offset - b.offset);
+  const result = rankParagraph(paragraph, 0, found);
   if (paragraphCache.size >= PARAGRAPH_CACHE_SIZE) paragraphCache.clear();
   paragraphCache.set(paragraph, result);
   return result;
@@ -202,11 +206,17 @@ function check(text) {
   init();
   const matches = [];
   let paraStart = 0;
+  let prevEnd = "";
   for (const paragraph of text.split("\n")) {
     if (paragraph.trim()) {
-      for (const m of checkParagraph(paragraph)) {
+      // Copies: the sentence rules may adjust them, the cache must stay as is.
+      const own = checkParagraph(paragraph).map((m) => ({ ...m, replacements: [...m.replacements] }));
+      // Sentence rules depend on the previous paragraph (list items after ":").
+      const all = [...own, ...fcSentenceRules(paragraph, own, spellChecker, prevEnd)];
+      for (const m of all.sort((a, b) => a.offset - b.offset)) {
         matches.push({ ...m, offset: paraStart + m.offset });
       }
+      prevEnd = paragraph.trimEnd().slice(-1);
     }
     paraStart += paragraph.length + 1;
   }

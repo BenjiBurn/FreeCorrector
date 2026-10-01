@@ -2,6 +2,9 @@
 // letter on the first word of a paragraph, and punctuation at its end.
 // (Grammalecte only checks the first capital once the sentence ends with a
 // period, and its final-punctuation rule almost never fires.)
+//
+// Both rules skip what is not a plain sentence: list items, titles,
+// references, signatures.
 
 /* exported fcSentenceRules, FC_RULE_CAPITAL, FC_RULE_FINAL_PUNCT */
 
@@ -10,11 +13,14 @@ const FC_RULE_FINAL_PUNCT = "FC_FINAL_PUNCT";
 const FC_MIN_WORDS_FOR_PUNCT = 3;
 
 const FC_FIRST_WORD = /^\s*(\p{Ll}[\p{L}\p{M}'’-]*)/u;
-const FC_LAST_WORD = /([\p{L}\p{N}][\p{L}\p{M}\p{N}'’-]*)\s*$/u;
+const FC_LAST_WORD = /(\p{L}[\p{L}\p{M}\p{N}'’-]*)\s*$/u;
+const FC_LIST_MARKER = /^\s*([-*•–—>]|\d+[.)]|[a-z][.)])\s/u;
 const FC_QUESTION_START =
-  /^\s*(pourquoi|comment|quand|où|qui|quoi|que|qu['’]|quel|quelle|quels|quelles|combien|lequel|laquelle|lesquels|lesquelles|est-ce)\b/iu;
-const FC_ET_TOI = /^\s*et (toi|vous|lui|elle|eux|elles)\b/iu;
-const FC_INVERSION = /-(t-)?(je|tu|il|elle|on|nous|vous|ils|elles)\b/iu;
+  /^\s*(pourquoi|comment|quand|où|qui|quoi|que|qu['’]|quel|quelle|quels|quelles|combien|lequel|laquelle|lesquels|lesquelles|est-ce)(?![\p{L}])/iu;
+const FC_ET_TOI = /^\s*et (toi|vous|lui|elle|eux|elles)(?![\p{L}])/iu;
+const FC_INVERSION = /-(t-)?(je|tu|il|elle|on|nous|vous|ils|elles)(?![\p{L}])/iu;
+const FC_SUBJECT_PRONOUN = /(^|[\s’'])(je|j['’]|tu|il|elle|on|nous|vous|ils|elles|c['’]est|ça|cela)(?![\p{L}])/iu;
+const FC_FINITE_VERB = /:(Ip|Iq|Is|If|K|Sp|Sq|E)/;
 
 // Looks at the last sentence only: "Je vais bien ! Et toi" is a question.
 function fcIsQuestion(paragraph) {
@@ -22,14 +28,32 @@ function fcIsQuestion(paragraph) {
   return FC_QUESTION_START.test(sentence) || FC_ET_TOI.test(sentence) || FC_INVERSION.test(sentence);
 }
 
+// A real sentence has a subject pronoun or a conjugated verb; titles,
+// references and list items usually have neither.
+function fcLooksLikeSentence(paragraph, spellChecker) {
+  if (FC_SUBJECT_PRONOUN.test(paragraph)) return true;
+  for (const word of paragraph.match(/\p{L}+/gu) ?? []) {
+    if (word[0] !== word[0].toLowerCase()) continue; // names are not verbs
+    try {
+      if (spellChecker.getMorph(word).some((m) => FC_FINITE_VERB.test(m))) return true;
+    } catch {
+      // Not in the dictionary.
+    }
+  }
+  return false;
+}
+
 // `existing` are the matches already found in the paragraph: we never stack
-// a sentence rule on top of another error.
-function fcSentenceRules(paragraph, existing) {
+// a sentence rule on top of another error. `prevEnd` is the last visible
+// character of the previous paragraph ("" at the start of the text).
+function fcSentenceRules(paragraph, existing, spellChecker, prevEnd) {
   const out = [];
   const free = (start, end) => !existing.some((m) => m.offset < end && start < m.offset + m.length);
+  const listItem =
+    FC_LIST_MARKER.test(paragraph) || /[:;,]/.test(prevEnd) || /[;,:]\s*$/.test(paragraph);
 
   const first = FC_FIRST_WORD.exec(paragraph);
-  if (first) {
+  if (first && !listItem) {
     const word = first[1];
     const start = first.index + first[0].length - word.length;
     // Leave alone things like "iPhone", "eBay" or "x2".
@@ -56,7 +80,7 @@ function fcSentenceRules(paragraph, existing) {
 
   const words = paragraph.match(/[\p{L}\p{N}]+/gu) ?? [];
   const last = FC_LAST_WORD.exec(paragraph);
-  if (last && words.length >= FC_MIN_WORDS_FOR_PUNCT) {
+  if (last && !listItem && words.length >= FC_MIN_WORDS_FOR_PUNCT && fcLooksLikeSentence(paragraph, spellChecker)) {
     const word = last[1];
     const start = last.index;
     if (free(start, start + word.length)) {

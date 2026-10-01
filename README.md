@@ -51,7 +51,9 @@ src/
   engine/
     grammalecte-worker.js  Fait tourner Grammalecte dans un Web Worker
     suggestions.js         Reclasse les suggestions selon le contexte
+    rules.js               Règles maison : homophones et accords que Grammalecte rate
     sentence-rules.js      Majuscule en début et ponctuation en fin de phrase
+  data/fr-freq.txt         Fréquence des 50 000 mots français les plus courants
   content/                 Scripts injectés dans les pages
     field.js               Un vérificateur par champ : calque miroir, soulignements, compteur
     ui.js                  Shadow DOM : bulle de suggestions et panneau des fautes
@@ -62,6 +64,10 @@ src/
   lib/                     Réglages et styles partagés
   demo/demo.html           Page de test avec des fautes (ouverte depuis le popup)
   vendor/grammalecte/      Moteur Grammalecte 2.3.0 (sous-ensemble non modifié)
+tests/
+  run.js                   Fait tourner le moteur sous Node et le note sur les corpus
+  fr-corpus.js             Corpus de fautes courantes (homophones, accords, accents…)
+  fr-holdout.js            Second corpus, pour vérifier que les réglages se généralisent
 ```
 
 ### Fonctionnement
@@ -95,6 +101,12 @@ une option permet de les désactiver.
 Les corrections passent par `document.execCommand("insertText")`, ce qui conserve l’historique
 d’annulation (Ctrl+Z) et déclenche un vrai évènement `input`, compris par React, Vue, etc.
 
+### Tests de qualité
+
+`npm test` (ou `node tests/run.js`) fait tourner le vrai moteur sur les corpus et affiche le taux
+de fautes détectées, le taux de bonnes suggestions en première position et les fausses alertes
+sur des phrases correctes. À lancer après chaque modification du moteur.
+
 ## Feuille de route
 
 - [ ] Chrome, Edge, Opera, Brave (Manifest V3 avec document hors écran pour le worker)
@@ -112,4 +124,6 @@ Créé par **BenjiBurn**.
 FreeCorrector est un logiciel libre distribué sous licence **GNU GPL v3** (voir [LICENSE](LICENSE)).
 
 Il intègre Grammalecte © Olivier R., également sous GPL v3, sans modification
-(`src/vendor/grammalecte/`).
+(`src/vendor/grammalecte/`), et la liste de fréquence
+[FrequencyWords](https://github.com/hermitdave/FrequencyWords) de Hermit Dave, sous licence
+CC BY-SA 4.0 (`src/data/`).

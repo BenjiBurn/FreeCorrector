@@ -1,0 +1,17 @@
+{
+  "name": "freecorrector",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Correcteur orthographique et grammatical libre pour le navigateur",
+  "license": "GPL-3.0-or-later",
+  "author": "BenjiBurn",
+  "scripts": {
+    "test": "node tests/run.js",
+    "lint": "web-ext lint --source-dir src",
+    "start": "web-ext run --source-dir src",
+    "build": "web-ext build --source-dir src --overwrite-dest"
+  },
+  "devDependencies": {
+    "web-ext": "^8.0.0"
+  }
+}
