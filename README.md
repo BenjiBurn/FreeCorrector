@@ -15,6 +15,10 @@ ligne de vos textes sur Internet : toute l’analyse tourne dans votre navigateu
 - Clic sur un mot souligné : suggestions de correction, « Ignorer », « Ajouter au dictionnaire »
 - Dictionnaire personnel, désactivation par site, mode exigeant
 - Langues : français et anglais, détectées automatiquement paragraphe par paragraphe
+- Page « Correcteur » (bouton du menu) : collez ou écrivez un texte, toutes les fautes sont
+  listées avec la correction recommandée, « Tout corriger » et « Copier » en un clic
+- Aucune connexion réseau : la politique de sécurité de l’extension (`connect-src 'self'`)
+  interdit au navigateur toute requête vers Internet depuis l’extension
 
 Les moteurs de correction sont [Grammalecte](https://grammalecte.net/), le correcteur grammatical
 libre de référence pour le français, et [Harper](https://github.com/Automattic/harper) pour
@@ -99,6 +103,7 @@ src/
   popup/                   Menu de la barre d’outils
   options/                 Page d’options
   lib/                     Réglages et styles partagés
+  editor/                  Page « Correcteur » : grande zone de texte et liste des fautes
   demo/demo.html           Page de test avec des fautes (ouverte depuis le popup)
   vendor/grammalecte/      Moteur Grammalecte 2.3.0 (sous-ensemble non modifié)
   vendor/harper/           Moteur Harper 2.10.0 (harper.js, binaire WebAssembly)
@@ -109,6 +114,7 @@ tests/
   fr-holdout.js            Second corpus, pour vérifier que les réglages se généralisent
   en-corpus.js             Corpus de fautes anglaises courantes
   fr-blind.js, en-holdout.js  Corpus écrits après les réglages, pour une mesure honnête
+  fr-blind2-3.js, en-blind2-3.js  Corpus écrits avant chaque nouvelle passe de réglages
 ```
 
 ### Fonctionnement

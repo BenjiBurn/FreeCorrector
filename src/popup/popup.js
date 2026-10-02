@@ -31,6 +31,11 @@
     render();
   });
 
+  document.getElementById("open-editor").addEventListener("click", () => {
+    fcApi.tabs.create({ url: fcApi.runtime.getURL("editor/editor.html") });
+    window.close();
+  });
+
   document.getElementById("open-demo").addEventListener("click", () => {
     fcApi.tabs.create({ url: fcApi.runtime.getURL("demo/demo.html") });
     window.close();
