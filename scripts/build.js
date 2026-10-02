@@ -37,6 +37,7 @@ const TARGETS = {
     manifest: (m) => {
       const out = { ...m };
       delete out.browser_specific_settings;
+      delete out.author; // Chrome expects { email }, not a name
       out.minimum_chrome_version = "116";
       out.background = { service_worker: "chromium/service-worker.js" };
       out.permissions = [...new Set([...(m.permissions ?? []), "offscreen"])];
