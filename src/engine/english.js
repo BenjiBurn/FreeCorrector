@@ -102,11 +102,9 @@ export async function init(options = {}) {
     linter = new LocalLinter({ binary: slimBinary, dialect });
     linterDialect = dialect;
     await Promise.all([linter.setup(), loadFrequencies()]);
-    // Harper builds parts of its spelling-suggestion index on the first
-    // unknown words (accented ones especially),
-    // which takes about two seconds: do it now rather than on the user's
-    // first typo.
-    await lintCount("Thsi sentense has typos, électroménagr included.");
+    // Harper's first spelling suggestions are slower: done now, not on the
+    // user's first typo.
+    await lintCount("Thsi sentense has typos.");
   }
   return true;
 }
@@ -186,8 +184,18 @@ function frequentNeighbours(word, limit = 3) {
   return found.map((c) => matchCase(word, c));
 }
 
+// The text Harper gets: unknown words with accented letters ("Besançon",
+// "électroménager") are blanked, same length so offsets hold. They are names
+// or foreign words Harper cannot fix, and the first one costs it about two
+// seconds of index building. Known ones ("café", "naïve") stay.
+function harperText(text) {
+  if (!/[^\x00-\x7F]/.test(text)) return text;
+  return text.replace(/[\p{L}\p{M}'’-]+/gu, (w) =>
+    /[^\x00-\x7F’]/.test(w) && !frequencies.has(w.toLowerCase()) ? " ".repeat(w.length) : w);
+}
+
 async function lintCount(text) {
-  const lints = await linter.lint(text, { language: "plaintext" });
+  const lints = await linter.lint(harperText(text), { language: "plaintext" });
   const n = lints.length;
   for (const l of lints) l.free?.();
   return n;
@@ -301,8 +309,9 @@ function suggestionText(suggestion, problem) {
 }
 
 async function lintParagraph(paragraph) {
-  const toUtf16 = codePointToUtf16(paragraph);
-  const lints = await linter.lint(paragraph, { language: "plaintext" });
+  const forHarper = harperText(paragraph);
+  const toUtf16 = codePointToUtf16(forHarper);
+  const lints = await linter.lint(forHarper, { language: "plaintext" });
   const out = [];
   for (const lint of lints) {
     try {

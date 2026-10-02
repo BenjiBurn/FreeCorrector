@@ -8,7 +8,7 @@
 //   - FcTextField: <textarea> and <input>, drawn with a "mirror";
 //   - FcRichField (rich-field.js): contenteditable editors.
 
-const FC_CHECK_DELAY = 600;
+const FC_CHECK_DELAY = 450;
 const FC_BADGE_SIZE = 22;
 const FC_WORD_CHAR = /[\p{L}\p{N}'’_-]/u;
 const FC_SVG_NS = "http://www.w3.org/2000/svg";
@@ -43,9 +43,12 @@ class FcFieldBase {
     this.onInput = this.onInput.bind(this);
     this.onClick = this.onClick.bind(this);
     // Focus and caret moves can show or hide the "missing final period" hint.
-    this.onFocusChange = () => {
+    this.onFocusChange = (event) => {
       this.refreshVisible();
       this.renderBadge();
+      // The background may have gone idle and stopped the engines: restart
+      // them before the user's next check (no cost when they are running).
+      if (event?.type === "focus") Promise.resolve(fcApi.runtime.sendMessage({ type: "warmup" })).catch(() => {});
     };
     this.onCaretMove = () => this.refreshVisible();
     this.listen(el, "input", this.onInput);

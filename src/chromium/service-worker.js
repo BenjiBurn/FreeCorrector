@@ -28,12 +28,12 @@ async function fcEnsureOffscreen() {
   await fcCreating;
 }
 
-async function fcCheck(text) {
+async function fcForward(type, text = "") {
   const settings = await fcGetSettings();
   await fcEnsureOffscreen();
   return fcApi.runtime.sendMessage({
     target: "fc-offscreen",
-    type: "check",
+    type,
     text,
     settings: {
       language: settings.language,
@@ -44,8 +44,16 @@ async function fcCheck(text) {
   });
 }
 
+const fcCheck = (text) => fcForward("check", text);
+
 fcApi.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
-  if (msg?.type !== "check" || msg.target) return false;
+  if (msg?.target) return false;
+  // A field got focus: have the engines ready before the first check.
+  if (msg?.type === "warmup") {
+    fcForward("warmup").catch(() => {});
+    return false;
+  }
+  if (msg?.type !== "check") return false;
   fcCheck(String(msg.text ?? "")).then(sendResponse, (err) => {
     console.error("[FreeCorrector]", err);
     sendResponse({ error: String(err?.message ?? err) });

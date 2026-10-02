@@ -1,5 +1,5 @@
 /* exported FcUi */
-/* global FC_CSS, fcGetSettings, fcSetSettings */
+/* global FC_CSS, fcApi, fcGetSettings, fcSetSettings */
 
 // Owns FreeCorrector's single shadow root on the page: the per-field layers,
 // the suggestion card and the error-list panel.
@@ -38,6 +38,10 @@ class FcUi {
       }
     }, true);
     this.pollTimer = setInterval(() => this.tick(), 500);
+
+    // The first field of the page just got focus: start the engines now,
+    // while the user is still typing.
+    Promise.resolve(fcApi.runtime.sendMessage({ type: "warmup" })).catch(() => {});
   }
 
   get panelField() {

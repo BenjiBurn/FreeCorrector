@@ -9,8 +9,8 @@
 // With the "auto" language, each paragraph goes to the engine of its own
 // language (language.js).
 
-/* global fcApi, fcParagraphLanguages */
-/* exported fcEngineCheck */
+/* global fcApi, fcParagraphLanguages, FC_LANGUAGES */
+/* exported fcEngineCheck, fcEngineWarmup */
 
 const FC_MAX_TEXT_LENGTH = 50000;
 const FC_RESULT_CACHE_SIZE = 50;
@@ -115,6 +115,17 @@ function fcFilterDictionary(matches, dictionary) {
   if (!dictionary?.length) return matches;
   const words = new Set(dictionary.map((w) => w.toLowerCase()));
   return matches.filter((m) => m.category !== "spelling" || !words.has(m.word.toLowerCase()));
+}
+
+// Starts and initialises the engines a check will need, so the first
+// underlines do not wait for them (loading Harper takes about a second).
+// Called when a text field gets focus, before anything is typed.
+function fcEngineWarmup(settings) {
+  const wanted = settings.language ?? "auto";
+  const langs = wanted === "auto" ? FC_LANGUAGES : [wanted];
+  for (const lang of langs) {
+    fcEngines[lang]?.ensure(fcEngineOptions(lang, settings)).catch(() => {});
+  }
 }
 
 // `settings`: { language: "auto" | "fr" | "en", picky, dictionary, englishDialect }.
