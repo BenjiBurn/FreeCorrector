@@ -194,6 +194,9 @@ class FcFieldBase {
 
   // `allMatches` is everything the engine reported; `matches` is what we show.
   isVisible(m) {
+    // Search queries are not sentences: no capital asked for the first word.
+    if (this.isSearch && m.offset === 0 && m.replacements[0] !== m.word &&
+        m.replacements[0]?.toLowerCase() === m.word.toLowerCase()) return false;
     if (m.ruleId !== FC_RULE_CAPITAL && m.ruleId !== FC_RULE_FINAL_PUNCT) return true;
     if (!this.ui.sentenceRules || this.isSearch) return false;
     // Don't ask for a final period while the user is still writing the sentence.

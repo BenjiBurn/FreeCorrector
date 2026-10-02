@@ -168,7 +168,12 @@ function rankParagraph(paragraph, paraStart, found) {
     kept.push(m);
     lastEnd = start + m.length;
     if (ranked++ < MAX_RANKED_MATCHES) {
-      const participles = m.replacements.participles;
+      // Grammar fixes after "être" ("sont finit" -> finît | finies): the
+      // participle candidates, for the same preference as spelling ones.
+      const participles = m.replacements.participles ??
+        (/(?:^|\s)(suis|es|est|sommes|êtes|sont|étais|était|étaient|serai|sera|seront|été)\s+$/i.test(fixed.slice(Math.max(0, start + delta - 12), start + delta))
+          ? m.replacements.filter((r) => spellChecker.getMorph(r).some((x) => /:Q/.test(x)))
+          : null);
       m.replacements = fcRankSuggestions(
         spellChecker, fixed, start + delta, m.length, m.replacements, m.category === "spelling"
       );
@@ -196,6 +201,8 @@ function checkParagraph(paragraph) {
   for (const token of spellChecker.parseParagraph(paragraph)) {
     const word = token.sValue;
     if (fcLooksLikeProperNoun(paragraph, token.nStart, word)) continue;
+    // "soeur", "coeur": most keyboards have no "œ"; a typographic nicety only.
+    if (!picky && /oe|ae/i.test(word) && spellChecker.isValidToken(word.replace(/oe/g, "œ").replace(/OE/g, "Œ").replace(/ae/g, "æ"))) continue;
     spelling.push({
       offset: token.nStart,
       length: token.nEnd - token.nStart,

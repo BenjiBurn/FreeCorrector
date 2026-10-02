@@ -14,14 +14,21 @@ const FC_LANG_WORDS = {
      "avoir fait très plus bien aussi comme tout tous toute toutes alors donc car déjà encore " +
      "jamais toujours rien peu beaucoup merci bonjour oui non suis sont était avais avait peut " +
      "faut moi toi lui eux notre votre nos vos quand quoi pourquoi comment ça cela voici voilà " +
-     "c'est j'ai n'est qu'il qu'elle d'un d'une l'on salut cordialement bisous").split(" ")
+     "c'est j'ai n'est qu'il qu'elle d'un d'une l'on salut cordialement bisous " +
+     "à en chez sans sous entre vers depuis puis après avant hier demain aujourd'hui meilleur " +
+     "meilleure pourrais voudrais veux vais va avez avons ont fais faire dire voir").split(" ")
   ),
   en: new Set(
     ("the and is are was were you he she it we they not that which who with this these those " +
      "but or of at by from be been have has had do does did will would can could should my your " +
      "his her their our its there what when where why how about just some any all very also " +
-     "than then because into out up down over again only yes thanks hello please me him them " +
-     "us am i i'm don't it's can't won't isn't doesn't didn't").split(" ")
+     "than then because into out up down over again only yes thanks hello please him them " +
+     "us am i i'm don't it's can't won't isn't doesn't didn't " +
+     // "me", "an", "as", "on", "son", "plus" are French words too: not listed.
+     "in for to best new good great near how cheap buy free online get make know think want need " +
+     "see go going like love work help today tomorrow yesterday now here well more most one two " +
+     "first last other many much after before never always still even back if so no your " +
+     "way time day people should something nothing everything thing things why").split(" ")
   ),
 };
 

@@ -118,7 +118,7 @@ if (require.main === module) {
     if (only !== "en") {
       const call = loadWorker("engine/grammalecte-worker.js");
       call("init", { options: { apos: false, num: false } });
-      for (const corpus of ["./fr-corpus.js", "./fr-holdout.js", "./fr-blind.js", "./fr-blind2.js"]) {
+      for (const corpus of ["./fr-corpus.js", "./fr-holdout.js", "./fr-blind.js", "./fr-blind2.js", "./fr-blind3.js"]) {
         if (!fs.existsSync(path.join(__dirname, corpus))) continue;
         console.log(`\n=== ${corpus}`);
         await score(call, require(corpus), verbose);
@@ -126,7 +126,7 @@ if (require.main === module) {
     }
     if (only !== "fr") {
       const call = await loadEnglish();
-      for (const corpus of ["./en-corpus.js", "./en-holdout.js", "./en-blind2.js"]) {
+      for (const corpus of ["./en-corpus.js", "./en-holdout.js", "./en-blind2.js", "./en-blind3.js"]) {
         console.log(`\n=== ${corpus}`);
         await score(call, require(corpus), verbose);
       }

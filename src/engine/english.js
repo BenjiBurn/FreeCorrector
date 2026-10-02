@@ -351,7 +351,10 @@ export async function check(text) {
       let cached = paragraphCache.get(paragraph);
       if (!cached) {
         const harper = await lintParagraph(paragraph);
-        cached = [...harper, ...englishRules(paragraph, harper)];
+        const own = englishRules(paragraph, harper, frequency);
+        const overriding = own.filter((m) => m.override);
+        const kept = harper.filter((h) => !overriding.some((o) => o.offset < h.offset + h.length && h.offset < o.offset + o.length));
+        cached = [...kept, ...own];
         if (paragraphCache.size >= 500) paragraphCache.clear();
         paragraphCache.set(paragraph, cached);
       }

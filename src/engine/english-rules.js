@@ -22,6 +22,26 @@ const YOUR_NOUNS = /^(help|time|message|email|e-mail|support|patience|answer|rep
 const VERB_FOR_NOUN = { discus: "discuss", breath: "breathe", advice: "advise", loose: "lose", belief: "believe", proof: "prove", choise: "choose", chose: "choose" };
 // Real words that are usually a misspelled -ing form after "be".
 const ING_TYPOS = { planing: "planning", stoping: "stopping", shoping: "shopping", geting: "getting", runing: "running", siting: "sitting", writting: "writing", comming: "coming" };
+// Always capitalized; "may", "march", "august", "polish", "turkey" are left out.
+const PROPER_WORDS = new Set([
+  "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday",
+  "january", "february", "april", "june", "july", "september", "october", "november", "december",
+  "english", "french", "spanish", "german", "italian", "portuguese", "chinese", "japanese", "korean", "russian", "arabic", "dutch",
+  "american", "british", "european", "african", "asian", "canadian", "australian", "mexican", "indian", "brazilian", "irish", "scottish",
+  "christmas", "easter", "halloween", "thanksgiving",
+]);
+const UNCOUNTABLE = { informations: "information", advices: "advice", furnitures: "furniture", equipments: "equipment", knowledges: "knowledge", homeworks: "homework", luggages: "luggage", baggages: "baggage", feedbacks: "feedback", evidences: "evidence", softwares: "software", staffs: "staff" };
+const NOT_PLURAL = /^(always|perhaps|sometimes|towards|afterwards|whereas|thus|yes|series|species|means|news|physics|mathematics|economics|politics|headquarters|lens|gas|bus|plus|chaos|minus|bonus|virus|campus|status|its|this|was|has|is|his|hers|ours|yours|theirs)$/;
+const NUMBER_FOLLOWERS = /^(of|more|other|different|hundred|thousand|million|billion|dozen|times|new|good|great|best|big|small|main|major|last|next|first|extra|little|old|young|long|short|such|and|or|to|are|were|have|had|will|can|would|could|should|must|may|might|do|did|people|children|men|women|sheep|fish|deer|data|weeks|days|years|per|each|all|the|a|an|i|we|you|they|he|she|it|us|them)$/;
+
+function ingForm(verb) {
+  if (/ie$/.test(verb)) return `${verb.slice(0, -2)}ying`;
+  if (/(ee|ye|oe)$/.test(verb)) return `${verb}ing`;
+  if (/[^aeiou]e$/.test(verb)) return `${verb.slice(0, -1)}ing`;
+  if (verb.length <= 4 && /^[^aeiou]*[aeiou][bdgmnprt]$/.test(verb)) return `${verb}${verb.slice(-1)}ing`;
+  return `${verb}ing`;
+}
+
 const TOO_WORDS = /^(much|many|late|early|soon|bad|big|small|hard|far|long|often|fast|slow|expensive|cheap|hot|cold|tired|busy|young|old|good|difficult|easy|high|low|loud|quiet|close)$/;
 
 function tokens(text) {
@@ -36,23 +56,26 @@ function tokens(text) {
 
 const isPunct = (t) => !!t && /^[.,;:!?)]$/.test(t.text);
 
-export function englishRules(paragraph, existing) {
+// `frequency(word)`: log frequency, 0 for unknown words.
+// A match with `override` replaces Harper's overlapping reports.
+export function englishRules(paragraph, existing, frequency = () => 0) {
   const toks = tokens(paragraph);
   const out = [];
   const overlaps = (a, b, list) => list.some((m) => m.offset < b && a < m.offset + m.length);
-  const add = (start, end, replacement, message) => {
-    if (overlaps(start, end, existing) || overlaps(start, end, out)) return;
+  const add = (start, end, replacement, message, { override = false, category = "grammar", keepCase = false } = {}) => {
+    if ((!override && overlaps(start, end, existing)) || overlaps(start, end, out)) return;
     const word = paragraph.slice(start, end);
-    const fixed = /^\p{Lu}/u.test(word) && replacement !== "I" ? replacement[0].toUpperCase() + replacement.slice(1) : replacement;
+    const fixed = !keepCase && /^\p{Lu}/u.test(word) && replacement !== "I" ? replacement[0].toUpperCase() + replacement.slice(1) : replacement;
     out.push({
+      override,
       offset: start,
       length: end - start,
       word,
       message,
       replacements: [fixed],
       ruleId: `FC_EN_${replacement.toUpperCase().replace(/[^A-Z]/g, "_")}`,
-      category: "grammar",
-      label: "Grammaire",
+      category,
+      label: category === "spelling" ? "Orthographe" : "Grammaire",
     });
   };
 
@@ -142,6 +165,53 @@ export function englishRules(paragraph, existing) {
         /^\p{Ll}+$/u.test(next.text) && !/ing$/.test(next.lower) &&
         !/^(been|that|the|a|an|this|there|here|it|not|still|ready|in|on|at|now|really|also|always|never|next|first|last|online|available|responsible|right|wrong|going)$/.test(next.lower)) {
       add(t.start, t.end, "whose", "Did you mean the possessive “whose”? “Who's” means “who is”.");
+    }
+
+    // "monday", "english" -> capitalized (days, months, languages, holidays)
+    if (/^\p{Ll}/u.test(t.text) && PROPER_WORDS.has(t.lower) && !(prev?.text === "-" || next?.text === "-")) {
+      add(t.start, t.end, t.text[0].toUpperCase() + t.text.slice(1), "Days, months, languages and nationalities take a capital letter.", { override: true, category: "spelling", keepCase: true });
+    }
+
+    // "informations", "advices" -> uncountable nouns
+    if (UNCOUNTABLE[t.lower]) {
+      add(t.start, t.end, UNCOUNTABLE[t.lower], `“${UNCOUNTABLE[t.lower]}” is uncountable: it has no plural.`, { override: true });
+    }
+
+    // "I am agree" -> "I agree"
+    if (/^(am|is|are|'m|'re)$/.test(t.lower) && next && /^(agree|disagree)$/.test(next.lower) && prev) {
+      const subjectThird = /^(he|she|it|everyone|everybody|nobody|someone|this|that)$/.test(prev.lower);
+      add(t.start, next.end, subjectThird ? `${next.lower}s` : next.lower, "“Agree” is a verb: no “be” before it.");
+    }
+
+    // "Everyone are welcome" -> is
+    if (prev && /^(everyone|everybody|someone|somebody|nobody|anyone|anybody|everything|nothing|something|each)$/.test(prev.lower) &&
+        /^(are|were|have)$/.test(t.lower) && !(toks[i - 2] && /^(of|for|to|with)$/.test(toks[i - 2].lower))) {
+      const fix = { are: "is", were: "was", have: "has" }[t.lower];
+      add(t.start, t.end, fix, `“${prev.lower}” is singular: use “${fix}”.`);
+    }
+
+    // "The documents was sent" -> were (determiner + regular plural noun + singular verb)
+    if (prev && toks[i - 2] && /^(the|these|those|my|our|your|his|her|their|all|some|many|both|several)$/.test(toks[i - 2].lower) && (!toks[i - 3] || isPunct(toks[i - 3]) || /^(and|but|so|because|if|when|that)$/.test(toks[i - 3].lower)) &&
+        /^(was|is|has)$/.test(t.lower) && /^\p{Ll}+s$/u.test(prev.text) && !/(ss|us|is|ics|ews|ies|ws)$/.test(prev.lower) &&
+        !NOT_PLURAL.test(prev.lower) && frequency(prev.lower.slice(0, -1)) >= 3 && frequency(prev.lower) >= 2) {
+      const fix = { was: "were", is: "are", has: "have" }[t.lower];
+      add(t.start, t.end, fix, `“${prev.lower}” is plural: use “${fix}”.`);
+    }
+
+    // "I have three sister" -> sisters
+    if (prev && /^(two|three|four|five|six|seven|eight|nine|ten|twelve|twenty|several|many|few)$/.test(prev.lower) &&
+        /^\p{Ll}+$/u.test(t.text) && !/s$/.test(t.lower) && !NUMBER_FOLLOWERS.test(t.lower) &&
+        (!next || isPunct(next) || /^(in|at|on|from|who|that|to|of|is|are|was|were|with|for|ago|left|later)$/.test(next.lower))) {
+      const plural = /[^aeiou]y$/.test(t.lower) ? `${t.lower.slice(0, -1)}ies` : /(ch|sh|x|s)$/.test(t.lower) ? `${t.lower}es` : `${t.lower}s`;
+      if (frequency(plural) >= 3 && frequency(plural) > frequency(t.lower) - 2) {
+        add(t.start, t.end, plural, `After “${prev.lower}”, the noun is plural.`);
+      }
+    }
+
+    // "I look forward to hear from you" -> hearing
+    if (prev?.lower === "to" && toks[i - 2]?.lower === "forward" && toks[i - 3] && /^(look|looking|looks|looked)$/.test(toks[i - 3].lower) &&
+        /^\p{Ll}+$/u.test(t.text) && !/ing$/.test(t.lower) && !/^(the|a|an|my|your|our|his|her|their|this|that|it|you|seeing|meeting|working|it)$/.test(t.lower)) {
+      add(t.start, t.end, ingForm(t.lower), "After “look forward to”, use the -ing form.");
     }
 
     // "We are planing a trip" -> planning ("planing" is gliding over water)

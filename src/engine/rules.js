@@ -261,6 +261,21 @@ function fcCustomRules(paragraph, spellChecker, existing) {
       add(t, "à", "Confusion probable : « à » (préposition) plutôt que « a » (verbe avoir).");
     }
 
+    // "plein de monde a la fête" -> à (places and moments that follow "à la")
+    if (t.lower === "a" && next && /^(la|l’)$/.test(next.lower) && next2 && !FC_SUBJECTS.has(prevLower) &&
+        /^(fête|maison|plage|gare|mer|campagne|montagne|piscine|poste|banque|boulangerie|pharmacie|mairie|fac|cantine|messe|radio|télé|télévision|fin|place|main|mode|carte|rentrée|retraite|recherche|base|limite|suite|une|école|heure|hôpital|église|université|entrée|occasion|avance|ancienne|étranger|époque|aube)$/.test(next2.lower)) {
+      add(t, "à", "Confusion probable : « à » (préposition) plutôt que « a » (verbe avoir).");
+    }
+
+    // "Elle travail dans une banque" -> travaille (a noun where the verb goes)
+    if (prev && /^(je|tu|il|elle|on)$/.test(prevLower) && next && !/^[,.;:!?)]$/.test(next.text) &&
+        fcHas(morph(t), /:N/) && !fcHas(morph(t), /:V/) && !(prev2 && /^(le|la|les|un|une|du|des|de|mon|ton|son)$/.test(prev2.lower))) {
+      const person = { je: "1s", tu: "2s", il: "3s", elle: "3s", on: "3s" }[prevLower];
+      const forms = person === "2s" ? [`${t.lower}les`, `${t.lower}es`, `${t.lower}s`] : [`${t.lower}le`, `${t.lower}e`, `${t.lower}t`];
+      const verb = forms.find((f) => fcHas(fcMorph(spellChecker, f), new RegExp(`:V.*:Ip.*:${person}`)));
+      if (verb) add(t, verb, `« ${t.text} » est un nom ; après « ${prevLower} », il faut le verbe : « ${verb} ».`);
+    }
+
     // "Ces vraiment gentil", "Ses dommage" -> C’est (no noun follows)
     if (/^(ces|ses|cest|sait)$/.test(t.lower) && (!prev || /^[.!?:;,]$/.test(prev.text) || /^(mais|et|donc|alors|car)$/.test(prevLower)) && next) {
       const end = (tok) => !tok || /^[,.;:!?)]$/.test(tok.text) || /^(de|d’|que|qu’|pour|à|quand|si|comme)$/.test(tok.lower);
@@ -279,8 +294,14 @@ function fcCustomRules(paragraph, spellChecker, existing) {
     }
 
     // "Il faut que tu fait attention" -> fasses (subjunctive after these "que")
-    if (prev && FC_SUBJECTS.has(prevLower) && prevLower !== "qui" && /^(que|qu’)$/.test(prev2?.lower ?? "")) {
-      const trigger = tokens[i - 3]?.lower ?? "";
+    // Object pronouns may sit between the subject and the verb: "qu’on se voit".
+    let subj = i - 1;
+    while (subj > 0 && /^(se|s’|me|m’|te|t’|le|la|l’|les|lui|leur|en|y|ne|n’|nous|vous)$/.test(tokens[subj].lower) && subj > i - 4) subj--;
+    if (subj !== i - 1 && /^(nous|vous)$/.test(tokens[subj + 1]?.lower) && !FC_SUBJECTS.has(tokens[subj].lower)) subj++;
+    const subject = tokens[subj];
+    if (subject && FC_SUBJECTS.has(subject.lower) && subject.lower !== "qui" && /^(que|qu’)$/.test(tokens[subj - 1]?.lower ?? "")) {
+      const prevLower = subject.lower;
+      const trigger = tokens[subj - 2]?.lower ?? "";
       if (/^(faut|faudrait|faudra|fallait|veux|veut|voulez|voudrais|voudrait|souhaite|souhaites|aimerais|aimerait|pour|avant|afin|sans|bien|attends|attend|préfère|préfères|préférerais|exige|demande|important|nécessaire|essentiel|normal|dommage|possible|peur)$/.test(trigger)) {
         const ind = morph(t).find((m) => /:V.*:Ip/.test(m) && !/:Sp/.test(m));
         const person = { je: "1s", "j’": "1s", tu: "2s", il: "3s", elle: "3s", on: "3s", nous: "1p", vous: "2p", ils: "3p", elles: "3p", ça: "3s", cela: "3s" }[prevLower];
