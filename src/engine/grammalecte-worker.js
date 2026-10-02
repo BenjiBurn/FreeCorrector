@@ -83,8 +83,42 @@ function init(options) {
   return true;
 }
 
-function spellSuggestions(word) {
-  return fcSpellSuggestions(spellChecker, word, MAX_SPELL_SUGGESTIONS);
+const AUXILIARY_BEFORE = /(?:^|[\s’'])(suis|es|est|sommes|êtes|sont|étais|était|étaient|ai|as|a|avons|avez|ont|avait|avaient|été)\s+$/i;
+
+// After an auxiliary, the misspelled word is most likely a past participle:
+// "sont partient" -> "parties", even though the dictionary's nearest words
+// are "partent" and "partirent". The contextual ranking picks the agreement.
+function spellSuggestions(word, before = "") {
+  const out = fcSpellSuggestions(spellChecker, word, MAX_SPELL_SUGGESTIONS);
+  if (!AUXILIARY_BEFORE.test(before)) return out;
+  const participles = [];
+  for (const s of out.slice(0, 4)) {
+    let forms = "";
+    try {
+      forms = suggVerbPpas(s) || "";
+    } catch {
+      // Not a verb.
+    }
+    for (const form of String(forms).split("|")) {
+      if (form && !out.includes(form) && !participles.includes(form)) participles.push(form);
+    }
+  }
+  // Participles go among the first candidates: the ranking only looks at
+  // the head of the list.
+  const all = [...out.slice(0, 3), ...participles.slice(0, 5), ...out.slice(3)];
+  all.participles = participles;
+  return all;
+}
+
+// A finite verb right after an auxiliary ("sont partent") is ungrammatical:
+// when the ranking still put one first, prefer the closest participle.
+function preferParticiple(replacements, participles) {
+  if (!participles?.length || !replacements.length) return replacements;
+  const morphs = spellChecker.getMorph(replacements[0]);
+  const finite = morphs.some((m) => /:V.*:(Ip|Iq|Is|If|K|Sp|Sq)/.test(m)) && !morphs.some((m) => /:(Q|A|N)/.test(m));
+  if (!finite) return replacements;
+  const best = replacements.find((r) => participles.includes(r));
+  return best ? [best, ...replacements.filter((r) => r !== best)] : replacements;
 }
 
 function overlaps(a, b) {
@@ -134,9 +168,11 @@ function rankParagraph(paragraph, paraStart, found) {
     kept.push(m);
     lastEnd = start + m.length;
     if (ranked++ < MAX_RANKED_MATCHES) {
+      const participles = m.replacements.participles;
       m.replacements = fcRankSuggestions(
         spellChecker, fixed, start + delta, m.length, m.replacements, m.category === "spelling"
       );
+      m.replacements = preferParticiple(m.replacements, participles);
     }
     m.replacements = m.replacements.slice(0, MAX_SHOWN_SUGGESTIONS);
     const best = m.replacements[0];
@@ -165,7 +201,7 @@ function checkParagraph(paragraph) {
       length: token.nEnd - token.nStart,
       word,
       message: "Mot inconnu du dictionnaire.",
-      replacements: suggested++ < MAX_SUGGESTED_WORDS ? spellSuggestions(word) : [],
+      replacements: suggested++ < MAX_SUGGESTED_WORDS ? spellSuggestions(word, paragraph.slice(Math.max(0, token.nStart - 12), token.nStart)) : [],
       ruleId: "SPELLING",
       category: "spelling",
       label: CATEGORY_LABEL.spelling,
@@ -193,7 +229,9 @@ function checkParagraph(paragraph) {
 
   const custom = fcCustomRules(paragraph, spellChecker, [...spelling, ...grammar]);
   const urls = fcUrlRanges(paragraph);
-  const found = [...spelling, ...grammar, ...custom]
+  const overriding = custom.filter((m) => m.override);
+  const notOverridden = (m) => !overriding.some((o) => overlaps(o, m));
+  const found = [...spelling.filter(notOverridden), ...grammar.filter(notOverridden), ...custom]
     .filter((m) => !urls.some(([a, b]) => m.offset < b && a < m.offset + m.length))
     .sort((a, b) => a.offset - b.offset);
   const result = rankParagraph(paragraph, 0, found);

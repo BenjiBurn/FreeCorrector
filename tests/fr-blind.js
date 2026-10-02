@@ -21,7 +21,7 @@ module.exports = [
   ["Nous nous sommes rencontré à Paris.", "rencontré", "rencontrés"],
   ["Il y a beaucoup de choses a faire.", "a", "à"],
   ["Tu as raison, sa ne sert à rien.", "sa", "ça"],
-  ["Je ne sais pas si il viendra.", "si il", "s’il"],
+  ["Je ne sais pas si il viendra.", "si ", "s’"],
   ["Elle est arrivée en avance.", null, null],
   ["Ont doit partir maintenant.", "Ont", "On"],
   ["Je voulais te dire merci.", null, null],

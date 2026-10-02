@@ -215,6 +215,8 @@ async function rankSpelling(paragraph, m) {
     let cost = typingDistance(m.word, c) - FREQ_WEIGHT * frequency(c);
     cost += index >= 0 ? HARPER_ORDER_WEIGHT * index : 0.2;
     if (c === contraction || c.toLowerCase() === contraction?.toLowerCase()) cost -= 1;
+    // A plural typo wants a plural fix: "grocerys" -> "groceries", not "grocery".
+    if (/[^s's]s$/i.test(m.word) && !/s$/i.test(c)) cost += 1;
     return { c, cost, errors: 0 };
   }).sort((a, b) => a.cost - b.cost);
 
@@ -313,9 +315,17 @@ async function lintParagraph(paragraph) {
     }
   }
   for (const m of out) {
+    // "They're house" -> "Their"; "They're is a problem" -> "There".
+    if (/^they['’]re$/i.test(m.word)) {
+      const next = paragraph.slice(m.offset + m.length).match(/^\s+([A-Za-z'’]+)/)?.[1]?.toLowerCase() ?? "";
+      const want = /^(is|are|was|were|will|has|have|isn['’]t|aren['’]t|wasn['’]t|weren['’]t|must|might|may|could|should|would|seems?)$/.test(next) ? "there" : "their";
+      const hit = m.replacements.find((r) => r.toLowerCase() === want);
+      if (hit) m.replacements = [hit, ...m.replacements.filter((r) => r !== hit)];
+    }
     // Harper files some typos under other kinds ("untill": WordChoice,
     // "wont": Miscellaneous): rank any one-word fix of a rare or unknown word.
-    const oneWord = /^[\p{L}'’]+$/u.test(m.word);
+    // Not a contraction used for the wrong word: that is grammar, ranked above.
+    const oneWord = /^[\p{L}'’]+$/u.test(m.word) && !/['’](re|s|ll|ve|d|t)$/i.test(m.word);
     const rare = frequency(m.word) < 2.7;
     if (oneWord && m.category !== "typo" && (m.category === "spelling" || rare || contractionFor(m.word))) {
       m.replacements = await rankSpelling(paragraph, m);

@@ -85,12 +85,15 @@ function fcCustomRules(paragraph, spellChecker, existing) {
   const free = (t) => !existing.some((m) => m.offset < t.end && t.start < m.offset + m.length) &&
     !out.some((m) => m.offset < t.end && t.start < m.offset + m.length);
   const morph = (t) => (t ? fcMorph(spellChecker, t.text) : []);
-  const add = (t, replacement, message) => {
-    if (!free(t)) return;
+  // `override`: this rule knows better than Grammalecte's overlapping report,
+  // which checkParagraph then drops ("je c’est" is "sais", not "s’est").
+  const add = (t, replacement, message, override = false) => {
+    if (override ? out.some((m) => m.offset < t.end && t.start < m.offset + m.length) : !free(t)) return;
     const fixed = t.text[0] === t.text[0].toUpperCase() && t.text[0] !== t.text[0].toLowerCase()
       ? replacement[0].toUpperCase() + replacement.slice(1)
       : replacement;
     out.push({
+      override,
       offset: t.start,
       length: t.end - t.start,
       word: t.text,
@@ -247,6 +250,65 @@ function fcCustomRules(paragraph, spellChecker, existing) {
     // "je ne sais pas sil viendra" -> s’il
     if ((t.lower === "sil" || t.lower === "sils") && !/^(le|du|un|ce|les|des)$/.test(prevLower)) {
       add(t, t.lower === "sil" ? "s’il" : "s’ils", "Apostrophe oubliée : « s’il » (si il).");
+    }
+
+    // "Tu veux manger a la maison" -> à (an infinitive is never followed by
+    // the auxiliary "a" + determiner; "le manger a été" has a determiner before)
+    if (t.lower === "a" && prev && next &&
+        /^(la|le|l’|les|un|une|mon|ma|mes|ton|ta|tes|son|sa|ses|notre|nos|votre|vos|leur|leurs|ce|cet|cette|ces|demain|midi|minuit|bientôt|quelle|quel|côté|cause|pied|vélo|moto|nouveau|partir|toi|moi|lui|eux|elle|elles|tous|toutes|chaque|plusieurs|deux|trois|nous|vous)$/.test(next.lower) &&
+        /(er|ir|re)$/.test(prevLower) && fcHas(morph(prev), /:Y/) && !fcHas(morph(prev), /:(A|Q)/) &&
+        !/^(le|la|l’|du|un|ce|son|mon|ton|leur|au)$/.test(prev2?.lower ?? "")) {
+      add(t, "à", "Confusion probable : « à » (préposition) plutôt que « a » (verbe avoir).");
+    }
+
+    // "Ces vraiment gentil", "Ses dommage" -> C’est (no noun follows)
+    if (/^(ces|ses|cest|sait)$/.test(t.lower) && (!prev || /^[.!?:;,]$/.test(prev.text) || /^(mais|et|donc|alors|car)$/.test(prevLower)) && next) {
+      const end = (tok) => !tok || /^[,.;:!?)]$/.test(tok.text) || /^(de|d’|que|qu’|pour|à|quand|si|comme)$/.test(tok.lower);
+      const adj = (tok) => fcHas(morph(tok), /:A/);
+      const adverb = /^(vraiment|très|trop|tellement|super|hyper|assez|plutôt|pas|bien|si|vachement|carrément|toujours|jamais|déjà|encore|plus|moins|aussi)$/.test(next.lower);
+      const word = /^(dommage|normal|vrai|faux|possible|impossible|génial|nul|bon|bien|grave|incroyable|parti|fini|clair|sûr|ok|cool|top|parfait|pareil|mieux|pire|ça|moi|toi|lui|elle|nous|vous|eux|elles)$/.test(next.lower);
+      if ((word && end(next2)) || (adverb && next2 && (adj(next2) || /^(dommage|grave|normal|génial|nul|bon|bien|top|clair|sûr|pareil|mieux|pire|possible)$/.test(next2.lower)) && end(tokens[i + 3]))) {
+        add(t, "c’est", "Confusion probable : « c’est » (cela est) ; aucun nom ne suit.", true);
+      }
+    }
+
+    // "Je ne c’est pas", "tu c’est quoi ?" -> sais (after je/tu, "c’est" is the verb savoir)
+    if (t.lower === "c’" && next?.lower === "est" &&
+        (/^(je|j’|tu)$/.test(prevLower) || (/^(ne|n’)$/.test(prevLower) && /^(je|tu)$/.test(prev2?.lower ?? "")))) {
+      add({ start: t.start, end: next.end, text: t.text + next.text }, "sais", "Confusion probable : « sais » (verbe savoir) après « je » ou « tu ».", true);
+    }
+
+    // "Il faut que tu fait attention" -> fasses (subjunctive after these "que")
+    if (prev && FC_SUBJECTS.has(prevLower) && prevLower !== "qui" && /^(que|qu’)$/.test(prev2?.lower ?? "")) {
+      const trigger = tokens[i - 3]?.lower ?? "";
+      if (/^(faut|faudrait|faudra|fallait|veux|veut|voulez|voudrais|voudrait|souhaite|souhaites|aimerais|aimerait|pour|avant|afin|sans|bien|attends|attend|préfère|préfères|préférerais|exige|demande|important|nécessaire|essentiel|normal|dommage|possible|peur)$/.test(trigger)) {
+        const ind = morph(t).find((m) => /:V.*:Ip/.test(m) && !/:Sp/.test(m));
+        const person = { je: "1s", "j’": "1s", tu: "2s", il: "3s", elle: "3s", on: "3s", nous: "1p", vous: "2p", ils: "3p", elles: "3p", ça: "3s", cela: "3s" }[prevLower];
+        if (ind && person && !fcHas(morph(t), new RegExp(`:Sp.*:${person}|:${person}.*:Sp`))) {
+          const lemma = ind.slice(1, ind.indexOf("/"));
+          let form = "";
+          try {
+            form = conj.getConj(lemma, ":Sp", `:${person}`) || "";
+          } catch {
+            // Unknown conjugation.
+          }
+          if (form && form !== t.lower) add(t, form, `Après « ${trigger} que », le verbe se met au subjonctif : « ${form} ».`, true);
+        }
+      }
+    }
+
+    // "Je les ai vu" -> vus (direct object "les" before avoir: the participle agrees)
+    if (prevLower.match(/^(ai|as|a|avons|avez|ont|avais|avait|avions|aviez|avaient|aurais|aurait)$/) && prev2?.lower === "les" &&
+        fcHas(morph(t), /:Q(:A)?:m:s/) && !fcHas(morph(t), /:Q(:A)?:.:[pi]/) && !(next && /^(les|la|le|l’|un|une|des|du|de|ces|mes|tes|ses)$/.test(next.lower))) {
+      const plural = String(suggVerbPpas(t.lower, ":m:p") || "").split("|").filter(Boolean)[0];
+      if (plural && plural !== t.lower) add(t, plural, "Le participe passé s’accorde avec « les », placé avant l’auxiliaire avoir.");
+    }
+
+    // "Je pense quel est partie" -> qu’elle
+    if (t.lower === "quel" && /^(pense|penses|pensait|crois|croit|sais|sait|dit|dis|espère|trouve|sens|vois|savais|disait|croyais|pensais|ai|as|a)$/.test(prevLower) &&
+        next && /^(est|était|sera|serait|a|avait|aura|va|allait|vient|veut|peut|doit)$/.test(next.lower) &&
+        next2 && (fcHas(morph(next2), /:Q/) || !fcHas(morph(next2), /:(N|D)/)) && /^\p{Ll}/u.test(next2.text)) {
+      add(t, "qu’elle", "Confusion probable : « qu’elle » (que + elle) plutôt que « quel ».");
     }
 
     // "Jaime ce film" -> J’aime (at the start, followed by a determiner)

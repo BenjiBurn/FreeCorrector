@@ -20,6 +20,8 @@ const IRREGULAR_PLURALS = /^(children|people|men|women|feet|teeth|mice|geese|pol
 const YOUR_NOUNS = /^(help|time|message|email|e-mail|support|patience|answer|reply|feedback|response|understanding|attention|kindness|advice|work|effort|efforts|order|question|questions|interest|call|letter|gift|hospitality|cooperation|consideration|trust|comments|input|invitation|offer|application)$/;
 // Nouns typed where the verb was meant, after "to" or a modal.
 const VERB_FOR_NOUN = { discus: "discuss", breath: "breathe", advice: "advise", loose: "lose", belief: "believe", proof: "prove", choise: "choose", chose: "choose" };
+// Real words that are usually a misspelled -ing form after "be".
+const ING_TYPOS = { planing: "planning", stoping: "stopping", shoping: "shopping", geting: "getting", runing: "running", siting: "sitting", writting: "writing", comming: "coming" };
 const TOO_WORDS = /^(much|many|late|early|soon|bad|big|small|hard|far|long|often|fast|slow|expensive|cheap|hot|cold|tired|busy|young|old|good|difficult|easy|high|low|loud|quiet|close)$/;
 
 function tokens(text) {
@@ -124,6 +126,27 @@ export function englishRules(paragraph, existing) {
     if (clauseStart && t.lower === "me" && next?.lower === "and" && next2 && SUBJECT_FOR[next2.lower] && toks[i + 3] && !isPunct(toks[i + 3])) {
       const other = SUBJECT_FOR[next2.lower];
       add(t.start, next2.end, `${other} and I`, "Use subject pronouns before a verb: “he and I”, “she and I”.");
+    }
+
+    // "I think its going to rain" -> it's (never a possessive before these)
+    if (t.lower === "its" && next) {
+      const afterAdj = !next2 || isPunct(next2) || /^(to|that|for|when|if|because)$/.test(next2.lower);
+      if (/^(going|getting|raining|snowing|been|not|ok|okay|a|an|the|my|your|our|just|already|about|too)$/.test(next.lower) ||
+          (afterAdj && /^(fine|important|possible|impossible|nice|great|cold|hot|late|early|true|hard|easy|good|bad|done|ready|free|normal|weird|funny|sad|amazing|awesome|ok|okay)$/.test(next.lower))) {
+        add(t.start, t.end, "it's", "Did you mean “it's” (it is, it has)? “Its” is the possessive.");
+      }
+    }
+
+    // "Who's book is this?" -> Whose (who's + noun + be)
+    if ((t.lower === "who's") && next && next2 && /^(is|are|was|were)$/.test(next2.lower) &&
+        /^\p{Ll}+$/u.test(next.text) && !/ing$/.test(next.lower) &&
+        !/^(been|that|the|a|an|this|there|here|it|not|still|ready|in|on|at|now|really|also|always|never|next|first|last|online|available|responsible|right|wrong|going)$/.test(next.lower)) {
+      add(t.start, t.end, "whose", "Did you mean the possessive “whose”? “Who's” means “who is”.");
+    }
+
+    // "We are planing a trip" -> planning ("planing" is gliding over water)
+    if (prev && /^(am|is|are|was|were|be|been|being|i'm|we're|you're|they're|he's|she's|it's|not)$/.test(prev.lower) && ING_TYPOS[t.lower]) {
+      add(t.start, t.end, ING_TYPOS[t.lower], `Did you mean “${ING_TYPOS[t.lower]}”?`);
     }
 
     // "I seen", "they done" -> "saw", "did"

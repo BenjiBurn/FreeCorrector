@@ -158,20 +158,46 @@ const FC_CSS = `
 
 .fc-msg { margin: 6px 0 10px; font-size: 14px; }
 
-.fc-repls { display: flex; flex-wrap: wrap; gap: 6px; }
+.fc-best { display: flex; }
 .fc-repl {
   all: unset;
+  box-sizing: border-box;
   cursor: pointer;
-  padding: 4px 10px;
+  max-width: 100%;
+  padding: 6px 14px;
   border-radius: 6px;
   background: var(--fc-accent);
   color: #fff;
   font-weight: 600;
-  font-size: 14px;
-  white-space: pre;
+  font-size: 15px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 .fc-repl:hover { filter: brightness(1.1); }
-.fc-repl.fc-empty { font-style: italic; font-weight: 400; }
+.fc-none { font-size: 13px; color: var(--fc-muted); font-style: italic; }
+
+.fc-others { margin-top: 10px; padding-top: 8px; border-top: 1px dashed var(--fc-border); }
+.fc-others-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--fc-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  margin-bottom: 6px;
+}
+.fc-repls { display: flex; flex-wrap: wrap; gap: 6px; }
+.fc-alt {
+  all: unset;
+  cursor: pointer;
+  padding: 3px 9px;
+  border-radius: 6px;
+  border: 1px solid var(--fc-border);
+  color: var(--fc-fg);
+  font-size: 13px;
+  white-space: pre;
+}
+.fc-alt:hover { border-color: var(--fc-accent); color: var(--fc-accent); background: var(--fc-hover); }
+.fc-repl.fc-empty, .fc-alt.fc-empty { font-style: italic; font-weight: 400; }
 
 .fc-actions {
   display: flex;

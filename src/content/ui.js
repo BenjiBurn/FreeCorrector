@@ -208,7 +208,7 @@ class FcUi {
       list.append(item);
     }
 
-    const foot = fcEl("div", "fc-foot", "Analyse locale par Grammalecte, aucun texte n’est envoyé.");
+    const foot = fcEl("div", "fc-foot", "Analyse 100 % locale, aucun texte n’est envoyé.");
     el.replaceChildren(head, list, foot);
     this.positionPanel(this.host.getBoundingClientRect());
   }
@@ -246,18 +246,33 @@ class FcUi {
 
     frag.append(fcEl("div", "fc-msg", match.message));
 
-    const repls = fcEl("div", "fc-repls");
-    const suggestions = match.replacements.slice(0, FC_MAX_CARD_SUGGESTIONS);
-    for (const s of suggestions) {
-      const btn = fcEl("button", "fc-repl", s);
+    // The best correction stands alone and big; the other
+    // candidates stay reachable in a quieter section below it.
+    const [best, ...others] = match.replacements.slice(0, FC_MAX_CARD_SUGGESTIONS);
+    const replButton = (s, className) => {
+      const btn = fcEl("button", className, s === "" ? "(supprimer)" : s);
+      if (s === "") btn.classList.add("fc-empty");
       btn.addEventListener("click", () => {
         onDone?.();
         field.apply(match, s);
       });
-      repls.append(btn);
+      return btn;
+    };
+    if (best === undefined) {
+      frag.append(fcEl("div", "fc-none", "Aucune suggestion."));
+    } else {
+      const main = fcEl("div", "fc-best");
+      main.append(replButton(best, "fc-repl"));
+      frag.append(main);
     }
-    if (!suggestions.length) repls.append(fcEl("span", "fc-msg", "Aucune suggestion."));
-    frag.append(repls);
+    if (others.length) {
+      const section = fcEl("div", "fc-others");
+      section.append(fcEl("div", "fc-others-title", "Autres suggestions"));
+      const list = fcEl("div", "fc-repls");
+      for (const s of others) list.append(replButton(s, "fc-alt"));
+      section.append(list);
+      frag.append(section);
+    }
 
     const actions = fcEl("div", "fc-actions");
     const ignore = fcEl("button", "fc-action", "Ignorer");
