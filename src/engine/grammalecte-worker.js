@@ -113,6 +113,35 @@ function spellSuggestions(word, before = "") {
 
 // A finite verb right after an auxiliary ("sont partent") is ungrammatical:
 // when the ranking still put one first, prefer the closest participle.
+// "Les équipes se sont bien organiser" -> organisées: when the fixes are the
+// forms of one participle after a plural "être", pick the one that agrees
+// with the subject noun found before it.
+function agreeWithSubject(text, start, replacements) {
+  if (replacements.length < 2) return replacements;
+  const before = text.slice(Math.max(0, start - 80), start);
+  const aux = before.match(/(?:^|\s)(sommes|êtes|sont|étaient|seront|serons|seraient)(\s+(bien|tous|toutes|déjà|vraiment|très|pas|jamais|enfin))*\s+$/);
+  if (!aux) return replacements;
+  const forms = replacements.map((r) => ({ r, morph: spellChecker.getMorph(r).find((x) => /:Q/.test(x)) ?? "" }));
+  if (!forms[0].morph) return replacements;
+  // The nearest noun before "être" gives the gender; "nous", "vous" give none.
+  let gender = "m";
+  const words = before.slice(0, aux.index).match(/[\p{L}’'-]+/gu) ?? [];
+  for (const w of words.slice(-6).reverse()) {
+    const noun = spellChecker.getMorph(w.toLowerCase()).find((x) => /:N:[mfe]:[pi]/.test(x));
+    if (noun) {
+      gender = noun.match(/:N:([mfe])/)[1] === "f" ? "f" : "m";
+      break;
+    }
+    if (/^(ils|elles|nous|vous|on)$/i.test(w)) {
+      gender = /^elles$/i.test(w) ? "f" : "m";
+      break;
+    }
+  }
+  const want = new RegExp(`:Q(:A)?:(${gender}|e):(p|i)`);
+  const best = forms.find((f) => want.test(f.morph));
+  return best ? [best.r, ...replacements.filter((r) => r !== best.r)] : replacements;
+}
+
 function preferParticiple(replacements, participles) {
   if (!participles?.length || !replacements.length) return replacements;
   const morphs = spellChecker.getMorph(replacements[0]);
@@ -139,17 +168,19 @@ function rankParagraph(paragraph, paraStart, found) {
   let delta = 0;
   let ranked = 0;
   let lastEnd = 0;
+  let earlier = null;
 
   // Two errors that each disappear when the other is fixed are one mistake
   // with two possible fixes ("Ces problème" -> "Ce problème" or "Ces
   // problèmes"); only drop an error when the dependency goes one way.
+  // Returns the earlier fix that this error's own fix would make useless.
   const fixesAnEarlierError = (start, m) => {
     const own = m.replacements[0];
-    if (own === undefined) return false;
+    if (own === undefined) return null;
     const alt = paragraph.slice(0, start) + own + paragraph.slice(start + m.length);
-    return fixes.some(
+    return fixes.find(
       (f) => fcHasErrorAt(paragraph, f.start, f.length) && !fcHasErrorAt(alt, f.start, f.length)
-    );
+    ) ?? null;
   };
 
   for (const m of found) {
@@ -162,7 +193,12 @@ function rankParagraph(paragraph, paraStart, found) {
       m.category !== "spelling" &&
       fixed !== paragraph &&
       fcIsCascadeError(paragraph, start, fixed, start + delta, m.length) &&
-      !fixesAnEarlierError(start, m)
+      // Except after a homophone mix-up when this error's own fix is a much
+      // rarer word: in "a fait sont travail", "sont travaux" would agree too,
+      // but "son" is the word that was meant. ("commence à travaillé" keeps
+      // "travailler", as common as the word typed.)
+      (!(earlier = fixesAnEarlierError(start, m)) ||
+        (/conf_|^FC_/.test(earlier.ruleId) && Math.max(0, ...m.replacements.map(fcFrequency)) < fcFrequency(m.word) - 1))
     ) {
       continue;
     }
@@ -180,13 +216,14 @@ function rankParagraph(paragraph, paraStart, found) {
         spellChecker, fixed, start + delta, m.length, m.replacements, m.category === "spelling"
       );
       m.replacements = preferParticiple(m.replacements, participles);
+      m.replacements = agreeWithSubject(fixed, start + delta, m.replacements);
     }
     m.replacements = m.replacements.slice(0, MAX_SHOWN_SUGGESTIONS);
     const best = m.replacements[0];
     if (best !== undefined) {
       fixed = fixed.slice(0, start + delta) + best + fixed.slice(start + delta + m.length);
       delta += best.length - m.length;
-      fixes.push({ start, length: m.length });
+      fixes.push({ start, length: m.length, ruleId: m.ruleId });
     }
   }
   return kept;

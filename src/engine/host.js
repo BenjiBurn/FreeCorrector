@@ -9,7 +9,7 @@
 // With the "auto" language, each paragraph goes to the engine of its own
 // language (language.js).
 
-/* global fcApi, fcParagraphLanguages, FC_LANGUAGES */
+/* global fcApi, fcParagraphLanguages, fcSplitQuotes, FC_LANGUAGES */
 /* exported fcEngineCheck, fcEngineWarmup */
 
 const FC_MAX_TEXT_LENGTH = 50000;
@@ -135,15 +135,36 @@ async function fcEngineCheck(text, settings) {
   const paragraphs = text.split("\n");
   const wanted = settings.language ?? "auto";
   const langs = wanted === "auto" ? fcParagraphLanguages(paragraphs) : paragraphs.map(() => wanted);
+  // Quotations in the other language get their own engine.
+  const split = paragraphs.map((p, i) =>
+    (wanted === "auto" ? fcSplitQuotes(p, langs[i]) : { lang: langs[i], quotes: [] }));
 
   // Each engine gets the whole text with the other language's paragraphs
-  // blanked out: offsets stay the same, results just add up.
+  // and quotes blanked out: offsets stay the same, results just add up.
+  // Quote marks are blanked for both, they belong to neither sentence.
+  const blank = (s) => " ".repeat(s.length);
+  const textFor = (lang) => paragraphs.map((p, i) => {
+    const { lang: own, quotes } = split[i];
+    if (!quotes.length) return own === lang ? p : blank(p);
+    let out = own === lang ? p : blank(p);
+    for (const [a, b, quoteLang] of quotes) {
+      const inner = quoteLang === lang ? ` ${p.slice(a + 1, b - 1)} ` : blank(p.slice(a, b));
+      out = out.slice(0, a) + inner + out.slice(b);
+    }
+    return out;
+  }).join("\n");
+
+  const used = new Set(split.flatMap(({ lang, quotes }) => [lang, ...quotes.map((q) => q[2])]));
   const jobs = [];
-  for (const lang of new Set(langs)) {
+  for (const lang of used) {
     if (!fcEngines[lang]) continue;
-    const own = paragraphs.map((p, i) => (langs[i] === lang ? p : " ".repeat(p.length))).join("\n");
+    const own = textFor(lang);
     if (own.trim()) jobs.push(fcCheckWith(lang, own, settings));
   }
-  const matches = (await Promise.all(jobs)).flat().sort((a, b) => a.offset - b.offset);
+  const matches = (await Promise.all(jobs)).flat()
+    // An engine may report on the blanks standing for the other language
+    // ("multiple spaces"): such a match does not quote the real text.
+    .filter((m) => text.slice(m.offset, m.offset + m.length) === m.word)
+    .sort((a, b) => a.offset - b.offset);
   return { matches: fcFilterDictionary(matches, settings.dictionary) };
 }

@@ -3040,7 +3040,7 @@ function getInitInput(binary) {
       "fs"
     ).then(
       (fs) => new Promise((resolve, reject) => {
-        fs.readFile(new URL(binary), (err, data) => {
+        fs.readFile(new URL(binary).pathname, (err, data) => {
           if (err) reject(err);
           resolve(data);
         });

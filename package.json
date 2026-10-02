@@ -1,6 +1,6 @@
 {
   "name": "freecorrector",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
   "description": "Correcteur orthographique et grammatical libre pour le navigateur",
   "license": "GPL-3.0-or-later",

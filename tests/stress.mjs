@@ -6,7 +6,8 @@ import { createRequire } from "module";
 
 const require = createRequire(import.meta.url);
 globalThis.self = globalThis;
-const { loadWorker } = require("./run.js");
+const { loadWorker, patchFsForWindowsUrls } = require("./run.js");
+patchFsForWindowsUrls();
 
 const fr = loadWorker("engine/grammalecte-worker.js");
 fr("init", { options: {} });

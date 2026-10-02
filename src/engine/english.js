@@ -380,7 +380,14 @@ async function lintParagraph(paragraph) {
         m.label = CATEGORY_LABEL.spelling;
       }
     }
-    m.replacements = m.replacements.slice(0, MAX_SUGGESTIONS);
+    // "They're", "They’re" and "They're " are the same suggestion: keep one,
+    // written with the apostrophe the user types.
+    const curly = /’/.test(paragraph);
+    const seen = new Set();
+    m.replacements = m.replacements
+      .map((r) => (curly ? r.replace(/'/g, "’") : r.replace(/’/g, "'")))
+      .filter((r) => !seen.has(r.trim()) && seen.add(r.trim()))
+      .slice(0, MAX_SUGGESTIONS);
   }
   return out;
 }

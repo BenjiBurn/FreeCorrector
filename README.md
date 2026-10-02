@@ -29,7 +29,7 @@ suggestions.
 
 | Navigateur | Paquet | Store |
 |---|---|---|
-| Firefox 128+ | `dist/freecorrector-<version>-firefox.zip` | addons.mozilla.org |
+| Firefox 140+ | `dist/freecorrector-<version>-firefox.zip` | addons.mozilla.org |
 | Chrome, Brave, Vivaldi (116+) | `dist/freecorrector-<version>-chromium.zip` | Chrome Web Store |
 | Edge | `dist/freecorrector-<version>-chromium.zip` | Edge Add-ons |
 | Opera | `dist/freecorrector-<version>-chromium.zip` | Opera add-ons |
@@ -47,7 +47,7 @@ tourne directement dans la page d’arrière-plan. Le reste du code est commun.
 
 ## Installer (développement)
 
-**Firefox** (128 ou plus récent) :
+**Firefox** (140 ou plus récent) :
 
 1. Ouvrir `about:debugging#/runtime/this-firefox`
 2. Cliquer sur **Charger un module complémentaire temporaire…**
@@ -104,7 +104,8 @@ src/
   options/                 Page d’options
   lib/                     Réglages et styles partagés
   editor/                  Page « Correcteur » : grande zone de texte et liste des fautes
-  demo/demo.html           Page de test avec des fautes (ouverte depuis le popup)
+  demo/demo.html           Page de test avec des fautes (développement uniquement : absente des
+                           paquets publiés, le bouton du menu n’apparaît qu’en développement)
   vendor/grammalecte/      Moteur Grammalecte 2.3.0 (sous-ensemble non modifié)
   vendor/harper/           Moteur Harper 2.10.0 (harper.js, binaire WebAssembly)
 scripts/build.js           Construit dist/firefox et dist/chromium (+ zips pour les stores)

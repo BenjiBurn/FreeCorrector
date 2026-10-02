@@ -2,7 +2,7 @@
 // words and accented letters. Plain JavaScript: it runs in the Firefox
 // background page and in the Chromium offscreen document alike.
 
-/* exported fcParagraphLanguages, FC_LANGUAGES */
+/* exported fcParagraphLanguages, fcSplitQuotes, FC_LANGUAGES */
 
 const FC_LANGUAGES = ["fr", "en"];
 
@@ -45,6 +45,33 @@ function fcLanguageScores(paragraph) {
   scores.fr += 0.5 * (paragraph.match(FC_FRENCH_LETTERS)?.length ?? 0);
   scores.fr += 1 * (paragraph.match(FC_ELISION)?.length ?? 0);
   return scores;
+}
+
+// The clear language of a piece of text, or null when it is too short or mixed.
+function fcDecidedLanguage(text) {
+  const s = fcLanguageScores(text);
+  if (s.en >= 2 && s.en > 1.5 * s.fr) return "en";
+  if (s.fr >= 2 && s.fr > 1.5 * s.en) return "fr";
+  return null;
+}
+
+const FC_QUOTE = /“([^”]{8,})”|«([^»]{8,})»|"([^"\n]{8,})"/gu;
+
+// A quotation in another language inside a paragraph: « Nos partenaires
+// nous ont écrit : "We are very excited to start." » Returns the paragraph's
+// own language and the quotes (quote marks included) written in the other
+// one, as [start, end, lang]; no quotes when there is nothing to split.
+function fcSplitQuotes(paragraph, paragraphLang) {
+  const quotes = [];
+  for (const m of paragraph.matchAll(FC_QUOTE)) {
+    const lang = fcDecidedLanguage(m[1] ?? m[2] ?? m[3]);
+    if (lang) quotes.push([m.index, m.index + m[0].length, lang]);
+  }
+  if (!quotes.length) return { lang: paragraphLang, quotes: [] };
+  let rest = paragraph;
+  for (const [a, b] of quotes) rest = rest.slice(0, a) + " ".repeat(b - a) + rest.slice(b);
+  const own = fcDecidedLanguage(rest) ?? (rest.trim() ? paragraphLang : quotes[0][2]);
+  return { lang: own, quotes: quotes.filter(([, , lang]) => lang !== own) };
 }
 
 // One language per paragraph ("fr" or "en"). Paragraphs too short to tell

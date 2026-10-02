@@ -28,11 +28,12 @@ const PNG_ICONS = {
 
 const TARGETS = {
   firefox: {
-    exclude: ["chromium"],
+    // The test page (demo/) is for development only: never published.
+    exclude: ["chromium", "demo"],
     manifest: (m) => m,
   },
   chromium: {
-    exclude: ["background.js", "icons/icon.svg"],
+    exclude: ["background.js", "icons/icon.svg", "demo"],
     manifest: (m) => {
       const out = { ...m };
       delete out.browser_specific_settings;

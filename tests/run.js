@@ -101,10 +101,26 @@ async function score(call, corpus, verbose) {
   return stats;
 }
 
-module.exports = { loadWorker, score };
+module.exports = { loadWorker, score, patchFsForWindowsUrls };
 
 // The English engine is an ES module: import it with a worker-like global.
+// Harper reads its WebAssembly file under Node with
+// fs.readFile(new URL(binary).pathname), which gives "/C:/…" on Windows.
+// Fixed here, for the tests only: the browser never takes that path, and the
+// vendored Harper files stay identical to the published package.
+function patchFsForWindowsUrls() {
+  const fsModule = require("fs");
+  if (process.platform !== "win32" || fsModule.readFile.fcPatched) return;
+  const original = fsModule.readFile;
+  const readFile = (file, ...rest) =>
+    original(typeof file === "string" && /^\/[A-Za-z]:\//.test(file) ? file.slice(1) : file, ...rest);
+  readFile.fcPatched = true;
+  fsModule.readFile = readFile;
+  require("module").syncBuiltinESMExports();
+}
+
 async function loadEnglish() {
+  patchFsForWindowsUrls();
   globalThis.self = globalThis;
   const english = await import(pathToFileURL(path.join(SRC, "engine", "english.js")).href);
   await english.init({ dialect: "us" });
