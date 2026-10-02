@@ -114,7 +114,9 @@ tests/
   fr-holdout.js            Second corpus, pour vérifier que les réglages se généralisent
   en-corpus.js             Corpus de fautes anglaises courantes
   fr-blind.js, en-holdout.js  Corpus écrits après les réglages, pour une mesure honnête
-  fr-blind2-3.js, en-blind2-3.js  Corpus écrits avant chaque nouvelle passe de réglages
+  fr-blind2-4.js, en-blind2-4.js  Corpus écrits avant chaque nouvelle passe de réglages
+  clean-messages.js        Messages du quotidien corrects : aucune alerte ne doit sortir
+  stress.mjs               Textes extrêmes : pas de plantage, pas de lenteur
 ```
 
 ### Fonctionnement
@@ -153,6 +155,10 @@ d’annulation (Ctrl+Z) et déclenche un vrai évènement `input`, compris par R
 `npm test` (ou `node tests/run.js`) fait tourner le vrai moteur sur les corpus et affiche le taux
 de fautes détectées, le taux de bonnes suggestions en première position et les fausses alertes
 sur des phrases correctes. À lancer après chaque modification du moteur.
+
+`npm run stress` (ou `node tests/stress.mjs`) soumet aux deux moteurs des textes extrêmes (émojis,
+code, URL, paragraphe de 28 000 caractères, mot de 5 000 lettres, Unicode exotique) et vérifie
+qu'aucun ne plante, ne place mal un soulignement ou ne dépasse son budget de temps.
 
 ## Feuille de route
 

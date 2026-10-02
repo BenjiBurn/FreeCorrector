@@ -8,12 +8,15 @@
 import { LocalLinter, Dialect, SuggestionKind } from "../vendor/harper/index.js";
 import { slimBinary } from "../vendor/harper/slimBinary.js";
 import { englishRules, contractionFor } from "./english-rules.js";
+import "./informal.js";
 import "./sentence-rules.js";
 
 const { fcSentenceRules } = self;
 
 const MAX_SUGGESTIONS = 6;
 const MAX_CANDIDATES = 6;
+const MAX_RANKED = 12; // errors re-ranked per paragraph
+const RANK_BUDGET_MS = 300;
 const FREQ_WEIGHT = 0.3;
 const HARPER_ORDER_WEIGHT = 0.15;
 
@@ -99,6 +102,11 @@ export async function init(options = {}) {
     linter = new LocalLinter({ binary: slimBinary, dialect });
     linterDialect = dialect;
     await Promise.all([linter.setup(), loadFrequencies()]);
+    // Harper builds parts of its spelling-suggestion index on the first
+    // unknown words (accented ones especially),
+    // which takes about two seconds: do it now rather than on the user's
+    // first typo.
+    await lintCount("Thsi sentense has typos, électroménagr included.");
   }
   return true;
 }
@@ -265,6 +273,26 @@ function looksLikeName(text, start, word) {
   return before !== "" && !/[.!?…:"“(\n]$/.test(before);
 }
 
+// The same word in another English spelling: colour/color, organise/organize,
+// centre/center, travelled/traveled, catalogue/catalog, defence/defense.
+function dialectForm(word) {
+  return word.toLowerCase()
+    .replace(/our(s|ed|ing|ful|ite|ites)?$/, "or$1")
+    .replace(/our(?=[a-z])/, "or")
+    .replace(/is(e|es|ed|ing|er|ers|ation|ations)$/, "iz$1")
+    .replace(/ys(e|es|ed|ing)$/, "yz$1")
+    .replace(/([^aeiou])re(s|d)?$/, "$1er$2")
+    .replace(/ll(ed|ing|er|ers|ation)$/, "l$1")
+    .replace(/ogue(s)?$/, "og$1")
+    .replace(/ence(s)?$/, "ense$1")
+    .replace(/^grey/, "gray")
+    .replace(/mme(s)?$/, "m$1");
+}
+
+function isDialectVariant(word, suggestion) {
+  return word.toLowerCase() !== suggestion.toLowerCase() && dialectForm(word) === dialectForm(suggestion);
+}
+
 function suggestionText(suggestion, problem) {
   const kind = suggestion.kind();
   if (kind === SuggestionKind.Remove) return "";
@@ -295,6 +323,11 @@ async function lintParagraph(paragraph) {
         if (!replacements.includes(r)) replacements.push(r);
       }
       if (!picky && kind === "Formatting" && TYPOGRAPHY_ONLY(word, replacements)) continue;
+      // "lol", "gonna", "congrats": informal on purpose.
+      if (self.FC_INFORMAL_WORDS.has(word.toLowerCase())) continue;
+      // "cancelled", "colour", "organise" are right in British English (and
+      // "canceled" in American): only picky mode asks for the chosen dialect.
+      if (!picky && (kind === "Spelling" || kind === "Typo") && replacements.some((r) => isDialectVariant(word, r))) continue;
       // Guesses with nothing to offer ("You may be missing a preposition").
       if (kind === "Miscellaneous" && !replacements.length) continue;
       // Never lowercase the first word of a sentence ("Who's coming?").
@@ -314,6 +347,10 @@ async function lintParagraph(paragraph) {
       lint.free?.();
     }
   }
+  // Ranking costs a few lints per error: bounded, so a long foreign or
+  // garbled paragraph cannot stall the checks (Harper's own order is kept).
+  let ranked = 0;
+  const deadline = performance.now() + RANK_BUDGET_MS;
   for (const m of out) {
     // "They're house" -> "Their"; "They're is a problem" -> "There".
     if (/^they['’]re$/i.test(m.word)) {
@@ -328,7 +365,7 @@ async function lintParagraph(paragraph) {
     const oneWord = /^[\p{L}'’]+$/u.test(m.word) && !/['’](re|s|ll|ve|d|t)$/i.test(m.word);
     const rare = frequency(m.word) < 2.7;
     if (oneWord && m.category !== "typo" && (m.category === "spelling" || rare || contractionFor(m.word))) {
-      m.replacements = await rankSpelling(paragraph, m);
+      if (ranked++ < MAX_RANKED && performance.now() < deadline) m.replacements = await rankSpelling(paragraph, m);
       if (rare || contractionFor(m.word)) {
         m.category = "spelling";
         m.label = CATEGORY_LABEL.spelling;
@@ -342,6 +379,9 @@ async function lintParagraph(paragraph) {
 // Checks English text; paragraphs are separated by "\n".
 export async function check(text) {
   await init();
+  // Tokens over 40 characters are hashes, keys or encoded data, never words:
+  // blanked (same length, so offsets hold) instead of costing seconds.
+  text = text.replace(/\S{41,}/g, (s) => " ".repeat(s.length));
   const matches = [];
   let paraStart = 0;
   let prevEnd = "";

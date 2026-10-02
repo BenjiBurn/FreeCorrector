@@ -261,8 +261,16 @@ function fcSentenceBounds(text, start, end) {
   while (s > 0 && !FC_SENTENCE_END.test(text[s - 1])) s--;
   let e = end;
   while (e < text.length && !FC_SENTENCE_END.test(text[e])) e++;
+  // Text without punctuation can be one huge "sentence": a few words around
+  // the error are enough context, and keep each check fast.
+  if (start - s > FC_CONTEXT_CHARS) s = text.lastIndexOf(" ", start - FC_CONTEXT_CHARS) + 1;
+  if (e - end > FC_CONTEXT_CHARS) {
+    const cut = text.indexOf(" ", end + FC_CONTEXT_CHARS);
+    if (cut > 0) e = cut - 1;
+  }
   return [s, Math.min(e + 1, text.length)];
 }
+const FC_CONTEXT_CHARS = 250;
 
 // Grammar errors of a sentence, as [start, end] pairs.
 function fcSentenceErrors(sentence) {

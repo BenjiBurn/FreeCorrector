@@ -17,6 +17,7 @@ const FC_FIRST_WORD = /^\s*(\p{Ll}[\p{L}\p{M}'’-]*)/u;
 const FC_LAST_WORD = /(\p{L}[\p{L}\p{M}\p{N}'’-]*)\s*$/u;
 const FC_LIST_MARKER = /^\s*([-*•–—>]|\d+[.)]|[a-z][.)])\s/u;
 const FC_FINITE_VERB = /:(Ip|Iq|Is|If|K|Sp|Sq|E)/;
+const FC_CHAT_START = /^\s*(lol|mdr|ptdr|omg|lmao|haha+|hihi|wow|yeah|yep|nope|ouais|bah|bof|ah|oh|oups|oops|ok|okay|ok\b|btw|jpp|tkt|wsh)(?![\p{L}])/u;
 
 const FC_SENTENCE_LANG = {
   fr: {
@@ -65,8 +66,13 @@ function fcLooksLikeSentence(paragraph, spellChecker, lang) {
 function fcSentenceRules(paragraph, existing, spellChecker, prevEnd, lang = "fr") {
   const out = [];
   const free = (start, end) => !existing.some((m) => m.offset < end && start < m.offset + m.length);
+  // Chat style ("lol that's hilarious", "mdr t'es sérieux") is written that
+  // way on purpose: no capital, no final period to ask for.
+  if (FC_CHAT_START.test(paragraph)) return out;
   const listItem =
     FC_LIST_MARKER.test(paragraph) || /[:;,]/.test(prevEnd) || /[;,:]\s*$/.test(paragraph);
+  // A signature after a closing ("Bien à vous, Claire Martin") ends without a period.
+  const signature = /,\s*(\p{Lu}[\p{L}.'’-]*)(\s+\p{Lu}[\p{L}.'’-]*){0,2}\s*$/u.test(paragraph);
 
   const first = FC_FIRST_WORD.exec(paragraph);
   if (first && !listItem) {
@@ -96,7 +102,7 @@ function fcSentenceRules(paragraph, existing, spellChecker, prevEnd, lang = "fr"
 
   const words = paragraph.match(/[\p{L}\p{N}]+/gu) ?? [];
   const last = FC_LAST_WORD.exec(paragraph);
-  if (last && !listItem && words.length >= FC_MIN_WORDS_FOR_PUNCT &&
+  if (last && !listItem && !signature && words.length >= FC_MIN_WORDS_FOR_PUNCT &&
       fcLooksLikeSentence(paragraph, spellChecker, lang)) {
     const word = last[1];
     const start = last.index;

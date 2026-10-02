@@ -17,7 +17,7 @@ module.exports = [
   ["Il ne peu pas venir.", "peu", "peut"],
   ["Je pense quel est partie.", "quel", "qu’elle"],
   ["Ces la vie.", "Ces", "C’est"],
-  ["Il c’est trompé de route.", "c’", "s’"],
+  ["Il c’est trompé de route.", "c’est", "s’est"],
   ["Merci a tous pour votre aide.", "a", "à"],
   ["Tu ma manqué.", "ma", "m’as"],
   ["Je n’ai pas pus venir.", "pus", "pu"],

@@ -28,6 +28,7 @@ importScripts(
   VENDOR + "fr/gc_engine.js",
   "suggestions.js",
   "rules.js",
+  "informal.js",
   "sentence-rules.js"
 );
 
@@ -167,7 +168,8 @@ function rankParagraph(paragraph, paraStart, found) {
     }
     kept.push(m);
     lastEnd = start + m.length;
-    if (ranked++ < MAX_RANKED_MATCHES) {
+    // Our own rules know their fix: no re-ranking.
+    if (!m.ruleId.startsWith("FC_") && ranked++ < MAX_RANKED_MATCHES) {
       // Grammar fixes after "être" ("sont finit" -> finît | finies): the
       // participle candidates, for the same preference as spelling ones.
       const participles = m.replacements.participles ??
@@ -201,6 +203,8 @@ function checkParagraph(paragraph) {
   for (const token of spellChecker.parseParagraph(paragraph)) {
     const word = token.sValue;
     if (fcLooksLikeProperNoun(paragraph, token.nStart, word)) continue;
+    // "dispo", "resto", "mdr": informal on purpose.
+    if (self.FC_INFORMAL_WORDS.has(word.toLowerCase())) continue;
     // "soeur", "coeur": most keyboards have no "œ"; a typographic nicety only.
     if (!picky && /oe|ae/i.test(word) && spellChecker.isValidToken(word.replace(/oe/g, "œ").replace(/OE/g, "Œ").replace(/ae/g, "æ"))) continue;
     spelling.push({
@@ -230,6 +234,11 @@ function checkParagraph(paragraph) {
       url: err.URL || "",
     };
     if (!picky && fcIsTypographicOnly(m.word, m.replacements)) continue;
+    // Optional commas ("passée chez toi, mais") are style, for picky mode.
+    if (!picky && /virgules_manquantes/.test(m.ruleId)) continue;
+    // "Elle s’est fait mal", "elle s’est fait opérer": "fait" stays invariable.
+    if (m.word === "fait" && /ppas/.test(m.ruleId) &&
+        /^\s+(mal|\p{L}+(er|ir|re))(?!\p{L})/u.test(paragraph.slice(err.nEnd))) continue;
     // An unknown word is the more useful report; drop grammar noise on top of it.
     if (!spelling.some((s) => overlaps(s, m))) grammar.push(m);
   }
@@ -249,6 +258,9 @@ function checkParagraph(paragraph) {
 
 function check(text) {
   init();
+  // Tokens over 40 characters are hashes, keys or encoded data, never words:
+  // blanked (same length, so offsets hold) instead of costing seconds.
+  text = text.replace(/\S{41,}/g, (s) => " ".repeat(s.length));
   const matches = [];
   let paraStart = 0;
   let prevEnd = "";

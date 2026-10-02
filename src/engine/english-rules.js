@@ -25,6 +25,7 @@ const ING_TYPOS = { planing: "planning", stoping: "stopping", shoping: "shopping
 // Always capitalized; "may", "march", "august", "polish", "turkey" are left out.
 const PROPER_WORDS = new Set([
   "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday",
+  "mondays", "tuesdays", "wednesdays", "thursdays", "fridays", "saturdays", "sundays",
   "january", "february", "april", "june", "july", "september", "october", "november", "december",
   "english", "french", "spanish", "german", "italian", "portuguese", "chinese", "japanese", "korean", "russian", "arabic", "dutch",
   "american", "british", "european", "african", "asian", "canadian", "australian", "mexican", "indian", "brazilian", "irish", "scottish",
@@ -33,6 +34,16 @@ const PROPER_WORDS = new Set([
 const UNCOUNTABLE = { informations: "information", advices: "advice", furnitures: "furniture", equipments: "equipment", knowledges: "knowledge", homeworks: "homework", luggages: "luggage", baggages: "baggage", feedbacks: "feedback", evidences: "evidence", softwares: "software", staffs: "staff" };
 const NOT_PLURAL = /^(always|perhaps|sometimes|towards|afterwards|whereas|thus|yes|series|species|means|news|physics|mathematics|economics|politics|headquarters|lens|gas|bus|plus|chaos|minus|bonus|virus|campus|status|its|this|was|has|is|his|hers|ours|yours|theirs)$/;
 const NUMBER_FOLLOWERS = /^(of|more|other|different|hundred|thousand|million|billion|dozen|times|new|good|great|best|big|small|main|major|last|next|first|extra|little|old|young|long|short|such|and|or|to|are|were|have|had|will|can|would|could|should|must|may|might|do|did|people|children|men|women|sheep|fish|deer|data|weeks|days|years|per|each|all|the|a|an|i|we|you|they|he|she|it|us|them)$/;
+
+// Base verbs typed after "have" instead of the participle. Verbs that are
+// also frequent nouns ("work", "call", "help", "change") are left out.
+const PARTICIPLE_OF = {
+  finish: "finished", decide: "decided", receive: "received", complete: "completed", arrive: "arrived",
+  forget: "forgotten", eat: "eaten", see: "seen", go: "gone", write: "written", take: "taken", give: "given",
+  speak: "spoken", ask: "asked", wait: "waited", try: "tried", buy: "bought", send: "sent",
+  meet: "met", choose: "chosen", lose: "lost", forgive: "forgiven", begin: "begun",
+  understand: "understood", become: "become", hear: "heard", tell: "told",
+};
 
 function ingForm(verb) {
   if (/ie$/.test(verb)) return `${verb.slice(0, -2)}ying`;
@@ -120,7 +131,7 @@ export function englishRules(paragraph, existing, frequency = () => 0) {
     // "Your welcome", "your right" -> "you're"
     if (t.lower === "your" && next && /^(welcome|right|wrong|going|not|so|very|too|always|never|being|doing|getting|making|coming|the|a|an|kidding|joking|amazing|awesome|beautiful|crazy|lucky|sure|done|late|early)$/.test(next.lower) &&
         !(next.lower === "right" && next2 && /^(hand|side|arm|leg|eye|ear|foot|now)$/.test(next2.lower))) {
-      add(t.start, t.end, "you're", "Did you mean “you're” (you are)?");
+      add(t.start, t.end, "you're", "Did you mean “you're” (you are)?", { override: /^(the|a|an)$/.test(next.lower) });
     }
 
     // "will loose", "to loose" -> "lose"
@@ -149,6 +160,46 @@ export function englishRules(paragraph, existing, frequency = () => 0) {
     if (clauseStart && t.lower === "me" && next?.lower === "and" && next2 && SUBJECT_FOR[next2.lower] && toks[i + 3] && !isPunct(toks[i + 3])) {
       const other = SUBJECT_FOR[next2.lower];
       add(t.start, next2.end, `${other} and I`, "Use subject pronouns before a verb: “he and I”, “she and I”.");
+    }
+    // "Me and my friend went" -> "My friend and I went"
+    const toks3 = toks[i + 3];
+    if (clauseStart && t.lower === "me" && next?.lower === "and" && next2 && /^(my|his|her|our|their|the)$/.test(next2.lower) &&
+        toks3 && /^\p{Ll}+$/u.test(toks3.text) && toks[i + 4] && /^(went|are|were|have|had|will|would|can|could|did|do|got|came|saw|made|took|left|met|played|decided|love|like)$/.test(toks[i + 4].lower)) {
+      add(t.start, toks3.end, `${next2.lower} ${toks3.text} and I`, "Before a verb, put yourself last and use “I”: “my friend and I”.");
+    }
+
+    // "She can sings" -> sing (base form after a modal)
+    if (prev && /^(can|could|will|would|should|must|might|may|shall|cannot|can't|won't|wouldn't|shouldn't|couldn't|mustn't|don't|doesn't|didn't)$/.test(prev.lower) &&
+        /^\p{Ll}+s$/u.test(t.text) && !/(ss|us|is|ous)$/.test(t.lower) && !NOT_PLURAL.test(t.lower) &&
+        !/^(always|sometimes|perhaps|towards|as|has|was|does|goes|less|unless|thus|plus|yes|news|this|its|his|hers|ours|yours|theirs|us)$/.test(t.lower)) {
+      const bases = /ies$/.test(t.lower) ? [`${t.lower.slice(0, -3)}y`] :
+        /(ch|sh|ss|x|o)es$/.test(t.lower) ? [t.lower.slice(0, -2)] : [t.lower.slice(0, -1)];
+      const base = bases.find((b) => frequency(b) >= 3.5 && frequency(b) > frequency(t.lower));
+      if (base) {
+        add(t.start, t.end, base, `After “${prev.lower}”, use the base form of the verb: “${base}”.`);
+      }
+    }
+
+    // "Where is you going?" -> are
+    if (/^(is|was)$/.test(t.lower) && next?.lower === "you" && prev && /^(where|what|how|why|when|who)$/.test(prev.lower)) {
+      add(t.start, t.end, t.lower === "is" ? "are" : "were", "With “you”, use “are” / “were”.");
+    }
+
+    // "three peoples" -> people
+    if (t.lower === "peoples" && prev && /^(two|three|four|five|six|seven|eight|nine|ten|many|few|several|some|these|those|most|more|other|young|old|\d+)$/.test(prev.lower)) {
+      add(t.start, t.end, "people", "“People” is already plural.", { override: true });
+    }
+
+    // "Every students" -> student
+    if (prev && /^(every|each)$/.test(prev.lower) && /^\p{Ll}+s$/u.test(t.text) && !/(ss|us|is)$/.test(t.lower) && !NOT_PLURAL.test(t.lower)) {
+      const single = /ies$/.test(t.lower) ? `${t.lower.slice(0, -3)}y` : t.lower.slice(0, -1);
+      if (frequency(single) >= 3.5) add(t.start, t.end, single, `After “${prev.lower}”, the noun is singular.`);
+    }
+
+    // "I have finish my work" -> finished
+    if (prev && /^(have|has|had|'ve|i've|we've|you've|they've)$/.test(prev.lower) && PARTICIPLE_OF[t.lower] &&
+        (!toks[i - 2] || /^(i|you|we|they|he|she|it|already|just|never)$/.test(toks[i - 2].lower) || /'ve$/.test(prev.lower))) {
+      add(t.start, t.end, PARTICIPLE_OF[t.lower], `After “${prev.lower}”, use the past participle: “${PARTICIPLE_OF[t.lower]}”.`);
     }
 
     // "I think its going to rain" -> it's (never a possessive before these)

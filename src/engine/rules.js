@@ -332,6 +332,49 @@ function fcCustomRules(paragraph, spellChecker, existing) {
       add(t, "qu’elle", "Confusion probable : « qu’elle » (que + elle) plutôt que « quel ».");
     }
 
+    // "Je vous pris d’agréer" -> prie (closing formula)
+    if (t.lower === "pris" && prevLower === "vous" && /^(je|j’|nous)$/.test(prev2?.lower ?? "") && next &&
+        /^(d’|de)$/.test(next.lower)) {
+      add(t, prev2.lower === "nous" ? "prions" : "prie", "Formule de politesse : « je vous prie de… » (verbe prier).");
+    }
+
+    // "Ça c’est passé très vite" -> s’est (pronominal verb after a subject)
+    if (t.lower === "c’" && next?.lower === "est" && next2 && /^(ça|cela|il|elle|on|tout|qui)$/.test(prevLower) &&
+        !(prev2 && prev2.text === ",") && fcHas(morph(next2), /:V.*:Q/) &&
+        tokens[i + 3] && !/^[,.;:!?)]$/.test(tokens[i + 3].text)) {
+      add({ start: t.start, end: next.end, text: t.text + next.text }, "s’est", "Verbe pronominal : « s’est » (se + être), pas « c’est ».", true);
+    }
+
+    // "Il a eu sont permis" -> son (after a past participle of avoir)
+    if (t.lower === "sont" && prev && fcHas(morph(prev), /:Q/) && prev2 && /^(ai|as|a|avons|avez|ont|avait|avais|avaient|aura)$/.test(prev2.lower) &&
+        next && fcHas(morph(next), /:N:m/)) {
+      add(t, "son", "Confusion probable : « son » (possessif) plutôt que « sont » (verbe être).");
+    }
+
+    // "Les photos que j’ai pris" -> prises (the object "que" comes before avoir)
+    if (prev && /^(ai|as|a|avons|avez|ont|avais|avait|avions|aviez|avaient)$/.test(prevLower) && prev2 && FC_SUBJECTS.has(prev2.lower) &&
+        /^(que|qu’)$/.test(tokens[i - 3]?.lower ?? "") && tokens[i - 4] && fcHas(morph(t), /:Q(:A)?:m:[si]/) &&
+        (!next || /^[,.;:!?)]$/.test(next.text) || /^(sont|est|était|étaient|sera|seront|hier|ce|cette|la|le|l’|à|en|sur|pour|avant)$/.test(next.lower))) {
+      const noun = morph(tokens[i - 4]).find((m) => /:N:[mfe]:[spi]/.test(m));
+      const gender = noun?.match(/:N:([mfe]):([spi])/);
+      if (gender && (gender[1] === "f" || gender[2] === "p")) {
+        const want = `:${gender[1] === "f" ? "f" : "m"}:${gender[2] === "p" ? "p" : "s"}`;
+        const form = String(suggVerbPpas(t.lower, want) || "").split("|").filter(Boolean)[0];
+        if (form && form !== t.lower) add(t, form, `Le participe passé s’accorde avec « ${tokens[i - 4].text} », complément placé avant avoir.`);
+      }
+    }
+
+    // "Nous allons vous envoyez" -> envoyer (infinitive after aller, pouvoir, devoir…)
+    if (/ez$/.test(t.lower) && prev) {
+      let k = i - 1;
+      while (k > i - 3 && tokens[k] && /^(me|m’|te|t’|se|s’|nous|vous|le|la|l’|les|lui|leur|en|y)$/.test(tokens[k].lower)) k--;
+      if (k < i - 1 && tokens[k] && /^(vais|vas|va|allons|vont|peux|peut|pouvons|peuvent|dois|doit|devons|doivent|veux|veut|voulons|veulent|faut|faudrait|aller|pouvoir|devoir)$/.test(tokens[k].lower)) {
+        const inf = morph(t).find((m) => /:V.*:2p/.test(m));
+        const lemma = inf?.slice(1, inf.indexOf("/"));
+        if (lemma && lemma !== t.lower) add(t, lemma, "Après ce verbe, il faut l’infinitif.");
+      }
+    }
+
     // "Jaime ce film" -> J’aime (at the start, followed by a determiner)
     if (t.lower === "jaime" && (!prev || FC_CLAUSE_START.has(prevLower)) && next &&
         /^(le|la|les|l’|ce|cet|cette|ces|mon|ma|mes|ton|ta|tes|son|sa|ses|bien|beaucoup|trop|pas|vraiment|tellement|ça|te|vous|un|une|quand|que|qu’)$/.test(next.lower)) {
