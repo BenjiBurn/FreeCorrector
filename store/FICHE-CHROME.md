@@ -1,10 +1,20 @@
-# Fiche Chrome Web Store — FreeCorrector 1.0.0
+# Fiche Chrome Web Store — FreeCorrector 1.1.0
 
 Chaque texte est dans un bloc : copier le contenu du bloc tel quel dans le champ indiqué.
 
+## 0. Compte développeur (une seule fois)
+
+1. Aller sur https://chrome.google.com/webstore/devconsole avec un compte Google (activer la
+   validation en deux étapes du compte si Google la demande).
+2. Accepter le contrat développeur et payer les frais d’inscription uniques (5 $).
+3. Profil / Compte : nom d’éditeur **BenjiBurn**, adresse e-mail de contact vérifiée.
+4. Statut professionnel (Digital Services Act) : choisir **non-trader** (particulier, projet non
+   commercial). Avant de valider, lire le texte à côté de chaque champ : si un champ (adresse,
+   téléphone) indique qu’il sera **affiché publiquement**, ne pas mettre son adresse personnelle.
+
 ## 1. Fichier à envoyer
 
-`dist/freecorrector-1.0.0-chromium.zip`
+`dist/freecorrector-1.1.0-chromium.zip`
 
 ## 2. Onglet « Fiche Play Store » (Store listing)
 
@@ -20,7 +30,7 @@ Comment ça marche
 • La page « Correcteur » (bouton du menu) permet de coller un long texte, de voir toutes les fautes et de tout corriger en un clic.
 
 Français et anglais
-La langue est détectée automatiquement, paragraphe par paragraphe : un e-mail en français avec une citation en anglais est corrigé dans les deux langues. Accords, conjugaison, homophones (a/à, et/est, ça/sa, ou/où, ces/ses, leur/leurs…), participes passés, subjonctif, accents, majuscules, ponctuation… En anglais : your/you’re, its/it’s, their/there/they’re, accords sujet-verbe, temps, fautes de frappe.
+La langue est détectée automatiquement, phrase par phrase : un e-mail en français avec une citation en anglais est corrigé dans les deux langues. Accords, conjugaison, homophones (a/à, et/est, ça/sa, ou/où, ces/ses, leur/leurs…), participes passés, subjonctif, accents, majuscules, ponctuation, fautes de frappe qui donnent un autre mot (« mot de basse »)… En anglais : your/you’re, its/it’s, their/there/they’re, accords sujet-verbe, articles, temps, fautes de frappe.
 
 Vos textes restent chez vous
 L’analyse se fait entièrement dans votre navigateur. FreeCorrector n’envoie rien sur Internet, ne collecte aucune donnée et fonctionne même hors connexion. Le navigateur lui interdit d’ailleurs toute connexion réseau.
@@ -30,6 +40,7 @@ Et aussi
 • Désactivation sur les sites de votre choix.
 • Mode exigeant pour la typographie fine (espaces insécables, apostrophes typographiques…).
 • Fonctionne aussi dans les zones de texte mises en forme (éditeurs riches des webmails, réseaux sociaux et outils en ligne).
+• Le code, les adresses, les liens et les noms propres ne sont pas pris pour des fautes.
 • Annulation avec Ctrl+Z après une correction.
 
 Logiciel libre
@@ -46,7 +57,7 @@ Créé par BenjiBurn.
 | Captures d’écran (1280×800, jusqu’à 5) | `store/capture-1-bulle.png`, `capture-2-correcteur.png`, `capture-3-anglais.png`, `capture-4-liste.png` |
 | Petite vignette promotionnelle (440×280, **obligatoire**) | `store/promo-440x280.png` |
 | Grande bannière (1400×560, facultative) | `store/banniere-1400x560.png` |
-| Site officiel | https://github.com/BenjiBurn/FreeCorrector |
+| Site officiel | https://lapigeonnerie.fr/freecorrector |
 | URL d’assistance | https://github.com/BenjiBurn/FreeCorrector/issues |
 
 ## 3. Onglet « Pratiques de confidentialité » (Privacy)
