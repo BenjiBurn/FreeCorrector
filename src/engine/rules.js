@@ -95,6 +95,27 @@ function fcMorph(spellChecker, word) {
 
 const fcHas = (morphs, re) => morphs.some((m) => re.test(m));
 
+// The same verb, same tense, at another person: ("sont", "3s") -> "est".
+// Null when the word is not a conjugated verb or already has that person.
+function fcConjugateAs(spellChecker, word, person) {
+  const morphs = fcMorph(spellChecker, word);
+  if (morphs.some((m) => new RegExp(`:(Ip|Iq|If|K|Sp|Is)[^/]*:${person}`).test(m))) return null;
+  for (const m of morphs) {
+    const found = m.match(/^>([^/]+)\/:V[^/]*?:(Ip|Iq|If|K|Sp|Is)/);
+    if (!found) continue;
+    try {
+      const form = conj.getConj(found[1], `:${found[2]}`, `:${person}`);
+      if (form) return form;
+    } catch {
+      // Unknown conjugation.
+    }
+  }
+  return null;
+}
+
+const FC_LANGUAGE_NAMES = /^(français|anglais|allemand|espagnol|italien|portugais|chinois|japonais|arabe|russe|néerlandais|coréen|grec|polonais|turc|hindi|latin|hébreu|suédois|norvégien|danois|breton|basque|catalan|corse|occitan|alsacien|créole|wolof|berbère|vietnamien|thaï|persan|roumain|hongrois|tchèque|ukrainien)$/;
+const FC_PROFESSIONS = /^(coiffeur|coiffeuse|médecin|dentiste|docteur|boulanger|boulangère|garagiste|kiné|kinésithérapeute|pharmacien|pharmacienne|notaire|vétérinaire|véto|psy|opticien|boucher|bouchère|plombier|avocat|avocate|ophtalmo|gynéco|dermato|osteo|ostéo|ostéopathe|épicier|fleuriste|banquier|comptable|mécanicien)$/;
+
 function fcCustomRules(paragraph, spellChecker, existing) {
   const tokens = fcTokens(paragraph);
   const out = [];
@@ -107,9 +128,10 @@ function fcCustomRules(paragraph, spellChecker, existing) {
   // `override`: this rule knows better than Grammalecte's overlapping report,
   // which checkParagraph then drops ("je c’est" is "sais", not "s’est").
   // `replacement`: one fix, or several, best first.
-  const add = (t, replacement, message, override = false) => {
+  // `keepCase`: the fix is about the case itself ("Français" -> "français").
+  const add = (t, replacement, message, override = false, keepCase = false) => {
     if (override ? out.some((m) => m.offset < t.end && t.start < m.offset + m.length) : !free(t)) return;
-    const upper = t.text[0] === t.text[0].toUpperCase() && t.text[0] !== t.text[0].toLowerCase();
+    const upper = !keepCase && t.text[0] === t.text[0].toUpperCase() && t.text[0] !== t.text[0].toLowerCase();
     const fixes = (Array.isArray(replacement) ? replacement : [replacement])
       .map((r) => (upper ? r[0].toUpperCase() + r.slice(1) : r));
     out.push({
@@ -398,16 +420,21 @@ function fcCustomRules(paragraph, spellChecker, existing) {
       add(t, "son", "Confusion probable : « son » (possessif) plutôt que « sont » (verbe être).");
     }
 
-    // "Les photos que j’ai pris" -> prises (the object "que" comes before avoir)
-    if (prev && /^(ai|as|a|avons|avez|ont|avais|avait|avions|aviez|avaient)$/.test(prevLower) && prev2 && FC_SUBJECTS.has(prev2.lower) &&
-        /^(que|qu’)$/.test(tokens[i - 3]?.lower ?? "") && tokens[i - 4] && fcHas(morph(t), /:Q(:A)?:m:[si]/) &&
+    // "Les photos que j’ai pris" -> prises ; "les fleurs que tu m’as offert" -> offertes
+    // (the object "que" comes before avoir; an indirect pronoun may sit in between)
+    let s = i - 2; // the subject, before avoir and any "m’", "lui"…
+    const subjectAfterQue = (k) => tokens[k] && FC_SUBJECTS.has(tokens[k].lower) && /^(que|qu’)$/.test(tokens[k - 1]?.lower ?? "");
+    if (!subjectAfterQue(s) && /^(m’|t’|me|te|lui|leur|nous|vous)$/.test(tokens[s]?.lower ?? "")) s--;
+    if (prev && /^(ai|as|a|avons|avez|ont|avais|avait|avions|aviez|avaient)$/.test(prevLower) && tokens[s] && FC_SUBJECTS.has(tokens[s].lower) &&
+        /^(que|qu’)$/.test(tokens[s - 1]?.lower ?? "") && tokens[s - 2] && fcHas(morph(t), /:Q(:A)?:m:[si]/) &&
         (!next || /^[,.;:!?)]$/.test(next.text) || /^(sont|est|était|étaient|sera|seront|hier|ce|cette|la|le|l’|à|en|sur|pour|avant)$/.test(next.lower))) {
-      const noun = morph(tokens[i - 4]).find((m) => /:N:[mfe]:[spi]/.test(m));
+      const antecedent = tokens[s - 2];
+      const noun = morph(antecedent).find((m) => /:N:[mfe]:[spi]/.test(m));
       const gender = noun?.match(/:N:([mfe]):([spi])/);
       if (gender && (gender[1] === "f" || gender[2] === "p")) {
         const want = `:${gender[1] === "f" ? "f" : "m"}:${gender[2] === "p" ? "p" : "s"}`;
         const form = String(suggVerbPpas(t.lower, want) || "").split("|").filter(Boolean)[0];
-        if (form && form !== t.lower) add(t, form, `Le participe passé s’accorde avec « ${tokens[i - 4].text} », complément placé avant avoir.`);
+        if (form && form !== t.lower) add(t, form, `Le participe passé s’accorde avec « ${antecedent.text} », complément placé avant avoir.`);
       }
     }
 
@@ -420,6 +447,105 @@ function fcCustomRules(paragraph, spellChecker, existing) {
         const lemma = inf?.slice(1, inf.indexOf("/"));
         if (lemma && lemma !== t.lower) add(t, lemma, "Après ce verbe, il faut l’infinitif.");
       }
+    }
+
+    // ---------- Subject-verb agreement Grammalecte misses ----------
+
+    const agree = (verb, person, message) => {
+      const form = verb && fcConjugateAs(spellChecker, verb.text.toLowerCase(), person);
+      if (form) add(verb, form, message, true);
+    };
+
+    // "Tout le monde sont là" -> est
+    if (t.lower === "monde" && prevLower === "le" && prev2?.lower === "tout" && next && fcHas(morph(next), /:V[^/]*:3p/)) {
+      agree(next, "3s", "« Tout le monde » est singulier.");
+    }
+
+    // "Chacun de nous doivent" -> doit
+    if (/^(chacun|chacune)$/.test(t.lower)) {
+      let k = i + 1;
+      if (/^(de|d’)$/.test(tokens[k]?.lower)) k += /^(entre)$/.test(tokens[k + 1]?.lower) ? 3 : 2;
+      const verb = tokens[k];
+      if (verb && fcHas(morph(verb), /:V[^/]*:(1p|2p|3p)/) && !fcHas(morph(verb), /:V[^/]*:3s/)) {
+        agree(verb, "3s", `« ${t.text} » est singulier.`);
+      }
+    }
+
+    // "Cette personne sont gentilles" -> est (singular determiner + singular noun + plural verb)
+    // (Not after "et", "ou", "ni": "la vie et l’œuvre font" has a plural subject.)
+    if ((!prev || /^[.!?;:,]$/.test(prev.text) || /^(mais|donc|car|alors|quand|si|que|qu’|comme|lorsque|puis)$/.test(prevLower)) &&
+        /^(le|la|l’|ce|cet|cette|mon|ma|ton|ta|son|sa|un|une|notre|votre|leur)$/.test(t.lower) &&
+        next && fcHas(morph(next), /:N:.:s/) && !fcHas(morph(next), /:N:.:[pi]/) && !/^(plupart|majorité|moitié|totalité|reste|tiers|quart)$/.test(next.lower) &&
+        next2 && /^(sont|ont|font|vont|étaient|avaient|seront|auront|peuvent|doivent|veulent|savent)$/.test(next2.lower)) {
+      agree(next2, "3s", `« ${t.text} ${next.text} » est singulier.`);
+    }
+
+    // "Mes amis et moi sont partis" -> sommes ; "Paul et toi sont" -> êtes
+    if (/^(moi|toi)$/.test(t.lower) && prevLower === "et" && next && fcHas(morph(next), /:V[^/]*:3p/)) {
+      agree(next, t.lower === "moi" ? "1p" : "2p", `Avec « et ${t.lower} », le verbe se met à la ${t.lower === "moi" ? "1re" : "2e"} personne du pluriel.`);
+    }
+
+    // "Ce sont eux qui a gagné" -> ont ; "c’est moi qui a" -> ai
+    if (t.lower === "qui" && /^(moi|toi|nous|vous|eux|elles|lui)$/.test(prevLower) && next) {
+      const person = { moi: "1s", toi: "2s", nous: "1p", vous: "2p", eux: "3p", elles: "3p", lui: "3s" }[prevLower];
+      if (fcHas(morph(next), /:V[^/]*:(Ip|Iq|If|K|Sp|Is)/)) agree(next, person, `Après « ${prevLower} qui », le verbe s’accorde avec « ${prevLower} ».`);
+    }
+
+    // "Les gens qui son venus" -> sont
+    if (t.lower === "son" && prevLower === "qui" && next && fcHas(morph(next), /:V[^/]*:Q/)) {
+      add(t, "sont", "Confusion probable : « sont » (verbe être) plutôt que « son ».", true);
+    }
+
+    // ---------- Usage ----------
+
+    // "Quelques fois, je vais au cinéma" -> Quelquefois (sometimes)
+    if (t.lower === "quelques" && next?.lower === "fois" && FC_CLAUSE_START.has(prevLower) && next2 &&
+        (next2.text === "," || FC_SUBJECTS.has(next2.lower))) {
+      add({ start: t.start, end: next.end, text: paragraph.slice(t.start, next.end) }, "quelquefois",
+        "« Quelquefois » (parfois) s’écrit en un mot.", true);
+    }
+
+    // "Je me rappelle de cette soirée" -> je me rappelle cette soirée
+    if (/^rappel/.test(t.lower) && fcHas(morph(t), /^>rappeler\//) && /^(me|te|se|nous|vous|m’|t’|s’)$/.test(prevLower) &&
+        next && /^(de|du|des|d’)$/.test(next.lower) && next2 && (fcHas(morph(next2), /:D/) || next.lower !== "de") && !fcHas(morph(next2), /:Y/)) {
+      const article = { de: "", "d’": "", du: " le", des: " les" }[next.lower];
+      add({ start: t.start, end: next.end, text: paragraph.slice(t.start, next.end) }, `${t.text}${article}`,
+        "« Se rappeler » se construit sans « de » : on se rappelle quelque chose.");
+    }
+
+    // "Il a pallié à ce problème" -> pallié ce problème
+    if (/^pall/.test(t.lower) && fcHas(morph(t), /^>pallier\//) && next && /^(à|au|aux)$/.test(next.lower)) {
+      const article = { à: "", au: " le", aux: " les" }[next.lower];
+      add({ start: t.start, end: next.end, text: paragraph.slice(t.start, next.end) }, `${t.text}${article}`,
+        "« Pallier » se construit sans « à » : on pallie un problème.");
+    }
+
+    // "Voir même plus" -> Voire (even)
+    if (t.lower === "voir" && next?.lower === "même" && (!prev || /^[,;(]$/.test(prev.text) || FC_CLAUSE_START.has(prevLower))) {
+      add(t, "voire", "« Voire » (et même) s’écrit avec un « e ».");
+    }
+
+    // "Je vais au coiffeur" -> chez le coiffeur
+    if (/^(au|à)$/.test(t.lower) && prev && /^(vais|vas|va|allons|allez|vont|aller|allé|allée|allés|allées|suis|es|est|passe|passer|passé|retourne|rends|rend)$/.test(prevLower) &&
+        (t.lower === "au" ? next && FC_PROFESSIONS.test(next.lower) : next?.lower === "la" && next2 && FC_PROFESSIONS.test(next2.lower))) {
+      const span = t.lower === "au" ? t : { start: t.start, end: next.end, text: paragraph.slice(t.start, next.end) };
+      add(span, t.lower === "au" ? "chez le" : "chez la", "On va chez une personne, à un lieu : « chez le coiffeur ».");
+    }
+
+    // "Ci-joins le fichier" -> Ci-joint (invariable at the start)
+    if (/^ci-joint?s?$|^ci-jointes?$|^ci-joins$/.test(t.lower) && t.lower !== "ci-joint" && FC_CLAUSE_START.has(prevLower)) {
+      add(t, "ci-joint", "En tête de phrase, « ci-joint » est invariable.", true);
+    }
+
+    // "Vous dîtes vrai" -> dites (the passé simple is almost never meant)
+    if (/^(dîtes|fîtes)$/.test(t.lower) && prevLower === "vous") {
+      add(t, t.lower === "dîtes" ? "dites" : "faites", "Au présent : « vous dites », « vous faites » (sans accent).", true);
+    }
+
+    // "Il parle Français" -> français (languages take no capital)
+    if (FC_LANGUAGE_NAMES.test(t.lower) && /^\p{Lu}/u.test(t.text) && prev &&
+        /^(parle|parles|parlons|parlez|parlent|parler|apprends|apprend|apprenons|apprenez|apprennent|apprendre|étudie|étudies|étudier|comprends|comprend|comprendre|en|traduit|traduire|enseigne|cours)$/.test(prevLower)) {
+      add(t, t.lower, "Les noms de langues s’écrivent en minuscule.", true, true);
     }
 
     // ---------- SMS and phonetic spellings ----------
@@ -594,9 +720,22 @@ function fcCustomRules(paragraph, spellChecker, existing) {
         `Confusion probable : « ${t.lower[0]}’est » (verbe être).`, true);
     }
 
+    // "deux las bombe" -> la: "las" (tired) never comes before a noun, and
+    // not after "être" ("je suis las de tout" is right).
+    if (t.lower === "las" && next && !/^(de|d’|du|des|et|ou|,)$/.test(next.lower) && fcHas(morph(next), /:N/) &&
+        /^\p{Ll}/u.test(next.text) && !/^(si|très|trop|bien|tout|un|le|plus|moins|assez|aussi)$/.test(prevLower) &&
+        // ("un homme las marche lentement": "las" describes the noun before it.)
+        !(prev && fcHas(morph(prev), /:N:[me]/) && !fcHas(morph(prev), /:(V|D|B)/))) {
+      const nounMorph = morph(next).find((m) => /:N:[mfe]:[spi]/.test(m)) ?? "";
+      const fix = /:N:.:p/.test(nounMorph) ? "les" : /:N:m:s/.test(nounMorph) ? "le" : "la";
+      add(t, fix, `Faute de frappe probable : « ${fix} » (article) plutôt que « las » (fatigué).`);
+    }
+
     // "C’est deux la bombe" -> de: a number is never followed by a singular
-    // determiner ("nous étions deux la semaine dernière" excepted).
-    if (t.lower === "deux" && next && /^(la|le|l’|un|une|mon|ma|ton|ta|son|sa|ce|cet|cette|notre|votre|leur)$/.test(next.lower) &&
+    // determiner ("nous étions deux la semaine dernière" excepted). "las" is a
+    // typo for "la" here ("deux las bombe").
+    if (t.lower === "deux" && next && (/^(la|le|l’|un|une|mon|ma|ton|ta|son|sa|ce|cet|cette|notre|votre|leur)$/.test(next.lower) ||
+          (next.lower === "las" && next2 && fcHas(morph(next2), /:N:[fe]:s/))) &&
         !/^(étions|sommes|était|étaient|sont|serons|seront|êtes|étiez|étais|à|les|tous|toutes|nous|vous|eux|elles|ils|mes|tes|ses|ces|nos|vos|leurs|[,;:])$/.test(prevLower) &&
         // "il en a pris deux la semaine dernière": a time phrase follows.
         !(next2 && /^(semaine|veille|nuit|matinée|journée|soirée|année|mois|matin|soir|jour|week-end|fois|dernière|dernier|prochaine|prochain|même|suivante|suivant|précédente|précédent)$/.test(next2.lower))) {

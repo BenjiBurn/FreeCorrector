@@ -165,4 +165,9 @@ module.exports = [
   ["Qu'il ait raison ou pas, on verra.", null, null],
   ["Nous étions deux la semaine dernière.", null, null],
   ["Il en a pris deux la semaine dernière.", null, null],
+  ["C'est deux las bombe.", "deux", "de"],
+  ["C'est las bombe.", "las", "la"],
+  ["Il prend las voiture.", "las", "la"],
+  ["Je suis las de tout ça.", null, null],
+  ["Un homme las marche lentement.", null, null],
 ];

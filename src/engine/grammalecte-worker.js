@@ -100,8 +100,29 @@ const PHONETIC_VERBS = [
   [/^(fesant)$/, ["faisant"]],
 ];
 
+// Classic misspellings whose right form the dictionary's nearest words miss
+// or rank too low.
+const COMMON_MISSPELLINGS = {
+  succinte: "succincte", dilemne: "dilemme", rénumération: "rémunération", aréoport: "aéroport",
+  infractus: "infarctus", pécunier: "pécuniaire", apparament: "apparemment", notament: "notamment",
+  sincérement: "sincèrement", aquérir: "acquérir", acceuil: "accueil", acceuillir: "accueillir",
+  receuil: "recueil", receuillir: "recueillir", bizzare: "bizarre", language: "langage", example: "exemple",
+  connection: "connexion", addresse: "adresse", developpement: "développement", dévellopement: "développement",
+  environement: "environnement", personnelement: "personnellement", professionel: "professionnel",
+  traditionel: "traditionnel", exceptionel: "exceptionnel", rationel: "rationnel", fonctionel: "fonctionnel",
+  occurence: "occurrence", résonnance: "résonance", vraissemblable: "vraisemblable", chaqu: "chaque",
+  malgrés: "malgré", parmis: "parmi", hormi: "hormis", certe: "certes", jusqua: "jusqu’à", ormis: "hormis",
+};
+
 function spellSuggestions(word, before = "") {
   const lower = word.toLowerCase();
+  const known = COMMON_MISSPELLINGS[lower];
+  if (known) {
+    const fixed = word[0] === word[0].toUpperCase() ? known[0].toUpperCase() + known.slice(1) : known;
+    const forms = [fixed];
+    forms.only = [fixed];
+    return forms;
+  }
   const phonetic = PHONETIC_VERBS.find(([re]) => re.test(lower));
   if (phonetic) {
     const forms = phonetic[1].map((f) => (word[0] === word[0].toUpperCase() ? f[0].toUpperCase() + f.slice(1) : f));
