@@ -1,11 +1,11 @@
-# Fiche Opera Add-ons — FreeCorrector 1.1.0
+# Fiche Opera Add-ons — FreeCorrector 1.2.0
 
 Chaque texte est dans un bloc : copier le contenu du bloc tel quel dans le champ indiqué.
 Opera utilise le même paquet que Chrome et Edge (format Chromium).
 
 ## 1. Fichier à envoyer
 
-`dist/freecorrector-1.1.0-chromium.zip`
+`dist/freecorrector-1.2.0-chromium.zip`
 
 ## 2. Fiche
 
@@ -39,7 +39,9 @@ Vos textes restent chez vous
 L’analyse se fait entièrement dans votre navigateur. FreeCorrector n’envoie rien sur Internet, ne collecte aucune donnée et fonctionne même hors connexion. Le navigateur lui interdit d’ailleurs toute connexion réseau.
 
 Et aussi
-• Dictionnaire personnel (« Ajouter au dictionnaire »).
+• Dictionnaire personnel (« Ajouter au dictionnaire »), à importer ou exporter en fichier texte.
+• « Désactiver cette règle » pour ne plus voir un type de faute.
+• Clic droit sur un texte sélectionné → « Corriger avec FreeCorrector ».
 • Désactivation sur les sites de votre choix.
 • Mode exigeant pour la typographie fine (espaces insécables, apostrophes typographiques…).
 • Fonctionne aussi dans les zones de texte mises en forme (éditeurs riches des webmails, réseaux sociaux et outils en ligne).
@@ -97,7 +99,7 @@ How it works
 • Mistakes are underlined as you type: red for spelling, orange for grammar, blue for typography.
 • Click an underlined word to see the recommended fix, with the other suggestions right below it.
 • A counter at the bottom right of the field shows how many mistakes there are. Click it to open the full list.
-• The "Corrector" page (toolbar menu) lets you paste a long text, see every mistake and fix them all in one click.
+• The proofreader page (toolbar menu) lets you paste a long text, see every mistake and fix them all in one click. Or select text on any page and right-click "Check with FreeCorrector".
 
 French and English
 The language is detected automatically, sentence by sentence: a French email quoting an English sentence is checked in both languages. In English: your/you're, its/it's, their/there/they're, subject-verb agreement, articles, verb tenses, words typed for others (then/than, lose/loose, form/from…) and typos. In French: agreement, conjugation, homophones (a/à, et/est, ça/sa, ou/où…), past participles, subjunctive, accents, capitals, punctuation.
@@ -106,7 +108,8 @@ Your texts stay with you
 Everything is analyzed inside your browser. FreeCorrector sends nothing over the Internet, collects no data and even works offline. The browser itself forbids it any network connection.
 
 Also
-• Personal dictionary ("Add to dictionary").
+• Personal dictionary ("Add to dictionary"), with import and export as a text file.
+• "Turn off this rule" to stop seeing a kind of mistake.
 • Turn it off on the sites you choose.
 • Picky mode for fine typography.
 • Works in rich text editors too (webmail, social networks, online tools).
@@ -126,7 +129,7 @@ Created by BenjiBurn.
 | Service website URL | vide (l'extension ne se connecte à aucun service) |
 | Extension support page URL | https://github.com/BenjiBurn/FreeCorrector/issues |
 | Source code URL (public) | https://github.com/BenjiBurn/FreeCorrector |
-| Source code URL (moderators) | https://github.com/BenjiBurn/FreeCorrector/tree/v1.1.0 (le tag de la version) |
+| Source code URL (moderators) | https://github.com/BenjiBurn/FreeCorrector/tree/v1.2.0 (le tag de la version) |
 | License URL | https://github.com/BenjiBurn/FreeCorrector/blob/main/LICENSE |
 | Privacy policy URL | https://github.com/BenjiBurn/FreeCorrector/blob/main/PRIVACY.md |
 
@@ -134,8 +137,8 @@ Created by BenjiBurn.
 
 ```text
 Any OS (built on Windows 10). Node.js 18 or later; no npm install needed, the build has no dependencies.
-1. Download the source: https://github.com/BenjiBurn/FreeCorrector/archive/refs/tags/v1.1.0.zip and unzip it.
+1. Download the source: https://github.com/BenjiBurn/FreeCorrector/archive/refs/tags/v1.2.0.zip and unzip it.
 2. In the unzipped folder, run: node scripts/build.js chromium
-3. The package is written to dist/freecorrector-1.1.0-chromium.zip (unpacked copy in dist/chromium/).
+3. The package is written to dist/freecorrector-1.2.0-chromium.zip (unpacked copy in dist/chromium/).
 Our own code is not minified or bundled: the build only copies src/ and adapts manifest.json for Chromium. The two engines in src/vendor/ are unmodified copies of Grammalecte 2.3.0 and harper.js 2.10.0 (npm), see NOTE_FOR_REVIEWERS.md.
 ```

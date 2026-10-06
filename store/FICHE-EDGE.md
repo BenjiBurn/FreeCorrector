@@ -1,4 +1,4 @@
-# Fiche Microsoft Edge Add-ons — FreeCorrector 1.1.0
+# Fiche Microsoft Edge Add-ons — FreeCorrector 1.2.0
 
 Inscription gratuite : https://partner.microsoft.com/dashboard/microsoftedge/overview
 (compte Microsoft, programme « Microsoft Edge » du Partner Center).
@@ -7,7 +7,7 @@ Edge utilise le même paquet que Chrome et Opera (format Chromium).
 
 ## 1. Packages
 
-Fichier à envoyer : `dist/freecorrector-1.1.0-chromium.zip`
+Fichier à envoyer : `dist/freecorrector-1.2.0-chromium.zip`
 
 ## 2. Availability
 
@@ -58,7 +58,9 @@ Vos textes restent chez vous
 L’analyse se fait entièrement dans votre navigateur. FreeCorrector n’envoie rien sur Internet, ne collecte aucune donnée et fonctionne même hors connexion. Le navigateur lui interdit d’ailleurs toute connexion réseau.
 
 Et aussi
-• Dictionnaire personnel (« Ajouter au dictionnaire »).
+• Dictionnaire personnel (« Ajouter au dictionnaire »), à importer ou exporter en fichier texte.
+• « Désactiver cette règle » pour ne plus voir un type de faute.
+• Clic droit sur un texte sélectionné → « Corriger avec FreeCorrector ».
 • Désactivation sur les sites de votre choix.
 • Mode exigeant pour la typographie fine.
 • Fonctionne aussi dans les zones de texte mises en forme (éditeurs riches des webmails, réseaux sociaux et outils en ligne).
@@ -100,7 +102,7 @@ How it works
 • Mistakes are underlined as you type: red for spelling, orange for grammar, blue for typography.
 • Click an underlined word to see the recommended fix, with the other suggestions right below it.
 • A counter at the bottom right of the field shows how many mistakes there are. Click it to open the full list.
-• The "Corrector" page (toolbar menu) lets you paste a long text, see every mistake and fix them all in one click.
+• The proofreader page (toolbar menu) lets you paste a long text, see every mistake and fix them all in one click. Or select text on any page and right-click "Check with FreeCorrector".
 
 French and English
 The language is detected automatically, sentence by sentence: a French email quoting an English sentence is checked in both languages. In English: your/you're, its/it's, their/there/they're, subject-verb agreement, articles, verb tenses, words typed for others (then/than, lose/loose, form/from…) and typos. In French: agreement, conjugation, homophones (a/à, et/est, ça/sa, ou/où…), past participles, subjunctive, accents, capitals, punctuation.
@@ -109,7 +111,8 @@ Your texts stay with you
 Everything is analyzed inside your browser. FreeCorrector sends nothing over the Internet, collects no data and even works offline. The browser itself forbids it any network connection.
 
 Also
-• Personal dictionary ("Add to dictionary").
+• Personal dictionary ("Add to dictionary"), with import and export as a text file.
+• "Turn off this rule" to stop seeing a kind of mistake.
 • Turn it off on the sites you choose.
 • Picky mode for fine typography.
 • Works in rich text editors too (webmail, social networks, online tools).
@@ -143,5 +146,5 @@ free
 ## 5. Notes for certification (au moment de « Publish »)
 
 ```text
-No account or login is needed: the extension works on any page with a text field. Everything runs locally (CSP connect-src 'self'): no network requests, no data collected, no remote code. Our own code is neither minified nor bundled; the two engines are unmodified copies of Grammalecte 2.3.0 and harper.js 2.10.0 (see NOTE_FOR_REVIEWERS.md). The "offscreen" permission hosts the checking Web Workers, which a service worker cannot start. Source and build instructions: https://github.com/BenjiBurn/FreeCorrector/tree/v1.1.0 (node scripts/build.js chromium). To test: type "je suis aller au marché" or "Their going tomorow" in any text field, or open the toolbar menu and click "Ouvrir le correcteur".
+No account or login is needed: the extension works on any page with a text field. Everything runs locally (CSP connect-src 'self'): no network requests, no data collected, no remote code. Our own code is neither minified nor bundled; the two engines are unmodified copies of Grammalecte 2.3.0 and harper.js 2.10.0 (see NOTE_FOR_REVIEWERS.md). The "offscreen" permission hosts the checking Web Workers, which a service worker cannot start. Source and build instructions: https://github.com/BenjiBurn/FreeCorrector/tree/v1.2.0 (node scripts/build.js chromium). To test: type "je suis aller au marché" or "Their going tomorow" in any text field, or open the toolbar menu and click "Ouvrir le correcteur".
 ```

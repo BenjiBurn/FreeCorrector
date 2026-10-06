@@ -1,12 +1,15 @@
-/* global fcApi, fcGetSettings, fcParagraphLanguages, FcUi, FcTextField */
+/* global fcApi, fcGetSettings, fcParagraphLanguages, FcUi, FcTextField, fcLocalizePage, fcT, fcPlural, fcMatchLabel, fcUiLang */
+
+fcLocalizePage();
 
 // The "Correcteur" page: a large text area checked like any field on the web,
 // plus the list of every problem found, with its recommended fix first.
 
 (async () => {
   const DRAFT_KEY = "editorDraft";
-  const LANG_NAME = { fr: "Français", en: "Anglais" };
-  const CATEGORY_NAME = { spelling: "Orthographe", grammar: "Grammaire", style: "Style", typo: "Typographie" };
+  // Text sent by the right-click menu ("Check with FreeCorrector").
+  const INCOMING_KEY = "editorIncoming";
+  const LANG_NAME = { fr: fcT("langFr"), en: fcT("langEn") };
 
   const $ = (id) => document.getElementById(id);
   const textEl = $("text");
@@ -40,30 +43,30 @@
     return node;
   }
 
-  const shown = (s) => (s === "" ? "(supprimer)" : s);
+  const shown = (s) => (s === "" ? fcT("deleteSuggestion") : s);
 
   function renderList() {
     const matches = field.matches;
     const n = matches.length;
     $("total").textContent = String(n);
-    $("total-label").textContent = n > 1 ? "problèmes" : "problème";
+    $("total-label").textContent = fcT(n > 1 || (n === 0 && fcUiLang === "en") ? "edTotalMany" : "edTotalOne");
     $("n-spelling").textContent = String(matches.filter((m) => m.category === "spelling").length);
     $("n-grammar").textContent = String(matches.filter((m) => m.category === "grammar").length);
     $("n-style").textContent = String(matches.filter((m) => m.category === "style" || m.category === "typo").length);
     $("fix-all").disabled = !matches.some((m) => m.replacements.length);
 
     if (!n) {
-      const empty = el("div", "empty", field.text.trim() ? "Aucune faute détectée. Bravo !" : "Les fautes trouvées s’afficheront ici.");
+      const empty = el("div", "empty", field.text.trim() ? fcT("edEmptyClean") : fcT("edEmptyNoText"));
       list.replaceChildren(empty);
       return;
     }
 
     list.replaceChildren(...matches.map((m, index) => {
       const item = el("div", `item ${m.category}`);
-      item.title = "Afficher dans le texte";
+      item.title = fcT("edShowInText");
 
       const head = el("div", "item-head");
-      head.append(el("span", "", CATEGORY_NAME[m.category] ?? "Grammaire"), el("span", "", m.lang === "en" ? "anglais" : ""));
+      head.append(el("span", "", fcMatchLabel(m)));
       item.append(head);
 
       const [best, ...others] = m.replacements.slice(0, 5);
@@ -73,7 +76,7 @@
         fix.append(el("span", "arrow", "→"));
         const btn = el("button", "best", shown(best));
         btn.type = "button";
-        btn.title = "Appliquer la correction recommandée";
+        btn.title = fcT("edApplyBest");
         btn.addEventListener("click", (e) => {
           e.stopPropagation();
           field.apply(m, best);
@@ -86,7 +89,7 @@
 
       if (others.length) {
         const row = el("div", "others");
-        row.append(el("span", "others-label", "Autres :"));
+        row.append(el("span", "others-label", fcT("edOthers")));
         for (const s of others) {
           const alt = el("button", "alt", shown(s));
           alt.type = "button";
@@ -100,7 +103,7 @@
       }
 
       const actions = el("div", "item-actions");
-      const ignore = el("button", "", "Ignorer");
+      const ignore = el("button", "", fcT("ignore"));
       ignore.type = "button";
       ignore.addEventListener("click", (e) => {
         e.stopPropagation();
@@ -108,13 +111,22 @@
       });
       actions.append(ignore);
       if (m.category === "spelling") {
-        const add = el("button", "", "Ajouter au dictionnaire");
+        const add = el("button", "", fcT("addToDictionary"));
         add.type = "button";
         add.addEventListener("click", (e) => {
           e.stopPropagation();
           ui.addToDictionary(m);
         });
         actions.append(add);
+      } else {
+        const off = el("button", "", fcT("turnOffRule"));
+        off.type = "button";
+        off.title = fcT("turnOffRuleTitle");
+        off.addEventListener("click", (e) => {
+          e.stopPropagation();
+          ui.disableRule(m);
+        });
+        actions.append(off);
       }
       item.append(actions);
 
@@ -135,7 +147,7 @@
     const text = textEl.value;
     const words = (text.match(/[\p{L}\p{N}]+(?:['’-][\p{L}\p{N}]+)*/gu) ?? []).length;
     const chars = [...text].length;
-    $("stats").textContent = `${words} ${words > 1 ? "mots" : "mot"} · ${chars} ${chars > 1 ? "caractères" : "caractère"}`;
+    $("stats").textContent = `${fcPlural("edWords", words)} · ${fcPlural("edChars", chars)}`;
 
     const chip = $("language");
     const paragraphs = text.split("\n").filter((p) => p.trim());
@@ -145,7 +157,7 @@
         chip.textContent = LANG_NAME[settings.language];
       } else {
         const langs = new Set(fcParagraphLanguages(paragraphs));
-        chip.textContent = langs.size > 1 ? "Français et anglais" : `${LANG_NAME[[...langs][0]]} (détecté)`;
+        chip.textContent = langs.size > 1 ? fcT("edLangBoth") : fcT("edLangDetected", LANG_NAME[[...langs][0]]);
       }
     }
 
@@ -154,7 +166,7 @@
     saveTimer = setTimeout(async () => {
       try {
         await fcApi.storage.local.set({ [DRAFT_KEY]: textEl.value });
-        $("saved").textContent = "Enregistré sur cet ordinateur";
+        $("saved").textContent = fcT("edSaved");
       } catch {
         // Not saved: nothing to tell.
       }
@@ -195,22 +207,39 @@
     const button = $("copy");
     try {
       await navigator.clipboard.writeText(textEl.value);
-      button.textContent = "Copié !";
+      button.textContent = fcT("edCopied");
     } catch {
       textEl.select();
       document.execCommand("copy");
-      button.textContent = "Copié !";
+      button.textContent = fcT("edCopied");
     }
-    setTimeout(() => { button.textContent = "Copier"; }, 1500);
+    setTimeout(() => { button.textContent = fcT("edCopy"); }, 1500);
   });
 
   // Ctrl+Z brings the text back.
   $("clear").addEventListener("click", () => replaceAll(""));
 
+  // Text selected on a page and sent with "Check with FreeCorrector":
+  // it replaces the draft (Ctrl+Z brings the draft back).
+  async function takeIncoming() {
+    let incoming;
+    try {
+      incoming = (await fcApi.storage.local.get(INCOMING_KEY))[INCOMING_KEY];
+    } catch {
+      return;
+    }
+    if (typeof incoming !== "string") return;
+    await fcApi.storage.local.remove(INCOMING_KEY);
+    if (incoming.trim()) replaceAll(incoming);
+  }
+  await takeIncoming();
+
   fcApi.storage.onChanged.addListener(async (changes, area) => {
     if (area !== "local") return;
+    // Another selection sent while this page is open.
+    if (changes[INCOMING_KEY]?.newValue !== undefined) takeIncoming();
     settings = await fcGetSettings();
-    if (["dictionary", "picky", "language", "englishDialect"].some((k) => k in changes)) {
+    if (["dictionary", "disabledRules", "picky", "language", "englishDialect"].some((k) => k in changes)) {
       field.scheduleCheck(0);
       onTextChange();
     }

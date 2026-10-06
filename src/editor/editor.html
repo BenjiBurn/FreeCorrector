@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Correcteur · FreeCorrector</title>
+  <title data-i18n="edTitle">Correcteur · FreeCorrector</title>
   <link rel="stylesheet" href="../lib/common.css">
   <link rel="stylesheet" href="editor.css">
 </head>
@@ -11,8 +11,8 @@
   <header class="top">
     <img src="../icons/icon.svg" alt="" width="34" height="34">
     <div>
-      <h1>Correcteur FreeCorrector</h1>
-      <p class="muted">Écrivez ou collez votre texte, en français ou en anglais. Tout est analysé sur votre ordinateur : rien n’est envoyé sur Internet.</p>
+      <h1 data-i18n="edHeading">Correcteur FreeCorrector</h1>
+      <p class="muted" data-i18n="edIntro">Écrivez ou collez votre texte, en français ou en anglais. Tout est analysé sur votre ordinateur : rien n’est envoyé sur Internet.</p>
     </div>
   </header>
 
@@ -21,33 +21,34 @@
       <div class="toolbar">
         <span id="language" class="chip" hidden></span>
         <span class="spacer"></span>
-        <button type="button" id="fix-all" class="btn primary" disabled>Tout corriger</button>
-        <button type="button" id="copy" class="btn">Copier</button>
-        <button type="button" id="clear" class="btn">Effacer</button>
+        <button type="button" id="fix-all" class="btn primary" disabled data-i18n="edFixAll">Tout corriger</button>
+        <button type="button" id="copy" class="btn" data-i18n="edCopy">Copier</button>
+        <button type="button" id="clear" class="btn" data-i18n="edClear">Effacer</button>
       </div>
-      <textarea id="text" placeholder="Collez ou écrivez votre texte ici…" autofocus></textarea>
+      <textarea id="text" data-i18n-placeholder="edPlaceholder" placeholder="Collez ou écrivez votre texte ici…" autofocus></textarea>
       <div class="status muted">
-        <span id="stats">0 mot · 0 caractère</span>
+        <span id="stats"></span>
         <span id="saved"></span>
       </div>
     </section>
 
     <aside class="side">
       <div class="summary">
-        <div class="total"><strong id="total">0</strong> <span id="total-label">problème</span></div>
+        <div class="total"><strong id="total">0</strong> <span id="total-label"></span></div>
         <div class="counts">
-          <span><i class="dot spelling"></i><span id="n-spelling">0</span> orthographe</span>
-          <span><i class="dot grammar"></i><span id="n-grammar">0</span> grammaire</span>
-          <span><i class="dot style"></i><span id="n-style">0</span> style et typographie</span>
+          <span><i class="dot spelling"></i><span id="n-spelling">0</span> <span data-i18n="edCountSpelling">orthographe</span></span>
+          <span><i class="dot grammar"></i><span id="n-grammar">0</span> <span data-i18n="edCountGrammar">grammaire</span></span>
+          <span><i class="dot style"></i><span id="n-style">0</span> <span data-i18n="edCountStyle">style et typographie</span></span>
         </div>
       </div>
       <div id="list" class="list"></div>
     </aside>
   </main>
 
-  <footer class="credit muted">Créé par BenjiBurn · Grammalecte (français) et Harper (anglais), logiciels libres</footer>
+  <footer class="credit muted" data-i18n="edCredit">Créé par BenjiBurn · Grammalecte (français) et Harper (anglais), logiciels libres</footer>
 
   <script src="../lib/settings.js"></script>
+  <script src="../lib/i18n.js"></script>
   <script src="../engine/language.js"></script>
   <script src="../content/styles.js"></script>
   <script src="../content/field.js"></script>

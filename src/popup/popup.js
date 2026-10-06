@@ -1,4 +1,6 @@
-/* global fcApi, fcGetSettings, fcSetSettings, fcHostOf */
+/* global fcApi, fcGetSettings, fcSetSettings, fcHostOf, fcLocalizePage */
+
+fcLocalizePage();
 
 (async () => {
   const enabledBox = document.getElementById("enabled");

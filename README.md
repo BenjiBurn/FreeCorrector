@@ -15,9 +15,12 @@ ligne de vos textes sur Internet : toute l’analyse tourne dans votre navigateu
   - orange : grammaire (accords, conjugaison, homophones…)
   - bleu : typographie et style
 - Compteur de fautes en bas à droite du champ ; un clic ouvre la liste complète
-- Clic sur un mot souligné : suggestions de correction, « Ignorer », « Ajouter au dictionnaire »
-- Dictionnaire personnel, désactivation par site, mode exigeant
-- Langues : français et anglais, détectées automatiquement paragraphe par paragraphe
+- Clic sur un mot souligné : suggestions de correction, « Ignorer », « Ajouter au dictionnaire »,
+  « Désactiver cette règle » (réactivable dans les options)
+- Dictionnaire personnel (import et export en fichier texte), désactivation par site, mode exigeant
+- Clic droit sur un texte sélectionné → « Corriger avec FreeCorrector »
+- Interface en français et en anglais, selon la langue du navigateur
+- Langues : français et anglais, détectées automatiquement phrase par phrase
 - Page « Correcteur » (bouton du menu) : collez ou écrivez un texte, toutes les fautes sont
   listées avec la correction recommandée, « Tout corriger » et « Copier » en un clic
 - Aucune connexion réseau : la politique de sécurité de l’extension (`connect-src 'self'`)

@@ -1,4 +1,4 @@
-# Note for reviewers — FreeCorrector 1.1.0
+# Note for reviewers — FreeCorrector 1.2.0
 
 FreeCorrector is a free, open-source (GPL-3.0) spelling and grammar checker for French and
 English. All checking happens locally in the browser: the extension makes **no network
@@ -17,7 +17,7 @@ To rebuild from the source archive (Node.js 18 or later, no dependencies to inst
 
 ```sh
 node scripts/build.js firefox
-# -> dist/firefox/ and dist/freecorrector-1.1.0-firefox.zip
+# -> dist/firefox/ and dist/freecorrector-1.2.0-firefox.zip
 ```
 
 ## Third-party code (unmodified copies)
@@ -56,12 +56,17 @@ it:
   (CC BY-SA 4.0, https://github.com/hermitdave/FrequencyWords). They are used to rank
   suggestions.
 - `editor/`: an extension page where users can paste and check a longer text.
+- `lib/menus.js`: the right-click entry "Check with FreeCorrector" on selected text. It stores the
+  selection in `storage.local` and opens the editor page with it.
+- `_locales/`: the interface in French and English (`default_locale` is `en`).
 
 ## Permissions
 
 - `storage`: settings, personal dictionary and the editor page's draft (`storage.local` only).
 - `activeTab`: the popup reads the current tab's host name to let the user turn checking off for
   that site.
+- `contextMenus`: one entry on selected text, "Check with FreeCorrector", which opens the
+  extension's editor page with that text (new in 1.2.0).
 - The content script matches `<all_urls>` because checking must work in any text field. It reads
   text only from the field the user is typing in, and sends it to the extension's own background
   page through `runtime.sendMessage`.

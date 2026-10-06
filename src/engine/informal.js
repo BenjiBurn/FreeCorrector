@@ -22,6 +22,15 @@ self.FC_INFORMAL_WORDS = new Set([
   "arrabbiata", "limoncello", "vaporetto", "nonna", "boulangerie", "patisserie", "fromagerie", "crêperie", "brasserie",
   "taqueria", "horchata", "pozole", "izakaya", "onsen", "ryokan", "shinkansen", "onigiri", "tonkatsu", "gyoza", "bibimbap",
   "bulgogi", "hygge", "fika", "biergarten", "souvlaki", "shawarma", "biryani", "paneer",
+  "injera", "mochi", "empanada", "empanadas", "gazpacho", "gaspacho", "gyoza", "gyozas", "churros", "churro", "tamales",
+  "tamale", "arepa", "arepas", "pupusa", "pupusas", "ceviche", "pozole", "tteok", "tonkotsu", "katsu", "donburi",
+  "okonomiyaki", "takoyaki", "yakitori", "udon", "soba", "edamame", "dashi", "miso", "baklava", "falafel", "hummus",
+  "tabbouleh", "taboulé", "harissa", "tajine", "tagine", "pastilla", "mezze", "meze", "dolma", "dolmas", "börek", "pierogi",
+  "pelmeni", "borscht", "goulash", "strudel", "spätzle", "pretzel", "currywurst", "risotto", "tiramisu", "panettone",
+  "arancini", "cannoli", "gnocchi", "orzo", "polenta", "paella", "tortilla", "chorizo", "jamón", "pintxos", "sangria", "tapas",
+  "baozi", "bao", "jiaozi", "congee", "laksa", "rendang", "satay", "sambal",
+  "naan", "chapati", "dosa", "idli", "samosa", "samosas", "masala", "tikka", "korma", "vindaloo", "dal",
+  "dhal", "lassi", "chai", "acai", "açaí", "quinoa", "kombucha", "sriracha", "wasabi", "teriyaki",
   // Tech and business words French writing keeps in English ("un call", "la roadmap")
   "call", "calls", "feedback", "feedbacks", "dashboard", "dashboards", "roadmap", "roadmaps", "timeout", "timeouts",
   "build", "builds", "deploy", "release", "releases", "sprint", "sprints", "backlog", "backlogs", "standup", "stand-up",
@@ -44,6 +53,7 @@ self.FC_INFORMAL_WORDS = new Set([
   "endpoints", "payload", "payloads", "webhook", "webhooks", "middleware", "runtime", "debugger", "linter", "parser",
   "bundle", "bundler", "dataset", "datasets", "notebook", "notebooks", "prompt", "prompts", "chatbot", "chatbots",
   "localhost", "publickey", "stdout", "stderr", "stdin", "sudo", "async", "config", "configs",
+  "rebook", "rebooked", "rebooking", "preorder", "preorders", "preordered", "prebook", "prebooked", "unsubscribe", "unsubscribed", "onboarded", "upskilling", "reskilling",
 ]);
 
 // Phrases English borrows whole from French, Italian or Latin ("déjà vu",
@@ -62,6 +72,6 @@ self.FC_LOAN_PHRASES = new RegExp(`(?<![\\p{L}'’-])(?:${[
   "faux pas", "idée fixe", "mot juste", "nouvelle cuisine", "par excellence", "plat du jour", "pot-au-feu", "sang-froid",
   "soupe du jour", "tour de force", "trompe[- ]l['’]œil", "trompe[- ]l['’]oeil", "bon mot", "ménage à trois",
   "s['’]il vous plaît", "merci beaucoup", "la dolce vita", "dolce vita", "dolce far niente", "prima donna",
-  "al fresco", "panna cotta", "sotto voce", "mi casa es su casa", "hasta la vista", "hasta luego", "persona non grata",
+  "al fresco", "panna cotta", "sotto voce", "dim sum", "pad thai", "tom yum", "nasi goreng", "pastéis de nata", "pastel de nata", "pho bo", "banh mi", "tarte tatin", "mi casa es su casa", "hasta la vista", "hasta luego", "persona non grata",
   "sine qua non", "quid pro quo", "terra incognita", "magnum opus", "modus operandi", "ad nauseam", "ad infinitum",
 ].join("|")})(?![\\p{L}'’-])`, "giu");

@@ -6,7 +6,7 @@
 
 /* global fcApi, fcGetSettings */
 
-importScripts("../lib/settings.js");
+importScripts("../lib/settings.js", "../lib/i18n.js", "../lib/menus.js");
 
 const FC_OFFSCREEN_URL = "chromium/offscreen.html";
 let fcCreating = null;
@@ -40,6 +40,7 @@ async function fcForward(type, text = "") {
       englishDialect: settings.englishDialect,
       picky: settings.picky,
       dictionary: settings.dictionary,
+      disabledRules: settings.disabledRules,
     },
   });
 }

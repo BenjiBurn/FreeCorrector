@@ -62,8 +62,9 @@ function fcLooksLikeSentence(paragraph, spellChecker, lang) {
 // `existing` are the matches already found in the paragraph: we never stack
 // a sentence rule on top of another error. `prevEnd` is the last visible
 // character of the previous paragraph ("" at the start of the text).
-// `spellChecker` (French only) helps tell sentences from titles.
-function fcSentenceRules(paragraph, existing, spellChecker, prevEnd, lang = "fr") {
+// `spellChecker` (French only) helps tell sentences from titles. `nextStart` is
+// the first visible character of the next paragraph.
+function fcSentenceRules(paragraph, existing, spellChecker, prevEnd, lang = "fr", nextStart = "") {
   const out = [];
   const free = (start, end) => !existing.some((m) => m.offset < end && start < m.offset + m.length);
   // Chat style ("lol that's hilarious", "mdr t'es sérieux") is written that
@@ -71,6 +72,10 @@ function fcSentenceRules(paragraph, existing, spellChecker, prevEnd, lang = "fr"
   if (FC_CHAT_START.test(paragraph)) return out;
   const listItem =
     FC_LIST_MARKER.test(paragraph) || /[:;,]/.test(prevEnd) || /[;,:]\s*$/.test(paragraph);
+  // A sentence running over several lines (poems, wrapped text): the previous
+  // line ends on a word, or the next one starts in lowercase.
+  const continues = /[\p{L}\p{N}]/u.test(prevEnd);
+  const continued = /\p{Ll}/u.test(nextStart);
   // A signature after a closing ("Bien à vous, Claire Martin") ends without a period.
   // "Bien à vous, Claire Martin", "À bientôt, Ahmed et Leïla", "… ! Bisous",
   // and posts ending with #hashtags or @mentions.
@@ -79,7 +84,7 @@ function fcSentenceRules(paragraph, existing, spellChecker, prevEnd, lang = "fr"
     /(^|\s)[#@][\p{L}\p{N}_.-]+\s*$/u.test(paragraph);
 
   const first = FC_FIRST_WORD.exec(paragraph);
-  if (first && !listItem) {
+  if (first && !listItem && !continues) {
     const word = first[1];
     const start = first.index + first[0].length - word.length;
     // Leave alone things like "iPhone", "eBay" or "x2".
@@ -95,18 +100,19 @@ function fcSentenceRules(paragraph, existing, spellChecker, prevEnd, lang = "fr"
         offset: start,
         length: word.length,
         word,
-        message: "Majuscule en début de phrase.",
+        message: lang === "en" ? "Capital letter at the start of a sentence." : "Majuscule en début de phrase.",
         replacements: [word[0].toUpperCase() + word.slice(1)],
         ruleId: FC_RULE_CAPITAL,
         category: "typo",
         label: "Majuscule",
+        labelKey: "catCapital",
       });
     }
   }
 
   const words = paragraph.match(/[\p{L}\p{N}]+/gu) ?? [];
   const last = FC_LAST_WORD.exec(paragraph);
-  if (last && !listItem && !signature && words.length >= FC_MIN_WORDS_FOR_PUNCT &&
+  if (last && !listItem && !signature && !continued && words.length >= FC_MIN_WORDS_FOR_PUNCT &&
       fcLooksLikeSentence(paragraph, spellChecker, lang)) {
     const word = last[1];
     const start = last.index;
@@ -118,16 +124,27 @@ function fcSentenceRules(paragraph, existing, spellChecker, prevEnd, lang = "fr"
         offset: start,
         length: word.length,
         word,
-        message: "Il manque la ponctuation à la fin de la phrase.",
+        message: lang === "en" ? "The sentence ends without punctuation." : "Il manque la ponctuation à la fin de la phrase.",
         replacements: marks.map((p) => word + p),
         ruleId: FC_RULE_FINAL_PUNCT,
         category: "typo",
         label: "Ponctuation",
+        labelKey: "catPunctuation",
       });
     }
   }
   return out;
 }
 
-// Module workers have no shared global scope: expose the entry point.
+// The first visible character of the next non-empty paragraph, or "".
+function fcNextStart(paragraphs, index) {
+  for (let k = index + 1; k < paragraphs.length; k++) {
+    const start = paragraphs[k].trimStart();
+    if (start) return start[0];
+  }
+  return "";
+}
+
+// Module workers have no shared global scope: expose the entry points.
 self.fcSentenceRules = fcSentenceRules;
+self.fcNextStart = fcNextStart;

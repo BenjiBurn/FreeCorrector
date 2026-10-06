@@ -9,7 +9,7 @@
 // With the "auto" language, each paragraph goes to the engine of its own
 // language (language.js).
 
-/* global fcApi, fcParagraphLanguages, fcSplitQuotes, FC_LANGUAGES */
+/* global fcApi, fcParagraphLanguages, fcSplitQuotes, fcRuleKey, FC_LANGUAGES */
 /* exported fcEngineCheck, fcEngineWarmup */
 
 const FC_MAX_TEXT_LENGTH = 50000;
@@ -117,6 +117,13 @@ function fcFilterDictionary(matches, dictionary) {
   return matches.filter((m) => m.category !== "spelling" || !words.has(m.word.toLowerCase()));
 }
 
+// Rules the user turned off from the correction bubble.
+function fcFilterDisabledRules(matches, disabledRules) {
+  if (!disabledRules?.length) return matches;
+  const keys = new Set(disabledRules.map((r) => r.key ?? r));
+  return matches.filter((m) => !keys.has(fcRuleKey(m)));
+}
+
 // Starts and initialises the engines a check will need, so the first
 // underlines do not wait for them (loading Harper takes about a second).
 // Called when a text field gets focus, before anything is typed.
@@ -167,5 +174,5 @@ async function fcEngineCheck(text, settings) {
     // ("multiple spaces"): such a match does not quote the real text.
     .filter((m) => text.slice(m.offset, m.offset + m.length) === m.word)
     .sort((a, b) => a.offset - b.offset);
-  return { matches: fcFilterDictionary(matches, settings.dictionary) };
+  return { matches: fcFilterDisabledRules(fcFilterDictionary(matches, settings.dictionary), settings.disabledRules) };
 }

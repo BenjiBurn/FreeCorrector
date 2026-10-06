@@ -1,5 +1,5 @@
 /* exported FcFieldBase, FcTextField, FC_RULE_CAPITAL, FC_RULE_FINAL_PUNCT */
-/* global fcApi */
+/* global fcApi, fcT, fcPlural */
 
 // A checker attached to one editable element. FcFieldBase holds what every
 // kind of field shares (checking, the counter badge, keeping underlines in
@@ -140,14 +140,14 @@ class FcFieldBase {
       if (!this.matches.some((m) => m.category === "spelling" || m.category === "grammar")) {
         badge.classList.add("fc-only-minor");
       }
-      badge.title = `${n} ${n > 1 ? "problèmes détectés" : "problème détecté"} : cliquer pour voir`;
+      badge.title = fcPlural("badgeProblems", n);
     } else if (this.state === "checking") {
       badge.dataset.state = "checking";
-      badge.title = "Vérification en cours…";
+      badge.title = fcT("badgeChecking");
     } else {
       badge.dataset.state = "ok";
       badge.append(fcCheckIcon());
-      badge.title = "Aucune faute détectée";
+      badge.title = fcT("badgeOk");
     }
   }
 
@@ -457,8 +457,8 @@ class FcTextField extends FcFieldBase {
 }
 
 function fcErrorText(code) {
-  if (code === "too-long") return "texte trop long pour être vérifié.";
-  return `erreur du correcteur (${code}).`;
+  if (code === "too-long") return fcT("errTooLong");
+  return fcT("errEngine", code);
 }
 
 function fcCheckIcon() {

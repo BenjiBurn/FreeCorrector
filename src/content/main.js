@@ -65,7 +65,7 @@
       attached = new WeakMap();
     } else if (!wasActive && isActive()) {
       attach(deepActiveElement());
-    } else if (["dictionary", "picky", "language", "englishDialect"].some((k) => k in changes)) {
+    } else if (["dictionary", "disabledRules", "picky", "language", "englishDialect"].some((k) => k in changes)) {
       ui?.recheckAll();
     }
     if (ui && "sentenceRules" in changes) {

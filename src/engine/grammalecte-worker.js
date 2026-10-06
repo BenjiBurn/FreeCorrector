@@ -123,7 +123,7 @@ const COMMON_MISSPELLINGS = {
   occurence: "occurrence", résonnance: "résonance", vraissemblable: "vraisemblable", chaqu: "chaque",
   malgrés: "malgré", parmis: "parmi", hormi: "hormis", certe: "certes", jusqua: "jusqu’à", ormis: "hormis",
   onions: "oignons", onion: "oignon", qualitée: "qualité", économic: "économique", enviromnent: "environnement",
-  enviroment: "environnement", envoierai: "enverrai", envoierais: "enverrais", envoiera: "enverra", envoierons: "enverrons", envoyerai: "enverrai", envoyeras: "enverras", envoyera: "enverra", envoyerons: "enverrons", envoyerez: "enverrez", envoyeront: "enverront", envoyerais: "enverrais", envoyerait: "enverrait", apartir: "à partir",
+  enviroment: "environnement", envoierai: "enverrai", envoierais: "enverrais", envoiera: "enverra", envoierons: "enverrons", envoyerai: "enverrai", envoyeras: "enverras", envoyera: "enverra", envoyerons: "enverrons", envoyerez: "enverrez", envoyeront: "enverront", envoyerais: "enverrais", envoyerait: "enverrait", apartir: "à partir", envoiras: "enverras", envoira: "enverra", envoirai: "enverrai", envoirons: "enverrons", envoirez: "enverrez", envoiront: "enverront", prenu: "pris", prenus: "pris", acquéri: "acquis", acquéris: "acquis", "va-s-y": "vas-y", peindu: "peint", éteindu: "éteint", craindu: "craint", rejoindu: "rejoint", ouvri: "ouvert", offri: "offert", souffri: "souffert", mouru: "mort", naissu: "né", vivu: "vécu", résolvu: "résolu", qd: "quand",
   envoieront: "enverront", envoyerai: "enverrai", envoyerais: "enverrais", envoyera: "enverra", appercevoir: "apercevoir",
   // Regular endings put on irregular verbs.
   résoudu: "résolu", mouru: "mort", prendu: "pris", metté: "mis", mettu: "mis", ouvri: "ouvert", offri: "offert",
@@ -152,6 +152,23 @@ function spellSuggestions(word, before = "") {
     const forms = [fixed];
     forms.only = [fixed];
     return forms;
+  }
+  // A name typed in lowercase: "chez paul", "en espagne", "à marseille".
+  if (word === lower && word.length > 2) {
+    const capitalized = word[0].toUpperCase() + word.slice(1);
+    let known = false;
+    try {
+      // A proper noun of the dictionary, and no lowercase word only an accent away ("pres" is "près").
+      known = spellChecker.isValidToken(capitalized) && spellChecker.getMorph(capitalized).some((m) => /:M/.test(m)) &&
+        !fcSpellSuggestions(spellChecker, word, 4).some((s) => s !== capitalized && s === s.toLowerCase() && fcPlain(s) === fcPlain(word));
+    } catch {
+      known = false;
+    }
+    if (known) {
+      const forms = [capitalized];
+      forms.only = [capitalized];
+      return forms;
+    }
   }
   const phonetic = PHONETIC_VERBS.find(([re]) => re.test(lower));
   if (phonetic) {
@@ -350,6 +367,11 @@ function checkParagraph(paragraph) {
     // Holidays ("le 14 Juillet", "le 8 Mai") and titles ("Germinal") keep their capital.
     if (/maj_mois/.test(m.ruleId) && (/^(vendémiaire|brumaire|frimaire|nivôse|pluviôse|ventôse|germinal|floréal|prairial|messidor|thermidor|fructidor)$/i.test(m.word) ||
         /(^|\s)(14|1er|8|11|15)\s+$/.test(paragraph.slice(0, err.nStart)))) continue;
+    // "les cheveux coupés court", "très court": an adverb, invariable.
+    if (/^(court|ras|net|bas|haut)$/.test(m.word) && /gn_/.test(m.ruleId) &&
+        /\b(coup\p{L}*|cheveux)\s+(\p{L}+\s+){0,2}$/u.test(paragraph.slice(Math.max(0, err.nStart - 40), err.nStart))) continue;
+    // Borrowed words ("les ramen", "des tapas") keep their own plural.
+    if (self.FC_INFORMAL_WORDS.has(m.word.toLowerCase())) continue;
     // Optional commas ("passée chez toi, mais") are style, for picky mode.
     if (!picky && /virgules_manquantes/.test(m.ruleId)) continue;
     // "Elle s’est fait mal", "elle s’est fait opérer": "fait" stays invariable.
@@ -397,12 +419,13 @@ function check(text) {
   const matches = [];
   let paraStart = 0;
   let prevEnd = "";
-  for (const paragraph of text.split("\n")) {
+  const paragraphs = text.split("\n");
+  for (const [index, paragraph] of paragraphs.entries()) {
     if (paragraph.trim()) {
       // Copies: the sentence rules may adjust them, the cache must stay as is.
       const own = checkParagraph(paragraph).map((m) => ({ ...m, replacements: [...m.replacements] }));
       // Sentence rules depend on the previous paragraph (list items after ":").
-      const all = [...own, ...fcSentenceRules(paragraph, own, spellChecker, prevEnd)];
+      const all = [...own, ...fcSentenceRules(paragraph, own, spellChecker, prevEnd, "fr", fcNextStart(paragraphs, index))];
       for (const m of all.sort((a, b) => a.offset - b.offset)) {
         matches.push({ ...m, offset: paraStart + m.offset });
       }

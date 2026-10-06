@@ -11,29 +11,30 @@
     <img src="../icons/icon.svg" alt="" width="28" height="28">
     <div>
       <h1>FreeCorrector</h1>
-      <p class="muted">Français et anglais · 100 % local</p>
+      <p class="muted" data-i18n="popupTagline">Français et anglais · 100 % local</p>
     </div>
   </header>
 
   <label class="row">
-    <span>Correction activée</span>
+    <span data-i18n="popupEnabled">Correction activée</span>
     <input type="checkbox" id="enabled" class="switch">
   </label>
 
   <label class="row" id="site-row">
-    <span>Activé sur <strong id="site"></strong></span>
+    <span><span data-i18n="popupSiteEnabled">Activé sur</span> <strong id="site"></strong></span>
     <input type="checkbox" id="site-enabled" class="switch">
   </label>
 
-  <button type="button" id="open-editor" class="primary-action">Ouvrir le correcteur</button>
+  <button type="button" id="open-editor" class="primary-action" data-i18n="popupOpenEditor">Ouvrir le correcteur</button>
 
   <footer>
-    <button type="button" id="open-options" class="link">Options et dictionnaire</button>
-    <button type="button" id="open-demo" class="link" hidden>Page de test</button>
-    <p class="credit muted">Créé par BenjiBurn</p>
+    <button type="button" id="open-options" class="link" data-i18n="popupOptions">Options et dictionnaire</button>
+    <button type="button" id="open-demo" class="link" hidden data-i18n="popupDemo">Page de test</button>
+    <p class="credit muted" data-i18n="credit">Créé par BenjiBurn</p>
   </footer>
 
   <script src="../lib/settings.js"></script>
+  <script src="../lib/i18n.js"></script>
   <script src="popup.js"></script>
 </body>
 </html>

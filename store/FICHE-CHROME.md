@@ -1,4 +1,4 @@
-# Fiche Chrome Web Store — FreeCorrector 1.1.0
+# Fiche Chrome Web Store — FreeCorrector 1.2.0
 
 Chaque texte est dans un bloc : copier le contenu du bloc tel quel dans le champ indiqué.
 
@@ -14,7 +14,7 @@ Chaque texte est dans un bloc : copier le contenu du bloc tel quel dans le champ
 
 ## 1. Fichier à envoyer
 
-`dist/freecorrector-1.1.0-chromium.zip`
+`dist/freecorrector-1.2.0-chromium.zip`
 
 ## 2. Onglet « Fiche Play Store » (Store listing)
 
@@ -36,7 +36,9 @@ Vos textes restent chez vous
 L’analyse se fait entièrement dans votre navigateur. FreeCorrector n’envoie rien sur Internet, ne collecte aucune donnée et fonctionne même hors connexion. Le navigateur lui interdit d’ailleurs toute connexion réseau.
 
 Et aussi
-• Dictionnaire personnel (« Ajouter au dictionnaire »).
+• Dictionnaire personnel (« Ajouter au dictionnaire »), à importer ou exporter en fichier texte.
+• « Désactiver cette règle » pour ne plus voir un type de faute.
+• Clic droit sur un texte sélectionné → « Corriger avec FreeCorrector ».
 • Désactivation sur les sites de votre choix.
 • Mode exigeant pour la typographie fine (espaces insécables, apostrophes typographiques…).
 • Fonctionne aussi dans les zones de texte mises en forme (éditeurs riches des webmails, réseaux sociaux et outils en ligne).

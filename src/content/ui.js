@@ -1,10 +1,18 @@
 /* exported FcUi */
-/* global FC_CSS, fcApi, fcGetSettings, fcSetSettings */
+/* global FC_CSS, fcApi, fcGetSettings, fcSetSettings, fcRuleKey, fcT, fcPlural, fcUiLang */
 
 // Owns FreeCorrector's single shadow root on the page: the per-field layers,
 // the suggestion card and the error-list panel.
 
 const FC_MAX_CARD_SUGGESTIONS = 5;
+const FC_CATEGORY_KEY = { spelling: "catSpelling", grammar: "catGrammar", style: "catStyle", typo: "catTypo" };
+
+// "Orthographe", or "Grammaire · anglais" when the text is not in the interface language.
+function fcMatchLabel(match) {
+  const label = fcT(match.labelKey ?? FC_CATEGORY_KEY[match.category] ?? "catGrammar");
+  if (!match.lang || match.lang === fcUiLang) return label;
+  return `${label} · ${fcT(match.lang === "en" ? "langTagEn" : "langTagFr")}`;
+}
 
 class FcUi {
   constructor() {
@@ -127,6 +135,16 @@ class FcUi {
     for (const field of this.fields) field.removeMatches((m) => this.ignoreKey(m) === key);
   }
 
+  // "Turn off this rule": never flagged again, until turned back on in the options.
+  async disableRule(match) {
+    const key = fcRuleKey(match);
+    for (const field of this.fields) field.removeMatches((m) => fcRuleKey(m) === key);
+    const { disabledRules } = await fcGetSettings();
+    if (!disabledRules.some((r) => r.key === key)) {
+      await fcSetSettings({ disabledRules: [...disabledRules, { key, message: match.message, word: match.word }] });
+    }
+  }
+
   async addToDictionary(match) {
     const word = match.word;
     const lower = word.toLowerCase();
@@ -196,15 +214,15 @@ class FcUi {
     const n = field.matches.length;
 
     const head = fcEl("div", "fc-panel-head");
-    head.append(fcEl("span", "", n ? `${n} ${n > 1 ? "problèmes" : "problème"}` : "Aucune faute"));
+    head.append(fcEl("span", "", n ? fcPlural("problems", n) : fcT("noErrors")));
     const close = fcEl("button", "fc-close", "×");
-    close.title = "Fermer";
+    close.title = fcT("close");
     close.addEventListener("click", () => this.closePanel());
     head.append(close);
 
     const list = fcEl("div", "fc-list");
     if (!n) {
-      list.append(fcEl("div", "fc-empty-state", "Rien à corriger, bravo !"));
+      list.append(fcEl("div", "fc-empty-state", fcT("nothingToFix")));
     }
     for (const match of field.matches) {
       const item = fcEl("div", "fc-item");
@@ -212,7 +230,7 @@ class FcUi {
       list.append(item);
     }
 
-    const foot = fcEl("div", "fc-foot", "Analyse 100 % locale, aucun texte n’est envoyé.");
+    const foot = fcEl("div", "fc-foot", fcT("localFoot"));
     el.replaceChildren(head, list, foot);
     this.positionPanel(this.host.getBoundingClientRect());
   }
@@ -230,8 +248,7 @@ class FcUi {
     const frag = document.createDocumentFragment();
 
     const head = fcEl("div", "fc-head");
-    const label = match.lang === "en" ? `${match.label} · anglais` : match.label;
-    head.append(fcEl("span", `fc-dot fc-${match.category}`), fcEl("span", "", label));
+    head.append(fcEl("span", `fc-dot fc-${match.category}`), fcEl("span", "", fcMatchLabel(match)));
     frag.append(head);
 
     if (withContext) {
@@ -243,7 +260,7 @@ class FcUi {
         fcEl("mark", `fc-${match.category}`, match.word),
         after + (match.offset + match.length + 30 < field.text.length ? "…" : "")
       );
-      ctx.title = "Sélectionner dans le champ";
+      ctx.title = fcT("selectInField");
       ctx.addEventListener("click", () => field.select(match));
       frag.append(ctx);
     }
@@ -254,7 +271,7 @@ class FcUi {
     // candidates stay reachable in a quieter section below it.
     const [best, ...others] = match.replacements.slice(0, FC_MAX_CARD_SUGGESTIONS);
     const replButton = (s, className) => {
-      const btn = fcEl("button", className, s === "" ? "(supprimer)" : s);
+      const btn = fcEl("button", className, s === "" ? fcT("deleteSuggestion") : s);
       if (s === "") btn.classList.add("fc-empty");
       btn.addEventListener("click", () => {
         onDone?.();
@@ -263,7 +280,7 @@ class FcUi {
       return btn;
     };
     if (best === undefined) {
-      frag.append(fcEl("div", "fc-none", "Aucune suggestion."));
+      frag.append(fcEl("div", "fc-none", fcT("noSuggestion")));
     } else {
       const main = fcEl("div", "fc-best");
       main.append(replButton(best, "fc-repl"));
@@ -271,7 +288,7 @@ class FcUi {
     }
     if (others.length) {
       const section = fcEl("div", "fc-others");
-      section.append(fcEl("div", "fc-others-title", "Autres suggestions"));
+      section.append(fcEl("div", "fc-others-title", fcT("otherSuggestions")));
       const list = fcEl("div", "fc-repls");
       for (const s of others) list.append(replButton(s, "fc-alt"));
       section.append(list);
@@ -279,22 +296,30 @@ class FcUi {
     }
 
     const actions = fcEl("div", "fc-actions");
-    const ignore = fcEl("button", "fc-action", "Ignorer");
+    const ignore = fcEl("button", "fc-action", fcT("ignore"));
     ignore.addEventListener("click", () => {
       onDone?.();
       this.ignore(match);
     });
     actions.append(ignore);
     if (match.category === "spelling") {
-      const add = fcEl("button", "fc-action", "Ajouter au dictionnaire");
+      const add = fcEl("button", "fc-action", fcT("addToDictionary"));
       add.addEventListener("click", () => {
         onDone?.();
         this.addToDictionary(match);
       });
       actions.append(add);
+    } else {
+      const off = fcEl("button", "fc-action", fcT("turnOffRule"));
+      off.title = fcT("turnOffRuleTitle");
+      off.addEventListener("click", () => {
+        onDone?.();
+        this.disableRule(match);
+      });
+      actions.append(off);
     }
     if (match.url) {
-      const more = fcEl("a", "fc-action", "En savoir plus");
+      const more = fcEl("a", "fc-action", fcT("learnMore"));
       more.href = match.url;
       more.target = "_blank";
       more.rel = "noopener noreferrer";

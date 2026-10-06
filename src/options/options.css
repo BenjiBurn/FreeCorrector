@@ -117,6 +117,27 @@ li button:hover {
   color: var(--danger);
 }
 
+/* Turned-off rules: one long message per line, not chips. */
+ul.rules {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+ul.rules li {
+  justify-content: space-between;
+  border-radius: 10px;
+  padding: 6px 6px 6px 12px;
+  font-size: 14px;
+}
+
+.file-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 10px;
+  font-size: 14px;
+}
+
 footer {
   font-size: 12px;
   border-top: 1px solid var(--border);

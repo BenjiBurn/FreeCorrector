@@ -25,6 +25,10 @@ self.fcMaskCode = (text) => {
     // number to the sentence ("dans la v2.3.1"), never a word to correct.
     // Not texting words ("bi1", "ri1"): those are mistakes.
     .replace(/(?<![\p{L}\p{N}_])\p{L}+\p{N}[\p{L}\p{N}]*(?![\p{L}\p{N}_])/gu, (m) => (/^\p{Ll}+1$/u.test(m) ? m : m.replace(/\p{L}/gu, (c) => "0".repeat(c.length))))
+    // Numbers with a unit or a suffix: "the 60s", "4K", "120Hz", "350°F", "-5 °C"
+    .replace(/(?<![\p{L}\p{N}_])\d+(?:[.,]\d+)?(?:s|['’]s|[A-Z]{1,3}|Hz|GHz|MHz|mAh|\s?°\s?[CF])(?![\p{L}\p{N}_])/gu, (m) => m.replace(/[^\s]/g, "0"))
+    // Abbreviations with periods: "D.C.", "U.S.", "e.g."
+    .replace(/(?<![\p{L}\p{N}_.])(?:\p{L}\.){2,}/gu, (m) => " ".repeat(m.length))
     // #hashtags and #channels
     .replace(/(?<![\p{L}\p{N}_&])#[\p{L}\p{N}_-]+/gu, blank)
     // command-line options: --watch, -v, -d

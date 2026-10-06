@@ -16,7 +16,7 @@
 const FC_COLLOCATIONS = {
   fr: [
     // time
-    "ce matin $", "ce soir $", "hier soir $", "hier matin $", "demain matin $", "demain soir $",
+    "ce matin $", "ce soir $", "hier soir $", "hier matin $", "demain matin !", "demain soir $",
     "tous les matins", "toute la journée", "toute la soirée", "toute la nuit",
     "la semaine prochaine", "la semaine dernière", "le mois prochain", "le mois dernier", "l’année prochaine",
     "l’année dernière", "fois par semaine", "fois par jour", "fois par mois", "fois par an",
@@ -29,7 +29,7 @@ const FC_COLLOCATIONS = {
     "dent de lait", "dents de lait", "salle de bain", "salle de bains", "salle à manger", "salle de classe",
     "salle d’attente", "salle de sport", "salle de réunion", "chambre à coucher", "machine à laver", "fer à repasser",
     "brosse à dents", "sac à dos", "sac à main", "boîte aux lettres", "boîte de nuit", "lettre de motivation",
-    "arrêt de bus", "carte bancaire $", "carte de crédit", "carte d’identité", "code postal $", "numéro de téléphone",
+    "arrêt de bus", "carte bancaire !", "carte de crédit", "carte d’identité", "code postal $", "numéro de téléphone",
     "coup de fil", "coup de main", "coup de soleil", "coup d’œil", "coup de pouce", "petit déjeuner", "pause déjeuner",
     "liste des courses", "fai* les courses", "fai* des courses", "fai* la vaisselle", "fai* le ménage",
     "fai* une promenade", "fai* la queue", "fai* du sport", "fai* attention",
@@ -71,6 +71,18 @@ const FC_COLLOCATIONS = {
     "un mot de passe", "le mot de passe", "votre mot de passe", "ton mot de passe", "mon mot de passe",
     "le bulletin de notes", "une bonne note", "une mauvaise note", "pren* des notes", "le tableau noir",
     "le cartable", "la trousse", "le cahier de texte", "les devoirs du soir",
+    // round 4: everyday nouns a slip turns into another word
+    "une pincée de sel", "pincée de sel", "sucre en poudre", "farine tamisée !", "préchauf* le four", "dans la salle",
+    "la salle du", "rat* le bus", "rat* le train", "rat* mon train", "rat* mon bus", "code de l’interphone", "le code wifi",
+    "porte du garage", "la porte du", "ma voiture est", "ta voiture est", "sa voiture est", "centimètres de neige",
+    "envoy* le fichier", "envoy* un message", "envoy* le lien", "le livre que", "toute la classe", "en pièce jointe",
+    "trouverez la facture", "votre facture", "un stage de", "un stage dans", "mon salaire a", "le salaire de",
+    "meilleur joueur du", "meilleur joueur de", "la meilleure saison", "meilleure saison du", "quel temps de",
+    "prends une chaise", "voir le film", "à votre équipe", "pour ma mère", "pour mon père", "avec mon frère",
+    "avec ma sœur", "une petite fête", "le ballon de", "perdu le ballon", "le match de", "du salon", "le tapis du salon",
+    "étal* la pâte", "la pâte sur", "coup de génie", "coup de théâtre", "fin du mois", "début du mois", "fin de la semaine",
+    "ces derniers temps", "ces derniers jours", "par la fenêtre", "un cadeau pour", "rendez-vous chez", "en retard de",
+    "au bout du fil", "de la pluie", "sous la neige", "le ciel est",
   ],
   en: [
     "main entrance !", "main course", "main road", "main street", "main reason", "main idea", "hard work $",
@@ -118,6 +130,19 @@ const FC_COLLOCATIONS = {
     "dead battery", "flat tire", "the speed limit", "a parking ticket", "a speeding ticket", "seat belt",
     "the traffic light", "the green light", "the red light", "a fever $", "a headache $",
     "a sore throat", "a stomachache", "a doctor's appointment", "the dentist", "the pharmacy",
+    // round 4: small words a slip turns into another word
+    "thank you for", "thanks for the", "thanks for your", "working with you", "work with you", "speak with you",
+    "one more time", "every time i", "every time we", "every time you", "next week !", "last week !", "this week $",
+    "table for two", "table for four", "in our next", "our next meeting", "delayed by #", "at # pm",
+    "at # am", "lands at #", "arrives at #", "on monday !", "on tuesday !", "on wednesday !", "on thursday !", "on friday !",
+    "on saturday !", "on sunday !", "without her !", "had to come", "we had to", "so we had to", "where we can",
+    "new pair of", "line of code", "meant by that", "meant by this", "door for me",
+    "for me please", "went straight to", "went to bed", "go to bed", "who came to", "came to the party",
+    "but i'm not sure", "but i'm not", "works as a", "worked as a", "work as a", "working as a",
+    "when you get a chance", "if you get a chance", "within three business days", "three business days",
+    "packed lunch !", "for lunch $", "his lunch to", "her lunch to", "a chocolate mousse", "chocolate mousse !",
+    "fresh bread !", "loaf of bread", "slice of bread",
+    "reached the peak", "the mountain peak", "at its peak", "be discreet !", "very discreet !",
   ],
 };
 
@@ -127,7 +152,7 @@ const FC_COLLOC_SMALL = {
   en: /^(a|an|the|of|off|or|on|in|at|to|too|two|for|from|form|by|be|is|it|its|as|so|no|not|now|know|and|any|all|our|are|was|has|had|his|her|him|he|she|we|me|my|us|you|your|they|them|then|than|that|this|there|their|these|those|with|will|well|were|where|when|what|who|how|out|up|but|can|may|though|through|thorough|threw|i|do|did|does|one|won|own|new|knew)$/,
 };
 const FC_COLLOC_PAIRS = new Set([
-  "of|off", "from|form", "know|now", "though|through", "through|thorough", "though|thorough", "to|too", "were|where",
+  "of|off", "from|form", "for|fir", "for|fur", "for|fort", "with|wit", "on|ion", "her|hey", "but|bur", "but|bit", "at|art", "as|ad", "our|out", "by|buy", "by|my", "had|hat", "pour|pou", "avec|avez", "know|now", "though|through", "through|thorough", "though|thorough", "to|too", "were|where",
   "then|than", "a|à", "ou|où", "et|est", "son|sont", "on|ont", "ce|se", "ces|ses", "sa|ça", "la|là",
   "dont|donc", "peu|peut", "sur|sûr", "mais|mes", "du|dû",
 ].flatMap((p) => [p, p.split("|").reverse().join("|")]));

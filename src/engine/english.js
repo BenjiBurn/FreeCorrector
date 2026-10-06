@@ -61,6 +61,10 @@ const neighbourCache = new Map();
 
 // Advice most people do not want by default: sentence length, Oxford comma…
 const PICKY_KINDS = new Set(["Readability", "Style", "Enhancement"]);
+const EN_IRREGULAR_PAST = /^(hid|ran|ate|went|came|saw|took|gave|made|told|wrote|met|chose|brought|thought|found|left|spoke|drove|knew|forgot|sat|stood|paid|sold|taught|caught|began|won|lost|spent|heard|felt|kept|slept|fell|flew|grew|drew|broke|woke|wore|sang|swam|did|had|got|put|cut|let|set|read|hit|hurt|bought|sent|built|meant|held|led|fed|bit|shook|stole|rode|rose|hung|lit|dug|threw|blew|tore|swore|froze|struck|fought|sought|bent|lent|dealt|\p{L}+ed)$/iu;
+// A known word behind a prefix: "midafternoon", "nonprofit", "multiyear".
+// Not "re", "inter", "un", "co"…: "interresting", "recommand" are typos.
+const EN_PREFIXED = /^(non|over|under|sub|super|multi|self|anti|counter|mid|post|semi|micro|mini)-?(\p{L}{4,})$/iu;
 const TYPOGRAPHY_ONLY = (word, replacements) => {
   const plain = (s) => s.replace(/…/g, "...").replace(/[‘’]/g, "'").replace(/[“”]/g, "\"").replace(/[–—]/g, "-");
   return replacements.some((r) => plain(r) === plain(word));
@@ -370,6 +374,19 @@ async function lintParagraph(paragraph) {
       // "cancelled", "colour", "organise" are right in British English (and
       // "canceled" in American): only picky mode asks for the chosen dialect.
       if (!picky && (kind === "Spelling" || kind === "Typo") && replacements.some((r) => isDialectVariant(word, r))) continue;
+      // "she hid", "they ran": a past form has no third-person -s.
+      if (kind === "Agreement" && EN_IRREGULAR_PAST.test(word) && replacements.every((r) => /s$/i.test(r))) continue;
+      // "1. a valid passport": a list item, not a sentence.
+      if (kind === "Capitalization" && /(^|\n)\s*(\d+[.)]|[-*•–])\s*$/.test(paragraph.slice(0, offset))) continue;
+      // "non-native", "midafternoon", "rebooking": correct hyphenated or prefixed words.
+      if (!picky && (kind === "Spelling" || kind === "Typo") && (
+        // ("carefull" -> "care full" is a typo: only a hyphen dropped counts.)
+        word.includes("-") && replacements.length && replacements.every((r) => r.replace(/-/g, "").toLowerCase() === word.replace(/-/g, "").toLowerCase()) ||
+        EN_PREFIXED.test(word) && frequency(word.toLowerCase().replace(EN_PREFIXED, "$2")) >= 3)) continue;
+      // "Reply YES to confirm or NO to cancel": words in capitals are on purpose.
+      if (/^[A-Z]{2,}\s/.test(word) || /^[A-Z]{2,}$/.test(word) && kind !== "Spelling" && kind !== "Typo") continue;
+      // A span starting at a space, after an emoji: nothing to fix there.
+      if (/^\s/.test(word) && /[\p{Extended_Pictographic}‍️]\s*$/u.test(paragraph.slice(0, offset + 1))) continue;
       // "He had had enough", "I think that that idea": right as written.
       if (kind === "Repetition" && /^(had|that)\s+(had|that)$/i.test(word)) continue;
       // "Notwithstanding the foregoing": a preposition, not a discourse marker wanting a comma.
@@ -382,7 +399,7 @@ async function lintParagraph(paragraph) {
       // Guesses with nothing to offer ("You may be missing a preposition").
       if (kind === "Miscellaneous" && !replacements.length) continue;
       // Never lowercase the first word of a sentence ("Who's coming?").
-      const sentenceStart = /(^|[.!?…]\s+)$/.test(paragraph.slice(0, offset));
+      const sentenceStart = /(^|[.!?…]\s+)["“‘'(]?$/.test(paragraph.slice(0, offset));
       if (kind === "Capitalization" && sentenceStart && replacements[0] === word.toLowerCase()) continue;
       out.push({
         offset,
@@ -447,7 +464,8 @@ export async function check(text) {
   const matches = [];
   let paraStart = 0;
   let prevEnd = "";
-  for (const paragraph of text.split("\n")) {
+  const paragraphs = text.split("\n");
+  for (const [index, paragraph] of paragraphs.entries()) {
     if (paragraph.trim()) {
       // Usually only one paragraph changed since the last check.
       let cached = paragraphCache.get(paragraph);
@@ -476,8 +494,12 @@ export async function check(text) {
         paragraphCache.set(paragraph, cached);
       }
       // Copies: the sentence rules may adjust them, the cache must stay as is.
-      const own = cached.map((m) => ({ ...m, replacements: [...m.replacements] }));
-      const all = [...own, ...fcSentenceRules(paragraph, own, null, prevEnd, "en")];
+      // A line continuing the previous one ("…in a tin box / and read them"): no capital to ask for.
+      const continues = /[\p{L}\p{N},;:]/u.test(prevEnd);
+      const own = cached
+        .filter((m) => !(continues && m.ruleId === "EN_Capitalization" && !paragraph.slice(0, m.offset).trim()))
+        .map((m) => ({ ...m, replacements: [...m.replacements] }));
+      const all = [...own, ...fcSentenceRules(paragraph, own, null, prevEnd, "en", fcNextStart(paragraphs, index))];
       for (const m of all.sort((a, b) => a.offset - b.offset)) matches.push({ ...m, offset: paraStart + m.offset });
       prevEnd = paragraph.trimEnd().slice(-1);
     }
