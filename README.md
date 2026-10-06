@@ -7,6 +7,7 @@ font les correcteurs du commerce, mais sans abonnement, sans compte et sans envo
 ligne de vos textes sur Internet : toute l’analyse tourne dans votre navigateur.
 
 **[➜ Installer FreeCorrector pour Firefox](https://addons.mozilla.org/fr/firefox/addon/freecorrector/)** (addons.mozilla.org)
+· Site officiel : **[lapigeonnerie.fr/freecorrector](https://lapigeonnerie.fr/freecorrector)**
 
 - Soulignement des fautes dans les `<textarea>`, les champs texte et les éditeurs riches
   (`contenteditable` : Gmail, Outlook, Discord, Notion…)

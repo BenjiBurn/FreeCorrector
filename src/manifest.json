@@ -3,7 +3,7 @@
   "name": "FreeCorrector",
   "version": "1.1.0",
   "author": "BenjiBurn",
-  "homepage_url": "https://github.com/BenjiBurn/FreeCorrector",
+  "homepage_url": "https://lapigeonnerie.fr/freecorrector",
   "description": "Correcteur orthographique et grammatical gratuit pour le français et l’anglais, 100 % local, propulsé par Grammalecte et Harper.",
   "icons": {
     "48": "icons/icon.svg",
