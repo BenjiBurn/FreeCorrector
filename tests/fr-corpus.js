@@ -157,4 +157,12 @@ module.exports = [
   ["Les fleurs que j’ai cueillies sont belles.", null, null],
   ["Quoi qu’il arrive, je serai là.", null, null],
   ["Merci pour ton message, à bientôt !", null, null],
+  // Reported by a user (2026-10-06).
+  ["C'ait deux la bombe.", "C'ait", "C'est"],
+  ["C'est de la bombe, c'ait génial.", "c'ait", "c'est"],
+  ["Il s'ait trompé de route.", "s'ait", "s'est"],
+  ["C'est deux la bombe.", "deux", "de"],
+  ["Qu'il ait raison ou pas, on verra.", null, null],
+  ["Nous étions deux la semaine dernière.", null, null],
+  ["Il en a pris deux la semaine dernière.", null, null],
 ];

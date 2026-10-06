@@ -375,6 +375,24 @@ function fcCustomRules(paragraph, spellChecker, existing) {
       }
     }
 
+    // "C’ait la bombe", "il s’ait trompé" -> c’est, s’est: forms that sound
+    // like "est" are never elided after "c’" or "s’".
+    if (/^(c’|s’)$/.test(t.lower) && next && /^(ait|ai|aie|aies|ais|es|et|é|e|haie|hait)$/.test(next.lower)) {
+      const apostrophe = t.text.slice(-1);
+      const fix = `${t.lower[0]}${apostrophe}est`;
+      add({ start: t.start, end: next.end, text: t.text + next.text }, fix,
+        `Confusion probable : « ${t.lower[0]}’est » (verbe être).`, true);
+    }
+
+    // "C’est deux la bombe" -> de: a number is never followed by a singular
+    // determiner ("nous étions deux la semaine dernière" excepted).
+    if (t.lower === "deux" && next && /^(la|le|l’|un|une|mon|ma|ton|ta|son|sa|ce|cet|cette|notre|votre|leur)$/.test(next.lower) &&
+        !/^(étions|sommes|était|étaient|sont|serons|seront|êtes|étiez|étais|à|les|tous|toutes|nous|vous|eux|elles|ils|mes|tes|ses|ces|nos|vos|leurs|[,;:])$/.test(prevLower) &&
+        // "il en a pris deux la semaine dernière": a time phrase follows.
+        !(next2 && /^(semaine|veille|nuit|matinée|journée|soirée|année|mois|matin|soir|jour|week-end|fois|dernière|dernier|prochaine|prochain|même|suivante|suivant|précédente|précédent)$/.test(next2.lower))) {
+      add(t, "de", "Confusion probable : « de » (préposition) plutôt que « deux » (nombre).");
+    }
+
     // "Jaime ce film" -> J’aime (at the start, followed by a determiner)
     if (t.lower === "jaime" && (!prev || FC_CLAUSE_START.has(prevLower)) && next &&
         /^(le|la|les|l’|ce|cet|cette|ces|mon|ma|mes|ton|ta|tes|son|sa|ses|bien|beaucoup|trop|pas|vraiment|tellement|ça|te|vous|un|une|quand|que|qu’)$/.test(next.lower)) {
