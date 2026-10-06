@@ -8,7 +8,7 @@ module.exports = [
   ["This is the best restaraunt in town.", "restaraunt", "restaurant"],
   ["Their are many reasons to stay.", "Their", "There"],
   ["He is more taller than me.", "more taller", "taller"],
-  ["Could you borrow me your pen?", null, null],
+  ["Could you borrow me your pen?", "borrow", "lend"],
   ["I have went there before.", "went", "gone"],
   ["Its been a long day.", "Its", "It's"],
   ["The meeting is schedualed for Monday.", "schedualed", "scheduled"],

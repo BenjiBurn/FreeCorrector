@@ -100,7 +100,7 @@ module.exports = [
   ["Je savait que tu viendrais.", "savait", "savais"],
   // je serai / serais (future/conditional)
   ["Si j’avais su, je serai venu.", "serai", "serais"],
-  ["Demain, je serais là à 8 h.", null, null],
+  ["Demain, je serais là à 8 h.", "serais", "serai"],
   // j'ai / j'ais / g
   ["J’ais faim.", "J’ais", "J’ai"],
   ["G faim.", "G", "J’ai"],

@@ -147,8 +147,9 @@ async function fcEngineCheck(text, settings) {
     const { lang: own, quotes } = split[i];
     if (!quotes.length) return own === lang ? p : blank(p);
     let out = own === lang ? p : blank(p);
-    for (const [a, b, quoteLang] of quotes) {
-      const inner = quoteLang === lang ? ` ${p.slice(a + 1, b - 1)} ` : blank(p.slice(a, b));
+    for (const [a, b, quoteLang, marks] of quotes) {
+      const kept = marks ? ` ${p.slice(a + 1, b - 1)} ` : p.slice(a, b);
+      const inner = quoteLang === lang ? kept : blank(p.slice(a, b));
       out = out.slice(0, a) + inner + out.slice(b);
     }
     return out;

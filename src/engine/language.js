@@ -61,17 +61,29 @@ const FC_QUOTE = /“([^”]{8,})”|«([^»]{8,})»|"([^"\n]{8,})"/gu;
 // nous ont écrit : "We are very excited to start." » Returns the paragraph's
 // own language and the quotes (quote marks included) written in the other
 // one, as [start, end, lang]; no quotes when there is nothing to split.
+// Also whole sentences: "Le train est en retard. Nice to meet you." Spans are
+// [start, end, lang, marks]: `marks` when the span starts and ends with quote
+// marks (they belong to neither language).
 function fcSplitQuotes(paragraph, paragraphLang) {
-  const quotes = [];
+  const spans = [];
   for (const m of paragraph.matchAll(FC_QUOTE)) {
     const lang = fcDecidedLanguage(m[1] ?? m[2] ?? m[3]);
-    if (lang) quotes.push([m.index, m.index + m[0].length, lang]);
+    if (lang) spans.push([m.index, m.index + m[0].length, lang, true]);
   }
-  if (!quotes.length) return { lang: paragraphLang, quotes: [] };
+  const inSpan = (a, b) => spans.some(([x, y]) => a < y && x < b);
+  // Sentences of at least four words, outside quotes.
+  for (const m of paragraph.matchAll(/[^.!?…]+[.!?…]*/g)) {
+    const start = m.index + (m[0].length - m[0].trimStart().length);
+    const end = m.index + m[0].trimEnd().length;
+    if (end - start < 12 || inSpan(start, end) || (m[0].match(/\p{L}+/gu) ?? []).length < 4) continue;
+    const lang = fcDecidedLanguage(m[0]);
+    if (lang) spans.push([start, end, lang, false]);
+  }
+  if (!spans.length) return { lang: paragraphLang, quotes: [] };
   let rest = paragraph;
-  for (const [a, b] of quotes) rest = rest.slice(0, a) + " ".repeat(b - a) + rest.slice(b);
-  const own = fcDecidedLanguage(rest) ?? (rest.trim() ? paragraphLang : quotes[0][2]);
-  return { lang: own, quotes: quotes.filter(([, , lang]) => lang !== own) };
+  for (const [a, b] of spans) rest = rest.slice(0, a) + " ".repeat(b - a) + rest.slice(b);
+  const own = fcDecidedLanguage(rest) ?? (rest.trim() ? paragraphLang : spans[0][2]);
+  return { lang: own, quotes: spans.filter(([, , lang]) => lang !== own).sort((x, y) => x[0] - y[0]) };
 }
 
 // One language per paragraph ("fr" or "en"). Paragraphs too short to tell

@@ -30,6 +30,7 @@ importScripts(
   "confusions.js",
   "rules.js",
   "informal.js",
+  "mask.js",
   "sentence-rules.js"
 );
 
@@ -120,6 +121,9 @@ const COMMON_MISSPELLINGS = {
   traditionel: "traditionnel", exceptionel: "exceptionnel", rationel: "rationnel", fonctionel: "fonctionnel",
   occurence: "occurrence", résonnance: "résonance", vraissemblable: "vraisemblable", chaqu: "chaque",
   malgrés: "malgré", parmis: "parmi", hormi: "hormis", certe: "certes", jusqua: "jusqu’à", ormis: "hormis",
+  onions: "oignons", onion: "oignon", qualitée: "qualité", économic: "économique", enviromnent: "environnement",
+  enviroment: "environnement", envoierai: "enverrai", envoierais: "enverrais", envoiera: "enverra", envoierons: "enverrons",
+  envoieront: "enverront", envoyerai: "enverrai", envoyerais: "enverrais", envoyera: "enverra", appercevoir: "apercevoir",
   // Regular endings put on irregular verbs.
   résoudu: "résolu", mouru: "mort", prendu: "pris", metté: "mis", mettu: "mis", ouvri: "ouvert", offri: "offert",
   souffri: "souffert", couvri: "couvert", découvri: "découvert", craindu: "craint", peindu: "peint", éteindu: "éteint",
@@ -367,7 +371,8 @@ function check(text) {
   // Tokens over 40 characters are hashes, keys or encoded data, never words:
   // blanked (same length, so offsets hold) instead of costing seconds.
   const original = text;
-  text = text.replace(/\S{41,}/g, (s) => " ".repeat(s.length));
+  // Code (`npm install`, config.json, fetchUser) is not French: blanked too.
+  text = self.fcMaskCode(text).replace(/\S{41,}/g, (s) => " ".repeat(s.length));
   const matches = [];
   let paraStart = 0;
   let prevEnd = "";

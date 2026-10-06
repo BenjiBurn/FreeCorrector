@@ -15,4 +15,7 @@ self.FC_INFORMAL_WORDS = new Set([
   "lol", "omg", "btw", "idk", "tbh", "lmao", "brb", "asap", "fyi", "thx", "pls", "plz", "okay", "imo",
   "imho", "afaik", "irl", "dm", "dms", "gonna", "wanna", "gotta", "kinda", "sorta", "yeah", "yep",
   "nope", "haha", "hahaha", "hehe", "xoxo", "bday", "congrats", "convo", "info", "app", "apps", "emoji",
+  // Loanwords common in English cooking and daily life
+  "al", "dente", "pancetta", "guanciale", "prosciutto", "bruschetta", "focaccia", "ciabatta", "gnocchi", "burrata",
+  "chorizo", "tapas", "matcha", "boba", "ramen", "pho", "banh", "kimchi", "tteokbokki", "shakshuka", "tzatziki",
 ]);

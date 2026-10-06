@@ -70,7 +70,17 @@ async function score(call, corpus, verbose) {
     }
 
     stats.errors++;
-    const at = text.indexOf(wrong);
+    // The wrong text as a whole word ("a" in "à demain", not in "demain").
+    let at = -1;
+    for (let k = text.indexOf(wrong); k >= 0; k = text.indexOf(wrong, k + 1)) {
+      const before = text[k - 1] ?? " ";
+      const after = text[k + wrong.length] ?? " ";
+      if (!/[\p{L}\p{N}]/u.test(before) && !/[\p{L}\p{N}]/u.test(after)) {
+        at = k;
+        break;
+      }
+    }
+    if (at < 0) at = text.indexOf(wrong);
     const hit =
       matches.find((m) => norm(m.word) === norm(wrong)) ??
       matches.find((m) => m.offset < at + wrong.length && at < m.offset + m.length);
@@ -134,7 +144,7 @@ if (require.main === module) {
     if (only !== "en") {
       const call = loadWorker("engine/grammalecte-worker.js");
       call("init", { options: { apos: false, num: false } });
-      for (const corpus of ["./fr-corpus.js", "./fr-holdout.js", "./fr-blind.js", "./fr-blind2.js", "./fr-blind3.js", "./fr-blind4.js", "./fr-dumb.js", "./fr-dumb2.js", "./fr-blind5.js", "./fr-blind-agent-a.js", "./fr-blind-agent-b.js", "./clean-messages.js", "./clean-agent-d.js"]) {
+      for (const corpus of ["./fr-corpus.js", "./fr-holdout.js", "./fr-blind.js", "./fr-blind2.js", "./fr-blind3.js", "./fr-blind4.js", "./fr-dumb.js", "./fr-dumb2.js", "./fr-blind5.js", "./fr-blind-agent-a.js", "./fr-blind-agent-b.js", "./fr-blind-agent-e.js", "./clean-messages.js", "./clean-agent-d.js", "./clean-agent-g.js"]) {
         if (!fs.existsSync(path.join(__dirname, corpus))) continue;
         console.log(`\n=== ${corpus}`);
         await score(call, require(corpus).fr ?? require(corpus), verbose);
@@ -142,7 +152,7 @@ if (require.main === module) {
     }
     if (only !== "fr") {
       const call = await loadEnglish();
-      for (const corpus of ["./en-corpus.js", "./en-holdout.js", "./en-blind2.js", "./en-blind3.js", "./en-blind4.js", "./en-dumb.js", "./en-dumb2.js", "./en-blind-agent-c.js", "./clean-messages.js", "./clean-agent-d.js"]) {
+      for (const corpus of ["./en-corpus.js", "./en-holdout.js", "./en-blind2.js", "./en-blind3.js", "./en-blind4.js", "./en-dumb.js", "./en-dumb2.js", "./en-blind-agent-c.js", "./en-blind-agent-f.js", "./clean-messages.js", "./clean-agent-d.js", "./clean-agent-g.js"]) {
         console.log(`\n=== ${corpus}`);
         await score(call, require(corpus).en ?? require(corpus), verbose);
       }

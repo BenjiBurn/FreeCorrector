@@ -9,6 +9,7 @@ import { LocalLinter, Dialect, SuggestionKind } from "../vendor/harper/index.js"
 import { slimBinary } from "../vendor/harper/slimBinary.js";
 import { englishRules, contractionFor } from "./english-rules.js";
 import "./informal.js";
+import "./mask.js";
 import "./sentence-rules.js";
 
 const { fcSentenceRules } = self;
@@ -354,6 +355,13 @@ async function lintParagraph(paragraph) {
           /^\s*([,.;:!?)]|$|(tomorrow|today|tonight|now|yesterday|soon|again|later|and|but|with|for|at|by|alone|together|too|early|late|once|first|last|before|after|on|in|until|till|anymore|already|yet)\b)/i.test(paragraph.slice(end))) continue;
       // Closed compounds ("roadmap", "website"): only picky mode asks to split them.
       if (!picky && kind === "WordChoice" && replacements.length && replacements.every((r) => r.includes(" ") && r.replace(/[\s-]/g, "") === word)) continue;
+      // Debatable or harmful guesses, kept for picky mode: "whom" -> "who",
+      // joining "the sun rise", "day one" -> "Day One", "Mia" -> "MIA",
+      // "eagerness to learn" -> "learn to".
+      if (!picky && /^whom$/i.test(word)) continue;
+      if (!picky && kind === "WordChoice" && replacements.length && replacements.every((r) => r === word.replace(/\s+/g, "") || r.startsWith(`${word} `))) continue;
+      if (!picky && kind === "Capitalization" && replacements.every((r) => r.length > 1 && r === r.toUpperCase() && r !== word)) continue;
+      if (!picky && kind === "Capitalization" && /^(day|week|year|chapter|step|phase|round|level|page|part|act|scene|stage) (one|two|three|four|five|\d+)$/i.test(word)) continue;
       // "Mr. and Mrs.": an abbreviation's period does not end the sentence.
       if (kind === "Capitalization" && /\b(Mr|Mrs|Ms|Dr|Prof|St|vs|etc|e\.g|i\.e|approx|no|Jr|Sr)\.\s*$/i.test(paragraph.slice(0, offset))) continue;
       // "lol", "gonna", "congrats": informal on purpose.
@@ -422,7 +430,8 @@ export async function check(text) {
   // Tokens over 40 characters are hashes, keys or encoded data, never words:
   // blanked (same length, so offsets hold) instead of costing seconds.
   const original = text;
-  text = text.replace(/\S{41,}/g, (s) => " ".repeat(s.length));
+  // Code (`npm install`, config.json, fetchUser) is not English prose: blanked too.
+  text = self.fcMaskCode(text).replace(/\S{41,}/g, (s) => " ".repeat(s.length));
   const matches = [];
   let paraStart = 0;
   let prevEnd = "";

@@ -82,11 +82,33 @@ const FC_KNOW_VERBS = /^(sai[st]|savez|savons|savent|savoir|su|demande[sz]?|dema
 const FC_TIME_PLACE_NOUNS = /^(jour|moment|endroit|ville|pays|année|époque|instant|soir|matin|nuit|semaine|mois|heure|lieu|pièce|maison|rue|quartier|période|temps|là)$/;
 const FC_DAYS = /^(lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche|demain|aujourd’hui|hier|matin|soir|midi|janvier|février|mars|avril|mai|juin|juillet|août|septembre|octobre|novembre|décembre)$/;
 
+// Two words that make a hyphenated compound. `needDet`: only after these words
+// ("ma belle mère" is the mother-in-law, "une belle mère" may not be).
+const FC_HYPHEN_COMPOUNDS = {
+  "belle mère": { fix: "belle-mère", needDet: /^(ma|ta|sa|la|notre|votre|leur|ma|future)$/ },
+  "beau père": { fix: "beau-père", needDet: /^(mon|ton|son|le|notre|votre|leur|futur)$/ },
+  "belle sœur": { fix: "belle-sœur", needDet: /^(ma|ta|sa|la|notre|votre|leur)$/ },
+  "beau frère": { fix: "beau-frère", needDet: /^(mon|ton|son|le|notre|votre|leur)$/ },
+  "belle fille": { fix: "belle-fille", needDet: /^(ma|ta|sa|la|notre|votre|leur)$/ },
+  "beau fils": { fix: "beau-fils", needDet: /^(mon|ton|son|le|notre|votre|leur)$/ },
+  "grand mère": { fix: "grand-mère" }, "grand père": { fix: "grand-père" }, "grands parents": { fix: "grands-parents" },
+  "grand mères": { fix: "grands-mères" }, "arrière grand": { fix: "arrière-grand" }, "petit fils": { fix: "petit-fils", needDet: /^(mon|ton|son|le|notre|votre|leur)$/ },
+  "petits enfants": { fix: "petits-enfants", needDet: /^(mes|tes|ses|nos|vos|leurs)$/ },
+  "week end": { fix: "week-end" }, "week ends": { fix: "week-ends" }, "là bas": { fix: "là-bas" }, "là haut": { fix: "là-haut" },
+  "au dessus": { fix: "au-dessus" }, "au dessous": { fix: "au-dessous" }, "au delà": { fix: "au-delà" },
+  "c’est à": { fix: "c’est-à", needDet: /^$/ }, "vis à": { fix: "vis-à" }, "après midi": { fix: "après-midi" },
+  "rendez vous": { fix: "rendez-vous" }, "porte monnaie": { fix: "porte-monnaie" }, "arc en": { fix: "arc-en" },
+  "celui ci": { fix: "celui-ci" }, "celle ci": { fix: "celle-ci" }, "ceux ci": { fix: "ceux-ci" }, "celui là": { fix: "celui-là" },
+  "celle là": { fix: "celle-là" }, "ceux là": { fix: "ceux-là" }, "peut être": { fix: "peut-être", needDet: /^(,|\.|$|oui|non|mais|et|ou|alors|donc|bien|est|sont|était|a|ont|avait)$/ },
+  "t il": { fix: "t-il" }, "quatre vingt": { fix: "quatre-vingt" }, "quatre vingts": { fix: "quatre-vingts" }, "dix huit": { fix: "dix-huit" },
+  "dix sept": { fix: "dix-sept" }, "dix neuf": { fix: "dix-neuf" }, "vingt deux": { fix: "vingt-deux" }, "trente trois": { fix: "trente-trois" },
+};
+
 // Texting abbreviations: offered as a style suggestion (blue), not an error.
 const FC_ABBREVIATIONS = {
   pk: "pourquoi", pq: "pourquoi", bcp: "beaucoup", dsl: "désolé", slt: "salut", bjr: "bonjour", bsr: "bonsoir",
   mtn: "maintenant", qqn: "quelqu’un", qqch: "quelque chose", pcq: "parce que", tjs: "toujours",
-  jsp: "je ne sais pas", cad: "c’est-à-dire",
+  jsp: "je ne sais pas", cad: "c’est-à-dire", pr: "pour", mrc: "merci", tt: "tout", ns: "nous",
 };
 
 // Words written as they sound (texting), with their standard spelling.
@@ -102,7 +124,7 @@ const FC_SMS_WORDS = {
   jamai: "jamais", aujourdhui: "aujourd’hui", parceque: "parce que", jé: "j’ai", tro: "trop", oci: "aussi",
   ossi: "aussi", mé: "mais", tt: "tout", ct: "c’était", cétait: "c’était", cété: "c’était", jétais: "j’étais",
   jetais: "j’étais", jaurais: "j’aurais", javais: "j’avais", jarrête: "j’arrête", tinquiète: "t’inquiète",
-  tinquietes: "t’inquiète", jen: "j’en", jy: "j’y", koman: "comment", komen: "comment", kom: "comme", kelle: "quelle",
+  tinquietes: "t’inquiète", bi1: "bien", "2main": "demain", "2m1": "demain", koi29: "quoi de neuf", jen: "j’en", jy: "j’y", koman: "comment", komen: "comment", kom: "comme", kelle: "quelle",
 };
 
 const FC_CA_VERBS = /^(va|vas|ira|irait|allait|suffit|suffira|dépend|arrive|change|commence|existe|sert|coûte|vaut|devient|reste|semble|ressemble|peut|pourrait|doit|devrait|fait|faisait|fera|ferait|marche|marchait|roule|craint|compte|presse|passe|tombe|tourne|plaît|plait|m’|t’|s’|n’|ne|me|te|nous|vous|lui|leur|y|en)$/;
@@ -253,7 +275,7 @@ function fcCustomRules(paragraph, spellChecker, existing) {
     }
 
     // "Vous parler trop vite" -> parlez ; "Nous manger" -> mangeons
-    if ((t.lower === "vous" || t.lower === "nous") && FC_CLAUSE_START.has(prevLower) && next && /er$/.test(next.lower)) {
+    if ((t.lower === "vous" || t.lower === "nous") && (!prev || /^[.!?;:]$/.test(prev.text)) && next && /er$/.test(next.lower)) {
       const inf = morph(next).find((m) => /:Y/.test(m));
       if (inf) {
         const lemma = inf.slice(1, inf.indexOf("/"));
@@ -292,7 +314,9 @@ function fcCustomRules(paragraph, spellChecker, existing) {
     }
 
     // "C’est sur, il viendra" -> sûr (a preposition never ends a clause)
-    if (t.text === "sur" && (!next || /^[,.;:!?]$/.test(next.text) || (next.lower === "que" && /^(c’est|suis|es|est|sommes|êtes|sont|pas)$/.test(prevLower)))) {
+    // (Not before masked code or a link: "sur fr.fifa.com".)
+    const maskedAfter = /^\s{2,}/.test(paragraph.slice(t.end, t.end + 3)) || (!next && /\s{2,}$/.test(paragraph.slice(t.end)));
+    if (t.text === "sur" && !maskedAfter && (!next || /^[,.;:!?]$/.test(next.text) || (next.lower === "que" && /^(c’est|suis|es|est|sommes|êtes|sont|pas)$/.test(prevLower)))) {
       add(t, "sûr", "« Sûr » (certain) prend un accent circonflexe.");
     }
 
@@ -304,7 +328,7 @@ function fcCustomRules(paragraph, spellChecker, existing) {
     }
 
     // "Ma sœur et moi sommes allé" -> allés (not "êtes": polite "vous" is singular)
-    if (/^(sommes|sont)$/.test(prevLower) && fcHas(morph(t), /:Q:.:s/) && !fcHas(morph(t), /:Q:.:[pi]/)) {
+    if (/^(sommes|sont)$/.test(prevLower) && !/^(se|s’|nous|vous)$/.test(prev2?.lower ?? "") && fcHas(morph(t), /:Q:.:s/) && !fcHas(morph(t), /:Q:.:[pi]/)) {
       const fem = fcHas(morph(t), /:Q:f:s/) && !fcHas(morph(t), /:Q:m:s/);
       const plural = String(suggVerbPpas(t.lower, fem ? ":f:p" : ":m:p") || "").split("|").filter(Boolean)[0];
       if (plural && plural !== t.lower) add(t, plural, "Le participe passé s’accorde avec le sujet pluriel.");
@@ -312,7 +336,7 @@ function fcCustomRules(paragraph, spellChecker, existing) {
 
     // "Si j’aurai le temps" -> si j’ai (after "si", no future)
     // ("Je ne sais pas si je pourrai venir": an indirect question takes the future.)
-    const indirect = tokens.slice(Math.max(0, i - 5), i - 2).some((x) => FC_KNOW_VERBS.test(x.lower) || /^(demande|demandes|demandais|demandait|savoir|voir|dis|dit|dire|décider|vérifier|regarder)$/.test(x.lower));
+    const indirect = tokens.slice(Math.max(0, i - 9), i - 2).some((x) => FC_KNOW_VERBS.test(x.lower) || /^(demande|demandes|demandais|demandait|demandez|savoir|voir|dis|dit|dire|dites|décider|vérifier|vérifiez|regarder|indiquer|indiquez|indique|préciser|précisez|confirmer|confirmez|signaler|signalez|ignore|ignorons|deviner|savez|sait|savoir|faites|demandons)$/.test(x.lower));
     if (!indirect && prev && FC_SUBJECTS.has(prevLower) && /^(si|s’)$/.test(prev2?.lower ?? "")) {
       const fut = morph(t).find((m) => /:If:/.test(m) || /:If$/.test(m) || /:If:\d/.test(m));
       const person = fut?.match(/:([123][sp])/)?.[1];
@@ -794,7 +818,7 @@ function fcCustomRules(paragraph, spellChecker, existing) {
     }
 
     // "Où sont passé les clés ?" -> passées (the subject comes after)
-    if (/^(sont|étaient|seront)$/.test(prevLower) && isPpas(t) && fcHas(morph(t), /:Q(:A)?:m:s/) && !fcHas(morph(t), /:Q(:A)?:.:[pi]/) &&
+    if (/^(sont|étaient|seront)$/.test(prevLower) && !/^(se|s’|nous|vous)$/.test(prev2?.lower ?? "") && isPpas(t) && fcHas(morph(t), /:Q(:A)?:m:s/) && !fcHas(morph(t), /:Q(:A)?:.:[pi]/) &&
         next && /^(les|des|mes|tes|ses|nos|vos|leurs|ces)$/.test(next.lower) && next2 && fcHas(morph(next2), /:N:[fme]:p/)) {
       const fem = fcHas(morph(next2), /:N:f:p/) && !fcHas(morph(next2), /:N:m/);
       const form = String(suggVerbPpas(t.lower, fem ? ":f:p" : ":m:p") || "").split("|").filter(Boolean)[0];
@@ -811,6 +835,105 @@ function fcCustomRules(paragraph, spellChecker, existing) {
         const form = String(suggVerbPpas(t.lower, ":m:s") || "").split("|").filter(Boolean)[0];
         if (form && form !== t.lower) add(t, form, indirect ? `« Se ${lemma} » : on parle à quelqu’un, le participe reste invariable.` : "Le complément d’objet vient après : le participe reste invariable.", true);
       }
+    }
+
+    // ---------- Round 2 ----------
+
+    // "Le train et en retard" -> est (the subject opens the sentence)
+    if (t.lower === "et" && prev && next && fcHas(morph(prev), /:N/) && !fcHas(morph(prev), /:A/) && prev2 && fcHas(morph(prev2), /:D/) &&
+        (!tokens[i - 3] || /^[.!?;:]$/.test(tokens[i - 3].text)) &&
+        /^(en|là|ici|déjà|toujours|encore|très|trop|pas|bien|mal|souvent|parfois|vraiment|tellement|si|plus|moins|fermé|fermée|ouvert|ouverte|parti|partie|terminé|terminée|fini|finie|prêt|prête|cassé|cassée|vide|plein|pleine)$/.test(next.lower) &&
+        !(next.lower === "en" && next2 && fcHas(morph(next2), /:N/) && !/^(retard|avance|panne|vacances|grève|forme|colère|train|cours|ligne|route|marche|vente|danger|feu|pleine)$/.test(next2.lower))) {
+      add(t, "est", "Confusion probable : « est » (verbe être) plutôt que « et ».", true);
+    }
+
+    // "Je pense quel viendra demain" -> qu’elle
+    if (t.lower === "quel" && /^(pense|penses|pensait|crois|croit|crois|sais|sait|dit|dis|espère|trouve|sens|vois|savais|disait|croyais|pensais|dirais|suis|es|est)$/.test(prevLower) &&
+        next && isFinite(next) && fcHas(morph(next), /:V[^/]*:3s/) && !fcHas(morph(next), /:N/) && /^\p{Ll}/u.test(next.text)) {
+      add(t, apo("qu’elle"), "Confusion probable : « qu’elle » (que + elle) plutôt que « quel ».", true);
+    }
+
+    // "Elle s’est lavé avant de partir" -> lavée (reflexive, no object after)
+    if (/^(est|sont|était|étaient)$/.test(prevLower) && /^(s’|se)$/.test(prev2?.lower ?? "") && /^(elle|elles|ils)$/.test(tokens[i - 3]?.lower ?? "") &&
+        isPpas(t) && fcHas(morph(t), /:Q(:A)?:m:s/) && !fcHas(morph(t), /:Q(:A)?:.:[pi]/) &&
+        (!next || /^[.!?,;:]$/.test(next.text) || /^(avant|après|ce|hier|tôt|tard|vite|à|au|en|dans|pour|et|puis|ensuite|tout|toute|seule|seul|ce|cette|chaque)$/.test(next.lower))) {
+      const lemma = morph(t).find((m) => /:Q/.test(m))?.match(/^>([^/]+)\//)?.[1] ?? "";
+      if (/^(laver|habiller|coiffer|maquiller|préparer|réveiller|lever|coucher|asseoir|endormir|blesser|tromper|perdre|perdu|cacher|arrêter|installer|inscrire|amuser|ennuyer|reposer|promener|baigner|doucher|changer|sauver|enfuir|évanouir|méfier|souvenir|rendre)$/.test(lemma)) {
+        const who = tokens[i - 3].lower;
+        const form = String(suggVerbPpas(t.lower, who === "elle" ? ":f:s" : who === "elles" ? ":f:p" : ":m:p") || "").split("|").filter(Boolean)[0];
+        if (form && form !== t.lower) add(t, form, `Le participe s’accorde avec « ${who} ».`);
+      }
+    }
+
+    // Imperative: "Achètes du pain", "vas te coucher" -> Achète, va
+    // (At the start of a sentence, or after "et" following another order:
+    // "…, chutes de pierres" in a list is a noun.)
+    // (A title has no final punctuation: "Caricatures de Victor Hugo".)
+    if ((!prev || /^[.!?]$/.test(prev.text) || (/^(et|puis)$/.test(prevLower) && t.lower === "vas")) && /[.!?]\s*$/.test(paragraph) &&
+        next && !/^(tu|-tu)$/.test(next.lower) && !/-/.test(t.text) && !(next2 && /^\p{Lu}/u.test(next2.text)) &&
+        !tokens.slice(Math.max(0, i - 4), i).some((x) => /^(tu|t’)$/.test(x.lower))) {
+      if (t.lower === "vas" && !/^(y|-y)$/.test(next.lower)) {
+        add(t, "va", "À l’impératif : « va » (sans s, sauf dans « vas-y »).", true);
+      } else if (/es$/.test(t.lower) && fcHas(morph(t), /:V1[^/]*:Ip[^/]*:2s/) && !fcHas(morph(t), /:A/) &&
+          /^(du|de|des|la|le|les|l’|un|une|ton|ta|tes|moi|lui|nous|leur|ça|bien|vite|attention|ce|cette|ces)$/.test(next.lower)) {
+        add(t, t.text.slice(0, -1), "À l’impératif, les verbes en -er ne prennent pas de s : « achète ».", true);
+      }
+    }
+
+    // "Les résultats de l’enquête montre" -> montrent (the head noun is plural)
+    if (!prev || /^[.!?]$/.test(prev.text)) {
+      if (/^(les|des|mes|tes|ses|nos|vos|leurs|ces|plusieurs)$/.test(t.lower) && next && isPluralNoun(next) && next2 && /^(de|du|des|d’)$/.test(next2.lower)) {
+        let k = i + 3;
+        // A word that is both noun and verb is a noun after an article ("l’enquête"),
+        // the verb otherwise ("l’enquête montre").
+        const article = (x) => x && /^(la|le|les|l’|un|une|du|des|de|d’|au|aux|cette|ce|ces|son|sa|ses)$/.test(x.lower);
+        while (tokens[k] && (!isFinite(tokens[k]) || (fcHas(morph(tokens[k]), /:N/) && article(tokens[k - 1])) || fcHas(morph(tokens[k]), /:A/)) &&
+          !/^[,;:.!?]$/.test(tokens[k].text) && k < i + 8) k++;
+        const verb = tokens[k];
+        // (A word right after an article is a noun, even when the dictionary
+        // only knows it as a verb: "de la soule".)
+        if (verb && isFinite(verb) && !/^(qui|que|qu’|dont|où|la|le|les|l’|un|une|du|des|de|d’|au|aux)$/.test(tokens[k - 1]?.lower ?? "") && fcHas(morph(verb), /:V[^/]*:3s/) && !fcHas(morph(verb), /:V[^/]*:3p/) &&
+            !tokens.slice(i + 3, k).some((x) => /^(qui|que|qu’|dont|où|,)$/.test(x.lower))) {
+          agree(verb, "3p", `Le sujet est « ${t.text} ${next.text} » (pluriel).`);
+        }
+      }
+    }
+
+    // "Je vous serez reconnaissant" -> serais (polite formula)
+    if (/^(serez|serai|seras|sera)$/.test(t.lower) && prevLower === "vous" && prev2?.lower === "je" && next && /^(reconnaissant|reconnaissante|gré|obligé|obligée)$/.test(next.lower)) {
+      add(t, "serais", "Formule de politesse : « je vous serais reconnaissant ».", true);
+    }
+
+    // "Demain, je serais au bureau" -> serai (a plain future fact)
+    if (/^(serais|aurais)$/.test(t.lower) && prevLower === "je" && next &&
+        /^(au|à|là|en|chez|dispo|disponible|absent|absente|présent|présente|de retour|joignable|libre|rentré|rentrée|parti|partie)$/.test(next.lower) &&
+        tokens.slice(0, i).some((x) => /^(demain|lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche|ce|bientôt|prochain|prochaine)$/.test(x.lower)) &&
+        !tokens.some((x) => /^(si|s’|sans|aimerais|voudrais)$/.test(x.lower))) {
+      add(t, t.lower === "serais" ? "serai" : "aurai", "Un fait à venir, sans condition : le futur.", true);
+    }
+
+    // "belle mère", "week end", "là bas" -> hyphenated compounds
+    const compound = next && FC_HYPHEN_COMPOUNDS[`${t.lower} ${next.lower}`];
+    if (compound && paragraph.slice(t.end, next.start) === " " && (compound.needDet === undefined || compound.needDet.test(prevLower))) {
+      const text = paragraph.slice(t.start, next.end);
+      const fix = /^\p{Lu}/u.test(text) ? compound.fix[0].toUpperCase() + compound.fix.slice(1) : compound.fix;
+      add({ start: t.start, end: next.end, text }, fix, "Mot composé : avec un trait d’union.", true, true);
+    }
+
+    // "Elle parle couramment l’Espagnol" -> espagnol
+    if (prevLower === "l’" && FC_LANGUAGE_NAMES.test(t.lower) && /^\p{Lu}/u.test(t.text) &&
+        /^(parle|parles|parlons|parlez|parlent|parler|couramment|apprends|apprend|apprendre|étudie|étudier|comprends|comprend|comprendre|enseigne|maîtrise|maîtriser|pratique|aime)$/.test(prev2?.lower ?? "")) {
+      add(t, t.lower, "Les noms de langues s’écrivent en minuscule.", true, true);
+    }
+
+    // "quoi que la baguette soit bonne" -> quoique (although)
+    // ("Quoi qu’il en soit", "quoi que ce soit": set phrases, left alone.)
+    if (t.lower === "quoi" && next && /^(que|qu’)$/.test(next.lower) && !(next2?.lower === "il" && tokens[i + 3]?.lower === "en") &&
+        tokens.slice(i + 2, i + 6).some((x) => /^(soit|soient|ait|aient|fût|fussent)$/.test(x.lower)) &&
+        !tokens.slice(i + 2, i + 6).some((x) => /^(arrive|arrivent|fasses|fasse|fassiez|dises|dise|disiez|pense|penses|décides|décide)$/.test(x.lower)) &&
+        next2 && !/^(ce|ça|cela)$/.test(next2.lower)) {
+      add({ start: t.start, end: next.end, text: paragraph.slice(t.start, next.end) }, next.lower === "que" ? "quoique" : apo("quoiqu’"),
+        "« Quoique » (bien que) s’écrit en un mot.", true);
     }
 
     // ---------- Usage ----------
@@ -884,7 +1007,7 @@ function fcCustomRules(paragraph, spellChecker, existing) {
         m.label = "Style";
       }
     }
-    if (sms && (sentenceStart || /^\p{Ll}/u.test(t.text)) &&
+    if (sms && (sentenceStart || /^[\p{Ll}\d]/u.test(t.text)) &&
         !(t.lower === "ya" && prev && !/^[.!?,;:]$/.test(prev.text) && !FC_CLAUSE_START.has(prevLower))) {
       add(t, apo(sms), `Écriture phonétique : « ${apo(sms)} ».`, true);
     }

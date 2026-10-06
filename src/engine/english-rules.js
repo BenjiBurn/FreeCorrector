@@ -26,7 +26,7 @@ const VERB_FOR_NOUN = { discus: "discuss", breath: "breathe", advice: "advise", 
 // regular ending ("teached", "womans"): Harper's nearest words miss them.
 const EN_MISSPELLINGS = {
   febuary: "february", wensday: "wednesday", wendsday: "wednesday", wednsday: "wednesday", tuesay: "tuesday", thrusday: "thursday",
-  sence: "sense", consequenses: "consequences", wich: "which", whitch: "which", collegue: "colleague", collegues: "colleagues",
+  neice: "niece", yatch: "yacht", colleage: "colleague", colleages: "colleagues", sence: "sense", consequenses: "consequences", wich: "which", whitch: "which", collegue: "colleague", collegues: "colleagues",
   mispell: "misspell", mispelled: "misspelled", supercede: "supersede", tounge: "tongue", definately: "definitely",
   definatly: "definitely", definitly: "definitely", seperate: "separate", seperately: "separately", occured: "occurred",
   occurence: "occurrence", accomodate: "accommodate", accomodation: "accommodation", untill: "until", beleive: "believe",
@@ -202,7 +202,9 @@ export function englishRules(paragraph, existing, frequency = () => 0) {
         (!next2 || isPunct(next2) || /^(people|things|times|of|to|for|and|now|today|tonight|outside|inside|here|there|lately|right|yet|but|so|in|at|on)$/.test(next2.lower));
       // "I want to come to." -> the verb already had its "to": this one is "too".
       // Same for "I'm going to the store to." ; but "I don't want to have to." is fine.
+      // (Only after a place or "come"/"go": "time to adjust to" is a stranded preposition.)
       const secondTo = atEnd && toks.slice(Math.max(0, i - 5), i - 1).some((x) => x.lower === "to") &&
+        /^(come|go|store|shop|park|beach|party|house|office|school|there|it|this|that|one|place|movies|cinema|gym|meeting|concert|show|game|class|work|home|mall|restaurant|bar|club|wedding|event)$/.test(prev.lower) &&
         !/^(have|has|had|want|wants|need|needs|going|got|ought|used|like|love|try|able|plan|hope|mean|meant|supposed|allowed)$/.test(prev.lower);
       if ((atEnd && /^(me|you|him|her|us|them|it|this|that|one|i|we|they|he|she)$/.test(prev.lower)) || beforeAdverb || secondTo) {
         add(t.start, t.end, "too", "Did you mean “too” (also, excessively)?");
@@ -521,7 +523,7 @@ export function englishRules(paragraph, existing, frequency = () => 0) {
     if (t.lower === "aloud" && prev && /^(not|are|is|be|been|were|was|isn't|aren't|wasn't|weren't|never|n't)$/.test(L1)) confuse("allowed", "Did you mean “allowed” (permitted)?");
     // through / threw
     // ("kicked it through the posts": "it" is an object there, not the subject.)
-    if (t.lower === "through" && prev && /^(he|she|i|we|they|you)$/.test(L1) && next && /^(the|a|it|his|her|my|away|up|out|them|him|me|our|their|your|stones|rocks)$/.test(R1)) {
+    if (t.lower === "through" && prev && /^(he|she|i|we|they|you)$/.test(L1) && (!toks[i - 2] || isPunct(toks[i - 2]) || /^(and|but|then|so|when|because)$/.test(toks[i - 2].lower)) && next && /^(the|a|it|his|her|my|away|up|out|them|him|me|our|their|your|stones|rocks)$/.test(R1)) {
       confuse("threw", "Past of “throw”: “threw”.");
     }
     if (t.lower === "threw" && prev && !/^(he|she|i|we|they|you|it|who|and|that)$/.test(L1) &&
@@ -607,9 +609,136 @@ export function englishRules(paragraph, existing, frequency = () => 0) {
     if (prev && /^(i|you|we|they|he|she)$/.test(prev.lower) && (t.lower === "seen" || t.lower === "done")) {
       add(t.start, t.end, t.lower === "seen" ? "saw" : "did", `“${t.lower}” needs an auxiliary (“have ${t.lower}”); the simple past is “${t.lower === "seen" ? "saw" : "did"}”.`);
     }
+
+    // ---------- More real-word confusions ----------
+
+    const R3 = toks[i + 3]?.lower ?? "";
+    const swap = (fix, message) => add(t.start, t.end, fix, message ?? `Did you mean “${fix}”?`, { override: true });
+    if (t.lower === "sight" && /^(construction|building|camp|camping|web|work|job|archaeological|heritage|test)$/.test(L1)) swap("site", "A place is a “site”.");
+    if (t.lower === "soul" && /^(owner|purpose|survivor|reason|responsibility|heir|provider|aim|source|exception|author|occupant)$/.test(R1)) swap("sole", "“Sole” means only, single.");
+    if (t.lower === "weak" && /^(all|whole|entire|this|last|next)$/.test(L1) && (atEnd || /^(long|and|but|so|at|in|i|we)$/.test(R1))) swap("week", "Seven days make a “week”.");
+    if (t.lower === "see" && /^(the|a|open)$/.test(L1) && (atEnd || /^(this|next|in|on|at|and|for|is|was|level|shore|breeze|water|view|side)$/.test(R1))) {
+      swap("sea", "The ocean is the “sea”.");
+    }
+    if (t.lower === "meat" && ((L1 === "to" && /^(you|him|her|them|us|me|up|everyone|the|my|your)$/.test(R1)) || (/^(nice|pleased|glad|happy|great)$/.test(toks[i - 2]?.lower ?? "") && L1 === "to") || (R1 === "up"))) {
+      swap("meet", "To see someone is to “meet”.");
+    }
+    if (/^flowers?$/.test(t.lower) && (/^(of|plain|wheat|corn|rice|almond|self-raising|all-purpose)$/.test(L1) && /(cups?|grams?|tablespoons?|g|kg|pound|ounces?|bag|plain|wheat|corn|rice|almond|self-raising|all-purpose)\s+(of\s+)?$/.test(paragraph.slice(0, t.start).toLowerCase()) ||
+        /\b(bake|baking|dough|cake|bread|sugar|butter|eggs?|whisk|oven|bowl|recipe)\b/.test(paragraph.toLowerCase()) && /^(of|the|some|and|with)$/.test(L1) && !/\b(garden|bouquet|vase|pot|bloom|petals?)\b/.test(paragraph.toLowerCase()))) {
+      swap(t.lower.endsWith("s") ? "flours" : "flour", "For baking, it is “flour”.");
+    }
+    if (t.lower === "male" && ((/^(the|my|your|e|e-|junk|voice|check|checked|by|in|post)$/.test(L1) && /^(arrive|arrived|came|come|is|was|yet|today|box|man|carrier|delivery)$/.test(R1)) || /^(box|carrier|man|delivery)$/.test(R1) && L1 !== "a")) {
+      swap("mail", "Letters and parcels are “mail”.");
+    }
+    if (t.lower === "sweet" && /^(a|the|our|their|honeymoon|presidential|hotel|junior|executive|bridal)$/.test(L1) && (/hotel|room|booked|book|reserved|stay/.test(paragraph.toLowerCase())) && (atEnd || /^(at|in|for|with|on|was|is)$/.test(R1))) {
+      swap("suite", "A set of hotel rooms is a “suite”.");
+    }
+    if (t.lower === "hole" && /^(the|a)$/.test(L1) && next && /^(pizza|cake|day|week|thing|time|world|family|team|class|night|weekend|book|bottle|story|year|month|life|place|house|city|country|point|morning|afternoon|evening|town|bag|box|meal)$/.test(R1)) {
+      swap("whole", "Entire: “whole”.");
+    }
+    if (t.lower === "our" && ((/^(an|half|per|every|each|one)$/.test(L1) && (atEnd || /^(ago|later|or|and|of|to|before|after|in|from|long|away)$/.test(R1))) || (/^(\d+|two|three|four|five|24)$/.test(L1) && R1 === "ago"))) {
+      swap("hour", "Sixty minutes make an “hour”.");
+    }
+    if (t.lower === "wood" && ((/^(i|you|we|they|he|she|it)$/.test(L1) && /^(like|love|be|have|go|not|never|rather|you|it|really|prefer|say|think|help)$/.test(R1)) || (clauseStart && /^(you|it|that|he|she|they)$/.test(R1) && /^(like|be|mind|have|help)$/.test(R2)))) {
+      swap("would", "Did you mean “would”?");
+    }
+    if (t.lower === "worse" && /^(the)$/.test(L1) && next && toks.slice(i + 1, i + 5).some((x) => /^(ever|i've|i|we've|you've|of|in|possible)$/.test(x.lower))) {
+      swap("worst", "The superlative is “the worst”.");
+    }
+    if (t.lower === "everyday" && (atEnd || /^(at|in|for|and|but|after|before|so|of|i|we|to)$/.test(R1)) && prev && !/^(an|the|my|your|our|their|his|her|its|this|that)$/.test(L1)) {
+      swap("every day", "As an adverb (each day), write “every day”.");
+    }
+    if (t.lower === "were" && /^(sure|know|knew|wonder|wondering|ask|asked|remember|forgot|see|tell|idea|decide|is|that's)$/.test(L1) && next && /^(the|my|your|his|her|our|their|it|he|she|they|you|we|i|this|that|to)$/.test(R1) &&
+        toks[i + 2] && /^(is|are|was|were|meeting|party|keys?|station|car|went|go|live|lives|stay)$/.test(R2)) {
+      swap("where", "A place: “where”.");
+    }
+    if (t.lower === "steel" && ((L1 === "to" && /^(a|the|my|your|his|her|money|cars?|bikes?|it|them)$/.test(R1)) || /^(didn't|don't|won't|will|would|can)$/.test(L1))) swap("steal", "To take what is not yours: “steal”.");
+    if (t.lower === "tail" && L1 === "fairy") swap("tale", "A story is a “tale”.");
+    if (t.lower === "tails" && L1 === "fairy") swap("tales", "Stories are “tales”.");
+    if (t.lower === "son" && /^(the)$/.test(L1) && /^(is|was)$/.test(R1) && /^(shining|out|hot|setting|rising|bright|up|down)$/.test(R2)) swap("sun", "The star is the “sun”.");
+    if (t.lower === "son" && /^(the)$/.test(L1) && /^(shines|shone|rises|rose|sets|set|came|comes)$/.test(R1)) swap("sun", "The star is the “sun”.");
+
+    // ---------- More agreement ----------
+
+    // "The number of complaints have increased" -> has
+    if (/^(have|are|were)$/.test(t.lower) && toks.slice(Math.max(0, i - 5), i).some((x, k, arr) => x.lower === "number" && arr[k - 1]?.lower === "the" && arr[k + 1]?.lower === "of")) {
+      add(t.start, t.end, { have: "has", are: "is", were: "was" }[t.lower], "“The number of …” is singular.", { override: true });
+    }
+    // "Neither Tom nor Anna know" -> knows (the verb agrees with the nearest subject)
+    if (prev && toks[i - 2]?.lower === "nor" && toks.slice(Math.max(0, i - 5), i - 2).some((x) => x.lower === "neither") &&
+        /^\p{Lu}/u.test(prev.text) && /^[a-z]+$/.test(t.text) && !/s$/.test(t.lower) && frequency(`${t.lower}s`) >= 3 && !/^(will|can|could|should|would|must|might|may|did)$/.test(t.lower)) {
+      add(t.start, t.end, /(ch|sh|x|o)$/.test(t.lower) ? `${t.lower}es` : `${t.lower}s`, "With “neither … nor”, the verb agrees with the nearest subject.", { override: true });
+    }
+    // "Her and I went" -> She and I
+    if (clauseStart && /^(her|him)$/.test(t.lower) && next?.lower === "and" && /^(i|me)$/.test(R2) && toks[i + 3] && !isPunct(toks[i + 3])) {
+      add(t.start, toks[i + 2].end, `${t.lower === "her" ? "She" : "He"} and I`, "Subject pronouns before a verb: “She and I”.", { override: true, keepCase: true });
+    }
+    // "badder" -> worse
+    if (t.lower === "badder") swap("worse", "The comparative of “bad” is “worse”.");
+    if (t.lower === "baddest") swap("worst", "The superlative of “bad” is “worst”.");
+    if (t.lower === "gooder") swap("better", "The comparative of “good” is “better”.");
+    // "Have you ate yet?" -> eaten
+    if (EN_PAST_TO_PARTICIPLE[t.lower] && toks[i - 2] && /^(have|has|had|haven't|hasn't)$/.test(toks[i - 2].lower) && /^(you|we|they|i|he|she|it)$/.test(L1)) {
+      add(t.start, t.end, EN_PAST_TO_PARTICIPLE[t.lower], `After “have”, use the past participle: “${EN_PAST_TO_PARTICIPLE[t.lower]}”.`, { override: true });
+    }
+    // "My brother and sister lives in Paris" -> live
+    if (/^(my|our|your|his|her|their|the)$/.test(toks[i - 4]?.lower ?? "") && toks[i - 2]?.lower === "and" && fcIsNounLike(toks[i - 3], frequency) && fcIsNounLike(prev, frequency) &&
+        (!toks[i - 5] || isPunct(toks[i - 5])) && /^(lives|works|is|was|has|likes|loves|wants|needs|plays|goes|does|comes|says|knows|thinks|lives)$/.test(t.lower)) {
+      const plural = { is: "are", was: "were", has: "have", goes: "go", does: "do" }[t.lower] ?? t.lower.replace(/s$/, "");
+      add(t.start, t.end, plural, "Two subjects joined by “and”: plural verb.", { override: true });
+    }
+    // "The news are bad" -> is
+    if (/^(are|were|have)$/.test(t.lower) && L1 === "news" && /^(the|this|that|bad|good|latest|great)$/.test(toks[i - 2]?.lower ?? "")) {
+      add(t.start, t.end, { are: "is", were: "was", have: "has" }[t.lower], "“News” is singular.", { override: true });
+    }
+    // "Yesterday we go to the zoo" -> went
+    if (/^(yesterday|last)$/.test(toks.find((x, k) => k < i - 1 && k >= Math.max(0, i - 4))?.lower ?? "") && /^(i|we|they|you|he|she)$/.test(L1) &&
+        EN_PRESENT_TO_PAST[t.lower]) {
+      add(t.start, t.end, EN_PRESENT_TO_PAST[t.lower], "A past event (“yesterday”): the simple past.", { override: true });
+    }
+    // "I'm agree" -> I agree
+    if (t.lower === "i'm" && /^(agree|disagree)$/.test(R1)) add(t.start, next.end, `I ${R1}`, "“Agree” is a verb: no “am” before it.", { override: true, keepCase: true });
+  }
+
+  // ---------- Phrases borrowed from other languages ----------
+  for (const [re, fix, message] of EN_PHRASES) {
+    re.lastIndex = 0;
+    let m;
+    while ((m = re.exec(paragraph))) {
+      const start = m.index + (m[1]?.length ?? 0);
+      const text = m[0].slice(m[1]?.length ?? 0);
+      const replacement = typeof fix === "function" ? fix(text) : fix;
+      add(start, start + text.length, replacement, message, { override: true, keepCase: !/^\p{Lu}/u.test(text) });
+    }
   }
   return out;
 }
+
+function fcIsNounLike(tok, frequency) {
+  return !!tok && /^\p{Ll}+$/u.test(tok.text) && !/(ly|ing)$/.test(tok.lower) && frequency(tok.lower) >= 2.5;
+}
+
+const EN_PRESENT_TO_PAST = {
+  go: "went", come: "came", see: "saw", eat: "ate", buy: "bought", have: "had", get: "got", take: "took", make: "made",
+  meet: "met", visit: "visited", play: "played", watch: "watched", walk: "walked", stay: "stayed", find: "found", leave: "left",
+};
+
+// [regex (group 1 = text kept before the error), fix, message]
+const EN_PHRASES = [
+  [/(^|[^\p{L}])explain me\b/giu, "explain to me", "One explains something to someone: “explain to me”."],
+  [/(^|[^\p{L}])(?=(make|makes|made|making) (a|some) (photo|photos|picture|pictures)\b)(make|makes|made|making)/giu, (w) => ({ make: "take", makes: "takes", made: "took", making: "taking" })[w.toLowerCase()], "In English, you “take” a photo."],
+  [/(^|[^\p{L}])married with\b/giu, "married to", "One is “married to” someone."],
+  [/(^|[^\p{L}])(depends|depend|depending|depended) of\b/giu, (w) => w.replace(/ of$/i, " on"), "“Depend on”, not “depend of”."],
+  [/(^|[^\p{L}])(borrow|borrows|borrowed)(?= (me|him|her|us|them|you)\b)/giu, (w) => ({ borrow: "lend", borrows: "lends", borrowed: "lent" })[w.toLowerCase()], "To give for a while is to “lend”; to “borrow” is to take."],
+  [/(^|[^\p{L}])afraid from\b/giu, "afraid of", "One is “afraid of” something."],
+  [/(^|[^\p{L}])responsible of\b/giu, "responsible for", "One is “responsible for” something."],
+  [/(^|[^\p{L}])(waiting|wait|waited|waits)(?= (you|me|him|her|us|them)\b)/giu, (w) => `${w} for`, "One waits “for” someone."],
+  [/(^|[^\p{L}])return back\b/giu, "return", "“Return” already means go back."],
+  [/(^|[^\p{L}])insisted to (\p{L}+)/giu, (w) => { const verb = w.split(" ")[2]; return `insisted on ${verb.replace(/e$/, "")}ing`; }, "“Insist on doing”, not “insist to do”."],
+  [/(^|[^\p{L}])(reached|reach|reaches) to (?=the|a|our|their|his|her|my)/giu, (w) => w.replace(/ to $/i, ""), "“Reach” takes no “to”."],
+  [/(^|[^\p{L}])(discuss|discussed|discussing) about\b/giu, (w) => w.replace(/ about$/i, ""), "“Discuss” takes no “about”."],
+  [/(^|[^\p{L}])(suggested|suggest|suggests) (him|her|them|me|us) to\b/giu, (w) => w.replace(/ (him|her|them|me|us) to$/i, (_, p) => ` ${p === "me" ? "I" : p === "us" ? "we" : p === "him" ? "he" : p === "her" ? "she" : "they"}`), "“Suggest that he…”, not “suggest him to”."],
+];
 
 // The apostrophe form of a contraction typed without it, or null.
 // `prevWord` picks the right agreement: "she dont" -> "doesn't".

@@ -21,8 +21,30 @@ const FC_NUMBER = /^(\d+|deux|trois|quatre|cinq|six|sept|huit|neuf|dix|onze|douz
 const FC_HAIR_ADJ = /^(longs|courts|blonds|bruns|roux|raides|frisés|bouclés|gras|châtains|mi-longs|lisses|teints|blancs|gris)$/;
 const FC_WATER = /(rivière|lac|mer|poisson|truite|canne|hameçon|étang|pêcheur|saumon|ligne)/;
 
+const FC_CLOTHES = /^(pull|robe|chemise|veste|t-shirt|tee-shirt|pantalon|manteau|écharpe|bonnet|jupe|short|sweat|blouson|voiture|porte|volet|stylo|sac|vélo|mur|tableau|tapis|canapé|fauteuil|rideau|rideaux|chaussures|baskets|chaussettes|yeux)$/;
+const FC_SUBJECT_PRONOUN = /^(je|j’|tu|il|elle|on|nous|vous|ils|elles)$/;
+
 // [word typed, fix (string or function of the context), test]
 const FC_REAL_WORD_CONFUSIONS = [
+  // round 2 additions
+  ["ver", "vert", (c) => /^(foncé|clair|pomme|olive|kaki|bouteille|émeraude|fluo|pâle|sapin|d’eau)$/.test(c.r1) || FC_CLOTHES.test(c.l1)],
+  ["verre", (c) => (c.l1 === "yeux" ? "verts" : "vert"), (c) => FC_CLOTHES.test(c.l1) && c.l1 !== "yeux"],
+  ["cours", "cour", (c) => FC_DET_FEM.test(c.l1) && !/^(de (maths|français|piano|danse|anglais|musique|sport|chant|dessin|histoire|yoga))/.test(c.right)],
+  ["mer", "maire", (c) => /^(le|un|du|au|monsieur|notre|votre|ancien|nouveau)$/.test(c.l1)],
+  ["foies", "fois", (c) => FC_NUMBER.test(c.l1) || /^(plusieurs|certaines|des|quelques|mille)$/.test(c.l1)],
+  ["plain", "plein", (c) => /^(le|un)$/.test(c.l1) && /^(d’essence|de carburant|de gazole|d’énergie|de courses)/.test(c.right) || /(faire|fait|fais|faisons) le$/.test(c.left)],
+  ["sans", "cent", (c) => /^(euros|euro|dollars|ans|mètres|kilos|grammes|personnes|pages|kilomètres|km|élèves|places|fois|mille)$/.test(c.r1) && !/^(de|le|du|les|des)$/.test(c.l1)],
+  ["don", "dont", (c) => FC_SUBJECT_PRONOUN.test(c.r1) || /^(on|il|elle)$/.test(c.r1)],
+  ["cou", "coût", (c) => /^(de la vie|des travaux|du transport|du loyer|de l’essence|de production|de la construction|élevé|total|moyen|réel|du projet)/.test(c.right) || /(prix|euros|budget|dépense|cher|chère|augment)/.test(c.sentence) && /^(le|un|du)$/.test(c.l1)],
+  ["cou", "coup", (c) => (c.l1 === "un" || c.l1 === "du" || c.l1 === "le") && /^(sur|de|d’|dans|à|en|droit|bas|dur|franc|fatal|fourré|monté)$/.test(c.r1) || /(pris un|donné un|reçu un|prendre un|donner un|recevoir un)$/.test(c.left)],
+  ["sceau", "saut", (c) => /(fait|faire|fais|fera) un$/.test(c.left) || /^(en hauteur|en longueur|en parachute|périlleux|à la perche|de \d+)/.test(c.right)],
+  ["signe", "cygne", (c) => /^(le|un|ce|du|les|des)$/.test(c.l1) && (/^(glisse|nage|blanc|noir|majestueux|sauvage)$/.test(c.r1) || /(lac|étang|rivière|plumes)/.test(c.sentence))],
+  ["près", "pré", (c) => /^(le|au|un|du)$/.test(c.l1) && (c.end || /^(du|de|d’|derrière|voisin)$/.test(c.r1)) && /^(dans|sur|au|traverse|vers|le)$/.test(c.l2)],
+  ["marcher", "marché", (c) => /^(le|un|au|du|ce|grand|petit|super|bon)$/.test(c.l1)],
+  ["restaurent", "restaurant", (c) => /^(le|un|au|du|ce|mon|ton|son|notre|votre|leur|excellent|bon|petit|nouveau|meilleur|grand|super|joli|beau)$/.test(c.l1)],
+  ["travails", "travaux", (c) => /^(les|des|ces|mes|tes|ses|nos|vos|leurs|gros|grands|petits)$/.test(c.l1)],
+  ["feus", "feux", (c) => /^(les|des|ces|deux|trois|nos|vos|leurs|gros)$/.test(c.l1) || /^(d’artifice|de signalisation|rouges|verts|tricolores)/.test(c.right)],
+  ["pois", "poids", (c) => /^(mon|ton|son|notre|votre|leur)$/.test(c.l1) && /(surveill|perd|prend|gard|contrôl|régime|kilo)/.test(c.sentence)],
   // vert / verre / vers / ver
   ["verre", (c) => (c.l1 === "yeux" ? "verts" : "vert"), (c) => /^(foncé|clair|pomme|olive|bouteille|kaki|émeraude|fluo|pâle)$/.test(c.r1) || (/^(yeux|couleur)$/.test(c.l1))],
   ["verres", "verts", (c) => /^(yeux)$/.test(c.l1)],
@@ -125,7 +147,9 @@ const FC_REAL_WORD_CONFUSIONS = [
   ["bien", "bain", (c) => /^(un|le|du|mon|ton|son)$/.test(c.l1) && /^(chaud|froid|moussant|de soleil|de bouche|tiède)/.test(c.right)],
   // tout / tous
   // ("Les fleuves prennent tous leur source": after a verb, "tous" is the subject's.)
+  // ("raconter à tous ce qu’elle avait vu": "tous" is a pronoun there.)
   ["tous", (c) => (/^(la|ma|ta|sa|cette)$/.test(c.r1) ? "toute" : "tout"), (c) => /^(le|la|l’|mon|ma|ton|ta|son|sa|ce|cet|cette|notre|votre)$/.test(c.r1) &&
+    !/^(à|pour|de|avec|par|chez|entre|sur|contre|nous|vous|eux)$/.test(c.l1) && !(c.r1 === "ce" && /^(que|qu’|qui|dont)$/.test(c.r2)) &&
     !(c.l1 && c.morph(c.l1).some((m) => /:V[^/]*:(Ip|Iq|Is|If|K)/.test(m)) && !/^(ai|as|a|avons|avez|ont)$/.test(c.l1))],
   // maux / mots / mot / mal
   ["mots", "maux", (c) => /^(de tête|de ventre|de dos|de gorge|de cœur|d’estomac|de dents)/.test(c.right)],
