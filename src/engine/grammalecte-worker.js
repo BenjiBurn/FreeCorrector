@@ -89,7 +89,25 @@ const AUXILIARY_BEFORE = /(?:^|[\s’'])(suis|es|est|sommes|êtes|sont|étais|é
 // After an auxiliary, the misspelled word is most likely a past participle:
 // "sont partient" -> "parties", even though the dictionary's nearest words
 // are "partent" and "partirent". The contextual ranking picks the agreement.
+// Verb forms spelled as they sound: "fesait" (faisait), "disez" (dites).
+// All the forms of that tense are offered: the ranking in context picks the
+// person ("Ils fesait" -> faisaient).
+const PHONETIC_VERBS = [
+  [/^fes(ai[st]?|aient|ions|iez)$/, ["faisais", "faisait", "faisions", "faisiez", "faisaient"]],
+  [/^fes(ons)$/, ["faisons"]],
+  [/^(fesez|faisez|fesé)$/, ["faites"]],
+  [/^disez$/, ["dites"]],
+  [/^(fesant)$/, ["faisant"]],
+];
+
 function spellSuggestions(word, before = "") {
+  const lower = word.toLowerCase();
+  const phonetic = PHONETIC_VERBS.find(([re]) => re.test(lower));
+  if (phonetic) {
+    const forms = phonetic[1].map((f) => (word[0] === word[0].toUpperCase() ? f[0].toUpperCase() + f.slice(1) : f));
+    forms.only = [...forms];
+    return forms;
+  }
   const out = fcSpellSuggestions(spellChecker, word, MAX_SPELL_SUGGESTIONS);
   if (!AUXILIARY_BEFORE.test(before)) return out;
   const participles = [];
@@ -212,9 +230,12 @@ function rankParagraph(paragraph, paraStart, found) {
         (/(?:^|\s)(suis|es|est|sommes|êtes|sont|étais|était|étaient|serai|sera|seront|été)\s+$/i.test(fixed.slice(Math.max(0, start + delta - 12), start + delta))
           ? m.replacements.filter((r) => spellChecker.getMorph(r).some((x) => /:Q/.test(x)))
           : null);
+      const only = m.replacements.only;
       m.replacements = fcRankSuggestions(
         spellChecker, fixed, start + delta, m.length, m.replacements, m.category === "spelling"
       );
+      // Phonetic verb forms: the ranking only picks the person among them.
+      if (only) m.replacements = [...m.replacements.filter((r) => only.includes(r)), ...only.filter((r) => !m.replacements.includes(r))];
       m.replacements = preferParticiple(m.replacements, participles);
       m.replacements = agreeWithSubject(fixed, start + delta, m.replacements);
     }
@@ -297,6 +318,7 @@ function check(text) {
   init();
   // Tokens over 40 characters are hashes, keys or encoded data, never words:
   // blanked (same length, so offsets hold) instead of costing seconds.
+  const original = text;
   text = text.replace(/\S{41,}/g, (s) => " ".repeat(s.length));
   const matches = [];
   let paraStart = 0;
@@ -314,7 +336,8 @@ function check(text) {
     }
     paraStart += paragraph.length + 1;
   }
-  return matches;
+  // Nothing about the blanks themselves ("multiple spaces").
+  return matches.filter((m) => original.slice(m.offset, m.offset + m.length) === m.word);
 }
 
 self.onmessage = (event) => {

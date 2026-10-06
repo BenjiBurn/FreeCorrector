@@ -1,0 +1,175 @@
+// "Dumb" French mistakes (2026-10-06): homophones and phonetic spellings,
+// written before the round that targets them.
+// [sentence, wrong text, expected first suggestion]; null = must not be flagged.
+
+module.exports = [
+  // c'est / s'est / ces / ses / sait / sais
+  ["Cest vraiment trop bien.", "Cest", "C’est"],
+  ["Sait pas grave, on recommence.", "Sait", "C’est"],
+  ["Ses bon, j’ai compris.", "Ses", "C’est"],
+  ["Il c’est levé tôt ce matin.", "c’est", "s’est"],
+  ["Elle ses fait mal au dos.", "ses", "s’est"],
+  ["Je sait pas ce qu’il veut.", "sait", "sais"],
+  ["Tu sait que je t’aime.", "sait", "sais"],
+  ["Elle a oublié c’est clés.", "c’est", "ses"],
+  // ça / sa
+  ["Sa me fait plaisir.", "Sa", "Ça"],
+  ["Sa fait longtemps.", "Sa", "Ça"],
+  ["Il a perdu ça voiture.", "ça", "sa"],
+  // a / à
+  ["Il a commencé a pleuvoir.", "a", "à"],
+  ["Je suis a la maison.", "a", "à"],
+  ["J’ai un truc a te dire.", "a", "à"],
+  ["Elle à raison.", "à", "a"],
+  ["Il y à du monde.", "à", "a"],
+  ["C’est a toi de jouer.", "a", "à"],
+  // et / est
+  ["Il et parti hier.", "et", "est"],
+  ["Elle est belle est gentille.", "est", "et"],
+  ["Paul est Marie viennent ce soir.", "est", "et"],
+  // on / ont
+  ["Ils on gagné le match.", "on", "ont"],
+  ["Ont va au cinéma ce soir.", "Ont", "On"],
+  ["Les enfants on faim.", "on", "ont"],
+  // son / sont
+  ["Ils son partis en vacances.", "son", "sont"],
+  ["Il a pris sont manteau.", "sont", "son"],
+  // ou / où
+  ["Tu vas ou ce soir ?", "ou", "où"],
+  ["Je ne sais pas ou il est.", "ou", "où"],
+  // la / là / l'a
+  ["Il la vu hier.", "la", "l’a"],
+  ["Je suis la, devant chez toi.", "la", "là"],
+  // ce / se
+  ["Il ce lève tôt.", "ce", "se"],
+  ["Se matin, il pleuvait.", "Se", "Ce"],
+  ["Ils ce sont disputés.", "ce", "se"],
+  // mes / mais / met
+  ["Je voulais venir mes je suis malade.", "mes", "mais"],
+  ["Il mais toujours du sucre.", "mais", "met"],
+  // peu / peut / peux
+  ["Je peut venir demain.", "peut", "peux"],
+  ["Il peu pas venir.", "peu", "peut"],
+  ["Tu peut m’aider ?", "peut", "peux"],
+  ["J’ai un peut froid.", "peut", "peu"],
+  // quand / quant / qu'en
+  ["Quant est-ce que tu viens ?", "Quant", "Quand"],
+  ["Tu viens quant ?", "quant", "quand"],
+  // quel / qu'elle
+  ["Je crois quel est malade.", "quel", "qu’elle"],
+  ["Quelle heure est-il ?", null, null],
+  // leur / leurs
+  ["Je leurs ai dit de venir.", "leurs", "leur"],
+  // ni / n'y
+  ["Je ni suis pas allé.", "ni", "n’y"],
+  // si / s'y
+  ["Il si connaît bien.", "si", "s’y"],
+  // sans / s'en / c'en
+  ["Il sans va demain.", "sans", "s’en"],
+  ["Je m’en fiche, il sans fout.", "sans", "s’en"],
+  // dans / d'en
+  ["Il faut dans parler.", "dans", "d’en"],
+  // tout / tous
+  ["Tous le monde est là.", "Tous", "Tout"],
+  ["Je les ai tout vus.", null, null],
+  // près / prêt
+  ["Je suis près à partir.", "près", "prêt"],
+  // plutôt / plus tôt
+  ["Il est arrivé plutôt que prévu.", "plutôt", "plus tôt"],
+  // -er / -é / -ez
+  ["Il faut manger.", null, null],
+  ["Je vais manger.", null, null],
+  ["J’ai manger une pomme.", "manger", "mangé"],
+  ["Vous avez manger ?", "manger", "mangé"],
+  ["Il faut mangé.", "mangé", "manger"],
+  ["Je vais mangé.", "mangé", "manger"],
+  ["Vous devez venir.", null, null],
+  ["Vous devez venez.", "venez", "venir"],
+  ["Venez manger !", null, null],
+  ["Je voudrais vous parlez.", "parlez", "parler"],
+  ["Pour allé au travail, je prends le bus.", "allé", "aller"],
+  ["Après avoir mangé, il est parti.", null, null],
+  ["Sans le savoir, il a gagné.", null, null],
+  ["Je l’ai vu partir.", null, null],
+  ["Je l’ai vu partit.", "partit", "partir"],
+  // -ait / -ais / -é / -er (imperfect)
+  ["Je mangeait une pomme.", "mangeait", "mangeais"],
+  ["Tu était où ?", "était", "étais"],
+  ["Il étais content.", "étais", "était"],
+  ["J’allais le faire.", null, null],
+  ["Je savait que tu viendrais.", "savait", "savais"],
+  // je serai / serais (future/conditional)
+  ["Si j’avais su, je serai venu.", "serai", "serais"],
+  ["Demain, je serais là à 8 h.", null, null],
+  // j'ai / j'ais / g
+  ["J’ais faim.", "J’ais", "J’ai"],
+  ["G faim.", "G", "J’ai"],
+  ["Jai pas le temps.", "Jai", "J’ai"],
+  ["Jsuis fatigué.", "Jsuis", "Je suis"],
+  // SMS style
+  ["Slt sa va ?", "sa", "ça"],
+  ["Koi de neuf ?", "Koi", "Quoi"],
+  ["Pk tu dis ça ?", null, null],
+  ["Je c pas.", "c", "sais"],
+  ["Ta vu le match ?", "Ta", "T’as"],
+  ["Ta raison.", "Ta", "T’as"],
+  ["Jvais au ciné.", "Jvais", "Je vais"],
+  ["Ya personne.", "Ya", "Il y a"],
+  // conjugation / agreement basics
+  ["Les enfants joue dehors.", "joue", "jouent"],
+  ["Nous allons au parc.", null, null],
+  ["Nous allont au parc.", "allont", "allons"],
+  ["Ils fesait du bruit.", "fesait", "faisaient"],
+  ["Je fesais mes devoirs.", "fesais", "faisais"],
+  ["Vous faite quoi ?", "faite", "faites"],
+  ["Vous dites n’importe quoi.", null, null],
+  ["Vous disez n’importe quoi.", "disez", "dites"],
+  ["Il faut que je soit à l’heure.", "soit", "sois"],
+  ["Il faut que tu soit là.", "soit", "sois"],
+  ["Je croit que oui.", "croit", "crois"],
+  ["Je voit bien.", "voit", "vois"],
+  ["Il voix bien.", "voix", "voit"],
+  ["Je doit y aller.", "doit", "dois"],
+  ["Je veut partir.", "veut", "veux"],
+  ["Je prend le train.", "prend", "prends"],
+  ["Je répond demain.", "répond", "réponds"],
+  ["Il répont toujours.", "répont", "répond"],
+  ["Je vien demain.", "vien", "viens"],
+  ["Il vien demain.", "vien", "vient"],
+  // gender / number
+  ["Une grand maison.", "grand", "grande"],
+  ["Les petit chats.", "petit", "petits"],
+  ["Des gros problème.", "problème", "problèmes"],
+  ["Mon amie est gentil.", "gentil", "gentille"],
+  ["Toute les filles sont là.", "Toute", "Toutes"],
+  // misc homophones
+  ["J’ai faim, je vais manger du pain.", null, null],
+  ["Il fait beau, on va a la mer.", "a", "à"],
+  ["Ma mer est malade.", "mer", "mère"],
+  ["Je suis dans le verre.", null, null],
+  ["Il est sensé venir.", "sensé", "censé"],
+  ["Quoique tu fasses, je t’aime.", "Quoique", "Quoi que"],
+  ["Au temps pour moi.", null, null],
+  ["Je vous en pris.", "pris", "prie"],
+  ["Je suis en train de manger.", null, null],
+  ["Ça c’est bien passé.", "c’est", "s’est"],
+  ["Ces le meilleur.", "Ces", "C’est"],
+  ["Il fait froid dehors.", null, null],
+  ["Il fais froid.", "fais", "fait"],
+  ["Quesque tu fais ?", "Quesque", "Qu’est-ce que"],
+  ["Qu’est ce que tu fais ?", "est ce", "est-ce"],
+  ["Parceque je veux.", "Parceque", "Parce que"],
+  ["Peut être demain.", "Peut être", "Peut-être"],
+  ["Il peut être là demain.", null, null],
+  ["Aujourdhui il fait beau.", "Aujourdhui", "Aujourd’hui"],
+  ["Biensur que oui.", "Biensur", "Bien sûr"],
+  ["Bien sur que oui.", "sur", "sûr"],
+  ["Au faite, tu viens ?", "faite", "fait"],
+  ["Entrain de bosser.", "Entrain", "En train"],
+  ["Sava et toi ?", "Sava", "Ça va"],
+  ["Comment sa va ?", "sa", "ça"],
+  ["Merci a toi.", "a", "à"],
+  ["Bonne anniversaire !", "Bonne", "Bon"],
+  ["Bonne appétit !", "Bonne", "Bon"],
+  ["Bon courage pour demain.", null, null],
+];

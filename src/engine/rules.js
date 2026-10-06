@@ -55,6 +55,22 @@ const FC_SUBJECTS = new Set(["je", "j’", "tu", "il", "elle", "on", "nous", "vo
 const FC_CLAUSE_START = new Set(["", ".", ",", ";", ":", "!", "?", "et", "mais", "si", "quand", "que", "qu’", "comme", "car", "donc", "alors", "puis", "lorsque", "parce"]);
 const FC_KNOW_VERBS = /^(sai[st]|savez|savons|savent|savoir|su|demande[sz]?|demandent|demander|dis|dit|dites|disent|dire|comprends?|comprenez|comprendre|ignore[sz]?|voi[st]|voyez|voir|regarde[sz]?|montre[sz]?|explique[sz]?|cherche[sz]?|devine[sz]?|oublié|rappelle[sz]?|imagine[sz]?)$/;
 const FC_TIME_PLACE_NOUNS = /^(jour|moment|endroit|ville|pays|année|époque|instant|soir|matin|nuit|semaine|mois|heure|lieu|pièce|maison|rue|quartier|période|temps|là)$/;
+// Words written as they sound (texting), with their standard spelling.
+// Deliberate abbreviations ("stp", "mdr", "bcp") are not here: they are
+// accepted as they are (informal.js).
+const FC_SMS_WORDS = {
+  jsuis: "je suis", chui: "je suis", chuis: "je suis", jvais: "je vais", jsais: "je sais", jpeux: "je peux",
+  jveux: "je veux", jpense: "je pense", jcrois: "je crois", jarrive: "j’arrive", jtaime: "je t’aime",
+  jte: "je te", jme: "je me", jle: "je le", ya: "il y a", koi: "quoi", kwa: "quoi", kan: "quand", ke: "que",
+  kel: "quel", kelle: "quelle", ki: "qui", sava: "ça va", cava: "ça va", quesque: "qu’est-ce que",
+  keske: "qu’est-ce que", kesk: "qu’est-ce que", kesse: "qu’est-ce", biensur: "bien sûr", bisur: "bien sûr",
+  dacc: "d’accord", dac: "d’accord", dak: "d’accord", daccord: "d’accord", tjr: "toujours", tjrs: "toujours",
+  jamai: "jamais", aujourdhui: "aujourd’hui", parceque: "parce que", jé: "j’ai", tro: "trop", oci: "aussi",
+  ossi: "aussi", mé: "mais", tt: "tout", ct: "c’était", cétait: "c’était", cété: "c’était", jétais: "j’étais",
+  jetais: "j’étais", jaurais: "j’aurais", javais: "j’avais", jarrête: "j’arrête", tinquiète: "t’inquiète",
+  tinquietes: "t’inquiète",
+};
+
 const FC_CA_VERBS = /^(va|vas|ira|irait|allait|suffit|suffira|dépend|arrive|change|commence|existe|sert|coûte|vaut|devient|reste|semble|ressemble|peut|pourrait|doit|devrait|fait|faisait|fera|ferait|marche|marchait|roule|craint|compte|presse|passe|tombe|tourne|plaît|plait|m’|t’|s’|n’|ne|me|te|nous|vous|lui|leur|y|en)$/;
 
 // Words with their position: letters (with apostrophes and hyphens) or a single
@@ -85,21 +101,25 @@ function fcCustomRules(paragraph, spellChecker, existing) {
   const free = (t) => !existing.some((m) => m.offset < t.end && t.start < m.offset + m.length) &&
     !out.some((m) => m.offset < t.end && t.start < m.offset + m.length);
   const morph = (t) => (t ? fcMorph(spellChecker, t.text) : []);
+  // Fixes use the apostrophe the user types.
+  const straight = paragraph.includes("'") && !paragraph.includes("’");
+  const apo = (s) => (straight ? s.replace(/’/g, "'") : s);
   // `override`: this rule knows better than Grammalecte's overlapping report,
   // which checkParagraph then drops ("je c’est" is "sais", not "s’est").
+  // `replacement`: one fix, or several, best first.
   const add = (t, replacement, message, override = false) => {
     if (override ? out.some((m) => m.offset < t.end && t.start < m.offset + m.length) : !free(t)) return;
-    const fixed = t.text[0] === t.text[0].toUpperCase() && t.text[0] !== t.text[0].toLowerCase()
-      ? replacement[0].toUpperCase() + replacement.slice(1)
-      : replacement;
+    const upper = t.text[0] === t.text[0].toUpperCase() && t.text[0] !== t.text[0].toLowerCase();
+    const fixes = (Array.isArray(replacement) ? replacement : [replacement])
+      .map((r) => (upper ? r[0].toUpperCase() + r.slice(1) : r));
     out.push({
       override,
       offset: t.start,
       length: t.end - t.start,
       word: t.text,
       message,
-      replacements: [fixed],
-      ruleId: `FC_${replacement.toUpperCase().replace(/[^A-Z]/g, "_")}`,
+      replacements: fixes,
+      ruleId: `FC_${fixes[0].toUpperCase().replace(/[^A-Z]/g, "_")}`,
       category: "grammar",
       label: "Grammaire",
     });
@@ -134,15 +154,24 @@ function fcCustomRules(paragraph, spellChecker, existing) {
 
     // "elle sait trompée" -> s’est
     if (/^(sait|sais|ses|ces|cest|c’est)$/.test(t.lower) && next && FC_SUBJECTS.has(prevLower)) {
-      if (prevLower !== "je" && prevLower !== "tu" && fcHas(morph(next), /:Q/) && !fcHas(morph(next), /:(N|Y)/)) {
-        add(t, "s’est", "Verbe pronominal au passé composé : « s’est » + participe passé.");
+      // "fait", "passé" are nouns too: what counts is that they are participles.
+      if (prevLower !== "je" && prevLower !== "tu" && fcHas(morph(next), /:V[^/]*:Q/) && !fcHas(morph(next), /:Y/)) {
+        add(t, apo("s’est"), "Verbe pronominal au passé composé : « s’est » + participe passé.", true);
       }
+    }
+
+    // "Je cest pas" -> sais
+    if (t.lower === "cest" && (/^(je|tu)$/.test(prevLower) || (/^(ne|n’)$/.test(prevLower) && /^(je|tu)$/.test(prev2?.lower ?? "")))) {
+      add(t, "sais", "Confusion probable : « sais » (verbe savoir) après « je » ou « tu ».", true);
     }
 
     // "sa va", "si tu veux, sa marche." -> ça
     if (t.lower === "sa" && next) {
       const clauseStart = FC_CLAUSE_START.has(prevLower);
-      const clauseEnd = !next2 || /^[,.;:!?]$/.test(next2.text);
+      // ("Sa marche pas", "sa marche bien": the clause ends after an adverb.)
+      const clauseEnd = !next2 || /^[,.;:!?]$/.test(next2.text) ||
+        (/^(pas|plus|bien|mal|jamais|trop|super|grave|nickel|toujours|encore|vraiment)$/.test(next2.lower) &&
+         (!tokens[i + 3] || /^[,.;:!?]$/.test(tokens[i + 3].text)));
       const isNoun = fcHas(morph(next), /:N/);
       // Words that can only follow "ça": "sa va", "sa suffit", "sa me plaît".
       const onlyAfterCa = FC_CA_VERBS.test(next.lower) && !isNoun;
@@ -326,10 +355,26 @@ function fcCustomRules(paragraph, spellChecker, existing) {
     }
 
     // "Je pense quel est partie" -> qu’elle
-    if (t.lower === "quel" && /^(pense|penses|pensait|crois|croit|sais|sait|dit|dis|espère|trouve|sens|vois|savais|disait|croyais|pensais|ai|as|a)$/.test(prevLower) &&
+    // ("Je sais quel est le problème" has a determiner after "est": left alone.)
+    if (t.lower === "quel" && /^(pense|penses|pensait|crois|croit|croyais|croyait|sais|sait|savais|savait|dit|dis|disait|espère|trouve|trouvais|sens|vois|pensais|ai|as|a|dirais|vu|entendu)$/.test(prevLower) &&
         next && /^(est|était|sera|serait|a|avait|aura|va|allait|vient|veut|peut|doit)$/.test(next.lower) &&
-        next2 && (fcHas(morph(next2), /:Q/) || !fcHas(morph(next2), /:(N|D)/)) && /^\p{Ll}/u.test(next2.text)) {
+        next2 && !fcHas(morph(next2), /:D/) && /^\p{Ll}/u.test(next2.text)) {
       add(t, "qu’elle", "Confusion probable : « qu’elle » (que + elle) plutôt que « quel ».");
+    }
+
+    // "Je vous en pris" -> prie
+    if (t.lower === "pris" && prevLower === "en" && prev2?.lower === "vous" && (!next || /^[.!,]$/.test(next.text))) {
+      add(t, "prie", "Formule de politesse : « je vous en prie » (verbe prier).");
+    }
+
+    // "Elle a oublié c’est clés" -> ses (or ces): "c’est" before a plural noun
+    // ("c’est dans…": "dans" is also a rare plural noun; grammatical words are left out.)
+    if (t.lower === "c’" && next?.lower === "est" && next2 && fcHas(morph(next2), /:N:.:p/) &&
+        !fcHas(morph(next2), /:(N:.:[si]|V|A|R|G|W|D|O)/)) {
+      const clause = tokens.slice(Math.max(0, i - 6), i).map((x) => x.lower);
+      const owner = clause.some((w) => /^(il|elle|on|ils|elles)$/.test(w));
+      add({ start: t.start, end: next.end, text: t.text + next.text }, owner ? ["ses", "ces"] : ["ces", "ses"],
+        "Devant un nom pluriel : « ses » (à lui, à elle) ou « ces » (ceux-là).", true);
     }
 
     // "Je vous pris d’agréer" -> prie (closing formula)
@@ -338,10 +383,12 @@ function fcCustomRules(paragraph, spellChecker, existing) {
       add(t, prev2.lower === "nous" ? "prions" : "prie", "Formule de politesse : « je vous prie de… » (verbe prier).");
     }
 
-    // "Ça c’est passé très vite" -> s’est (pronominal verb after a subject)
-    if (t.lower === "c’" && next?.lower === "est" && next2 && /^(ça|cela|il|elle|on|tout|qui)$/.test(prevLower) &&
-        !(prev2 && prev2.text === ",") && fcHas(morph(next2), /:V.*:Q/) &&
-        tokens[i + 3] && !/^[,.;:!?)]$/.test(tokens[i + 3].text)) {
+    // "Ça c’est passé très vite", "ça c’est bien passé" -> s’est (pronominal verb after a subject)
+    const adverbFirst = next2 && /^(bien|très|mal|vite|vraiment|super|trop|tellement|plutôt|assez)$/.test(next2.lower);
+    const participle = adverbFirst ? tokens[i + 3] : next2;
+    if (t.lower === "c’" && next?.lower === "est" && participle && /^(ça|cela|il|elle|on|tout|qui)$/.test(prevLower) &&
+        !(prev2 && prev2.text === ",") && fcHas(morph(participle), /:V.*:Q/) &&
+        (adverbFirst || (tokens[i + 3] && !/^[,.;:!?)]$/.test(tokens[i + 3].text)))) {
       add({ start: t.start, end: next.end, text: t.text + next.text }, "s’est", "Verbe pronominal : « s’est » (se + être), pas « c’est ».", true);
     }
 
@@ -372,6 +419,169 @@ function fcCustomRules(paragraph, spellChecker, existing) {
         const inf = morph(t).find((m) => /:V.*:2p/.test(m));
         const lemma = inf?.slice(1, inf.indexOf("/"));
         if (lemma && lemma !== t.lower) add(t, lemma, "Après ce verbe, il faut l’infinitif.");
+      }
+    }
+
+    // ---------- SMS and phonetic spellings ----------
+
+    // "Jsuis", "Ya", "Koi", "Sava", "Quesque": whole words written as they sound.
+    const sms = FC_SMS_WORDS[t.lower];
+    // A capitalized one inside a sentence is a name ("Michael Chui").
+    const sentenceStart = !prev || /^[.!?…]$/.test(prev.text);
+    if (sms && (sentenceStart || /^\p{Ll}/u.test(t.text)) &&
+        !(t.lower === "ya" && prev && !/^[.!?,;:]$/.test(prev.text) && !FC_CLAUSE_START.has(prevLower))) {
+      add(t, apo(sms), `Écriture phonétique : « ${apo(sms)} ».`, true);
+    }
+
+    // "G faim", "g vu le film" -> J’ai
+    if (t.text.length === 1 && t.lower === "g" && (!prev || FC_CLAUSE_START.has(prevLower)) && next && /^\p{Ll}/u.test(next.text)) {
+      add(t, apo("j’ai"), "Écriture phonétique : « j’ai ».", true);
+    }
+
+    // "Je c pas", "c pas grave" -> sais, c’est
+    if (t.text.length === 1 && t.lower === "c" && next && !/^[’'.]/.test(paragraph[t.end] ?? "")) {
+      if (/^(je|tu|j’)$/.test(prevLower) || (/^(ne|n’)$/.test(prevLower) && /^(je|tu)$/.test(prev2?.lower ?? ""))) {
+        add(t, "sais", "Écriture phonétique : « sais » (verbe savoir).", true);
+      } else if (!prev || FC_CLAUSE_START.has(prevLower) || /^(mais|et|donc|ouais|oui|non)$/.test(prevLower)) {
+        add(t, apo("c’est"), "Écriture phonétique : « c’est ».", true);
+      }
+    }
+
+    // "Ta vu le match ?", "Ta raison." -> T’as (tu as)
+    if (t.lower === "ta" && (!prev || FC_CLAUSE_START.has(prevLower) || /^[.!?,;:]$/.test(prev.text)) && next &&
+        ((fcHas(morph(next), /:V[^/]*:Q/) && !fcHas(morph(next), /:N:f/)) ||
+         (/^(raison|tort)$/.test(next.lower) && (!next2 || /^[.!?,;:]$/.test(next2.text))))) {
+      add(t, apo("t’as"), "Familier pour « tu as » : « t’as ».", true);
+    }
+
+    // "J’ais faim", "j’ait" -> j’ai
+    if (t.lower === "j’" && next && /^(ais|ait|é|es)$/.test(next.lower)) {
+      add({ start: t.start, end: next.end, text: t.text + next.text }, `${t.text}ai`, "Verbe avoir : « j’ai ».", true);
+    }
+
+    // ---------- Homophones ----------
+
+    // "Sa fait longtemps": "sa" never introduces a masculine-only noun.
+    if (t.lower === "sa" && next && FC_CLAUSE_START.has(prevLower) && fcHas(morph(next), /:V[^/]*:3s/) &&
+        !fcHas(morph(next), /:[NA]:[fe]/)) {
+      add(t, "ça", "Confusion probable : « ça » (cela) plutôt que « sa » (possessif).", true);
+    }
+
+    // "Les enfants on faim" -> ont (after a plural noun, before a noun or a participle)
+    if (t.lower === "on" && prev && fcHas(morph(prev), /:N:.:p/) && !fcHas(morph(prev), /:N:.:s/) && next &&
+        (fcHas(morph(next), /:V[^/]*:Q/) || (fcHas(morph(next), /:N/) && !fcHas(morph(next), /:V[^/]*:(Ip|Iq|If|K|Is):3s/)))) {
+      add(t, "ont", "Confusion probable : « ont » (verbe avoir) plutôt que « on ».");
+    }
+
+    // "Tu vas ou ce soir ?" -> où
+    if (t.lower === "ou" && prev && /^(vas|va|allez|vont|allons|aller|es|est|êtes|sont|habites|habite|habitez|travailles|travaille|pars|part|partez|étais|était|vis|vit|vivez)$/.test(prevLower) &&
+        (!next || /^[.!?]$/.test(next.text) || /^(ce|demain|maintenant|exactement|alors|aujourd’hui|cet|cette|en)$/.test(next.lower))) {
+      add(t, "où", "Confusion probable : « où » (lieu) plutôt que « ou » (choix).");
+    }
+
+    // "Tu viens quant ?" -> quand ("quant" only comes before "à", "au", "aux")
+    if (t.lower === "quant" && !(next && /^(à|au|aux|a)$/.test(next.lower))) {
+      add(t, "quand", "« Quant » s’emploie seulement dans « quant à » : ici, « quand ».", true);
+    }
+
+    // "Je ni suis pas allé" -> n’y
+    if (t.lower === "ni" && prev && /^(je|j’|tu|il|elle|on|nous|vous|ils|elles|ça)$/.test(prevLower) && next && fcHas(morph(next), /:V/)) {
+      add(t, apo("n’y"), "Confusion probable : « n’y » (ne + y) plutôt que « ni ».", true);
+    }
+
+    // "Il sans va", "il sans fout" -> s’en
+    if (t.lower === "sans" && prev && next && fcHas(morph(next), /:V[^/]*:(Ip|Iq|If|K|Sp)/) && !fcHas(morph(next), /:N/)) {
+      const fix = { je: "m’en", tu: "t’en", il: "s’en", elle: "s’en", on: "s’en", ils: "s’en", elles: "s’en" }[prevLower];
+      if (fix) add(t, apo(fix), `Confusion probable : « ${apo(fix)} » plutôt que « sans ».`, true);
+    }
+
+    // "Il faut dans parler" -> d’en
+    if (t.lower === "dans" && next && fcHas(morph(next), /:Y/) && /(er|ir|re)$/.test(next.lower)) {
+      add(t, apo("d’en"), "Confusion probable : « d’en » (de + en) plutôt que « dans ».", true);
+    }
+
+    // "arrivé plutôt que prévu" -> plus tôt
+    if (t.lower === "plutôt" && next?.lower === "que" && next2 && /^(prévu|prévue|prévus|prévues|d’habitude|habituellement|d’ordinaire|hier|la|ce|cette|moi|toi|lui|nous|vous|eux)$/.test(next2.lower) &&
+        prev && fcHas(morph(prev), /:V/)) {
+      add(t, "plus tôt", "« Plus tôt » (avant) plutôt que « plutôt » (de préférence).");
+    }
+
+    // "Ma mer est malade" -> mère
+    if (t.lower === "mer" && /^(ma|ta|sa)$/.test(prevLower) &&
+        !(next && /^(préférée|favorite|natale|bleue|calme)$/.test(next.lower))) {
+      add(t, "mère", "Confusion probable : « mère » (maman) plutôt que « mer ».");
+    }
+
+    // "Quoique tu fasses" -> Quoi que (whatever), not "quoique" (although)
+    if (/^(quoique|quoiqu’)$/.test(t.lower) && next && FC_SUBJECTS.has(next.lower) && next2 &&
+        /^(fasses|fasse|fassiez|fassions|fassent|dises|dise|disiez|disent|penses|pense|pensiez|arrive|arrivent|décides|décide|choisisses|choisisse|veuilles|veuille)$/.test(next2.lower)) {
+      add(t, t.lower === "quoique" ? "quoi que" : apo("quoi qu’"), "« Quoi que » (quelle que soit la chose que) s’écrit en deux mots.", true);
+    }
+
+    // "Au faite, tu viens ?" -> au fait
+    if (t.lower === "faite" && prevLower === "au" && (!next || /^[,.!?]$/.test(next.text))) {
+      add(t, "fait", "« Au fait » (à propos) s’écrit sans « e ».", true);
+    }
+
+    // "Entrain de bosser" -> En train de
+    if (t.lower === "entrain" && next && /^(de|d’)$/.test(next.lower)) {
+      add(t, "en train", "« En train de » s’écrit en deux mots.", true);
+    }
+
+    // "Je l’ai vu partit", "il va sortit" -> infinitive
+    if (prev && /^(vu|vue|vus|vues|entendu|entendue|laissé|laissée|fait|regardé|senti|voir|entendre|laisser|faire|vais|vas|va|allons|allez|vont|peux|peut|pouvons|pouvez|peuvent|dois|doit|devons|devez|doivent|veux|veut|voulons|voulez|veulent|faut)$/.test(prevLower) &&
+        fcHas(morph(t), /:V[^/]*:Is:3s/) && !fcHas(morph(t), /:(N|A|Q|Y|Ip)/)) {
+      const lemma = morph(t).find((m) => /:Is:3s/.test(m))?.match(/^>([^/]+)\//)?.[1];
+      if (lemma && lemma !== t.lower) add(t, lemma, "Après ce verbe, il faut l’infinitif.");
+    }
+
+    // "J’ai tous compris" -> tout (a singular subject: "ils ont tous compris" is fine)
+    if (t.lower === "tous" && /^(ai|as|a|avais|avait)$/.test(prevLower) && /^(j’|tu|il|elle|on)$/.test(prev2?.lower ?? "") &&
+        next && fcHas(morph(next), /:V[^/]*:Q/)) {
+      add(t, "tout", "« Tout » (toute chose) : invariable ici.");
+    }
+
+    // "Si tu viens, je serais content" -> serai (conditional after "si" + present)
+    if (fcHas(morph(t), /:V[^/]*:K/) && !fcHas(morph(t), /:If/)) {
+      let k = i - 1;
+      while (k >= 0 && !/^[.!?]$/.test(tokens[k].text)) k--;
+      const clause = tokens.slice(k + 1, i);
+      // Strictly "si + subject + present, … conditional": "si tu viens, je serais".
+      const si = clause.findIndex((x, j) => /^(si|s’)$/.test(x.lower) &&
+        (FC_SUBJECTS.has(clause[j + 1]?.lower) || /^(il|ils)$/.test(clause[j + 1]?.lower)) &&
+        fcHas(morph(clause[j + 2]), /:V[^/]*:Ip/) && !fcHas(morph(clause[j + 2]), /:V[^/]*:(Iq|K)/));
+      const comma = clause.findIndex((x) => x.text === ",");
+      const present = si >= 0 && comma > si + 2 && !clause.slice(si + 1, comma).some((x) => fcHas(morph(x), /:V[^/]*:(Iq|K)/));
+      const person = morph(t).find((m) => /:K/.test(m))?.match(/:K:([123][sp])/)?.[1];
+      if (present && person) {
+        const lemma = morph(t).find((m) => /:K/.test(m)).match(/^>([^/]+)\//)[1];
+        let form = "";
+        try {
+          form = conj.getConj(lemma, ":If", `:${person}`) || "";
+        } catch {
+          // Unknown conjugation.
+        }
+        if (form && form !== t.lower) add(t, form, "Après « si » + présent, le futur : « " + form + " ».");
+      }
+    }
+
+    // "Si j’avais su, je serai venu" -> serais (future after a "si" + imperfect clause)
+    if (fcHas(morph(t), /:V[^/]*:If/) && !fcHas(morph(t), /:K/)) {
+      let k = i - 1;
+      while (k >= 0 && !/^[.!?]$/.test(tokens[k].text)) k--;
+      const clause = tokens.slice(k + 1, i);
+      const si = clause.findIndex((x) => /^(si|s’)$/.test(x.lower));
+      const imperfect = si >= 0 && clause.slice(si + 1, si + 4).some((x) => fcHas(morph(x), /:V[^/]*:Iq/));
+      const person = morph(t).find((m) => /:If/.test(m))?.match(/:If:([123][sp])/)?.[1];
+      if (imperfect && person) {
+        const lemma = morph(t).find((m) => /:If/.test(m)).match(/^>([^/]+)\//)[1];
+        let form = "";
+        try {
+          form = conj.getConj(lemma, ":K", `:${person}`) || "";
+        } catch {
+          // Unknown conjugation.
+        }
+        if (form && form !== t.lower) add(t, form, "Après « si » + imparfait, le conditionnel : « " + form + " ».");
       }
     }
 

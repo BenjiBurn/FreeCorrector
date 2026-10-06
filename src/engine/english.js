@@ -320,6 +320,8 @@ async function lintParagraph(paragraph) {
       const end = toUtf16(span.end);
       span.free?.();
       const word = paragraph.slice(offset, end);
+      // Harper saw blanks there ("Besançon" hidden from it): not a real error.
+      if (forHarper.slice(offset, end) !== word) continue;
       const kind = lint.lint_kind();
       const category = KIND_CATEGORY[kind] ?? "grammar";
       // Names ("Ceylon", "Turkey") are not errors, whatever Harper files them as.
@@ -397,6 +399,7 @@ export async function check(text) {
   await init();
   // Tokens over 40 characters are hashes, keys or encoded data, never words:
   // blanked (same length, so offsets hold) instead of costing seconds.
+  const original = text;
   text = text.replace(/\S{41,}/g, (s) => " ".repeat(s.length));
   const matches = [];
   let paraStart = 0;
@@ -422,5 +425,6 @@ export async function check(text) {
     }
     paraStart += paragraph.length + 1;
   }
-  return matches;
+  // Nothing about the blanks themselves ("multiple spaces").
+  return matches.filter((m) => original.slice(m.offset, m.offset + m.length) === m.word);
 }

@@ -14,7 +14,9 @@ const CONTRACTIONS = new Map(Object.entries({
   lets: null, // "lets" is a verb too: left alone
 }));
 
-const SUBJECT_FOR = { me: "I", him: "he", her: "she", them: "they", us: "we" };
+const SUBJECT_FOR = { me: "I", him: "he", her: "she", them: "they", us: "we", you: "you" };
+// Words that can follow "you're" (adjectives, adverbs…): not nouns.
+const YOURE_FOLLOWERS = /^(right|wrong|welcome|sure|late|early|kidding|joking|here|there|done|ready|fine|ok|okay|good|great|crazy|beautiful|amazing|awesome|funny|smart|nice|lucky|safe|free|busy|tired|sick|alone|home|back|away|next|up|out|in|on|off|so|too|not|very|really|always|never|just|still|already|all|both|the|a|an|my|our|his|her|their|going|gonna|being|getting|asking|correct|cute|sweet|brilliant|perfect|special|best|worst|first|last|only|right|mad|angry|sad|happy|cool|hot|cold|young|old|new|late|right|amazing|incredible|wonderful|terrible|stupid|silly|clever|kind|rude|mean|weird|strange|different|important|responsible|invited|allowed|supposed|able|unable|right|gone|over|through|about|almost|probably|definitely|absolutely|totally|literally|actually|also|still|such|like|worth|wise|welcome)$/;
 const LETS_VERBS = /^(go|do|see|try|start|make|get|talk|meet|eat|have|take|be|move|play|watch|find|keep|call|check|discuss|hope|work|think|look|wait|plan|celebrate|grab|head|catch|leave|stay|begin|focus|keep)$/;
 const IRREGULAR_PLURALS = /^(children|people|men|women|feet|teeth|mice|geese|police)$/;
 const YOUR_NOUNS = /^(help|time|message|email|e-mail|support|patience|answer|reply|feedback|response|understanding|attention|kindness|advice|work|effort|efforts|order|question|questions|interest|call|letter|gift|hospitality|cooperation|consideration|trust|comments|input|invitation|offer|application)$/;
@@ -135,17 +137,91 @@ export function englishRules(paragraph, existing, frequency = () => 0) {
     }
 
     // "will loose", "to loose" -> "lose"
-    if (t.lower === "loose" && prev && /^(will|to|not|don't|can|could|would|might|may|should|never|gonna|cannot|won't|didn't|must)$/.test(prev.lower)) {
+    // ("I loose my keys", "they loose weight": a subject before it, or an object after it.)
+    if (t.lower === "loose" && prev && (/^(will|to|not|don't|can|could|would|might|may|should|never|gonna|cannot|won't|didn't|must|i|you|we|they|always|often|sometimes|usually)$/.test(prev.lower) ||
+        (next && /^(my|your|his|her|our|their|it|them|weight|control|money|time|track|interest|hope|sleep|everything|anything|focus)$/.test(next.lower) && !/^(a|the|too|so|very|come|comes|came|break|broke|let|cut|hang|set)$/.test(prev.lower)))) {
       add(t.start, t.end, "lose", "Did you mean the verb “lose” (to misplace, to be defeated)?");
     }
 
     // "to many people", "I'm coming to." -> "too"
     if (t.lower === "to" && prev) {
       const atEnd = !next || isPunct(next);
-      const beforeAdverb = next && TOO_WORDS.test(next.lower) && (!next2 || isPunct(next2) || /^(people|things|times|of|to|for|and|now)$/.test(next2.lower));
-      if ((atEnd && /^(me|you|him|her|us|them|it|this|that|one|i|we|they|he|she)$/.test(prev.lower)) || beforeAdverb) {
+      const beforeAdverb = next && TOO_WORDS.test(next.lower) &&
+        (!next2 || isPunct(next2) || /^(people|things|times|of|to|for|and|now|today|tonight|outside|inside|here|there|lately|right|yet|but|so|in|at|on)$/.test(next2.lower));
+      // "I want to come to." -> the verb already had its "to": this one is "too".
+      // Same for "I'm going to the store to." ; but "I don't want to have to." is fine.
+      const secondTo = atEnd && toks.slice(Math.max(0, i - 5), i - 1).some((x) => x.lower === "to") &&
+        !/^(have|has|had|want|wants|need|needs|going|got|ought|used|like|love|try|able|plan|hope|mean|meant|supposed|allowed)$/.test(prev.lower);
+      if ((atEnd && /^(me|you|him|her|us|them|it|this|that|one|i|we|they|he|she)$/.test(prev.lower)) || beforeAdverb || secondTo) {
         add(t.start, t.end, "too", "Did you mean “too” (also, excessively)?");
       }
+      // "I have to cats" -> two (a plural noun, not a verb, follows)
+      if (next && /^(have|has|had|got|need|needs|bought|buy|want|wants|with|only|about|for|ate|saw)$/.test(prev.lower) &&
+          /^\p{Ll}+s$/u.test(next.text) && !/(ss|us|is)$/.test(next.lower) && (!next2 || isPunct(next2) || /^(and|or|at|in|on|but)$/.test(next2.lower)) &&
+          frequency(next.lower.slice(0, -1)) >= 3.5) {
+        add(t.start, t.end, "two", "Did you mean the number “two”?");
+      }
+    }
+
+    // "I'd rather walk then drive", "more then ten" -> than
+    // (The comparison word must be in the same phrase: not "rather, and then".)
+    let comparison = false;
+    for (let k = i - 1; k >= Math.max(0, i - 4); k--) {
+      if (isPunct(toks[k]) || /^(and|or|but|so|team's)$/.test(toks[k].lower)) break;
+      if (/^(rather|more|less|better|worse|different|fewer|bigger|smaller|older|younger|faster|slower|higher|lower|longer|shorter|easier|harder|cheaper|larger)$/.test(toks[k].lower)) comparison = true;
+    }
+    if (t.lower === "then" && comparison) {
+      add(t.start, t.end, "than", "Comparisons take “than”, not “then”.");
+    }
+
+    // "I except your apology" -> accept
+    if (t.lower === "except" && prev && /^(i|you|we|they|will|to|can|could|would|should|please|must|not|don't|didn't|can't|cannot|won't|couldn't|wouldn't|shouldn't|gladly|happily)$/.test(prev.lower)) {
+      add(t.start, t.end, "accept", "Did you mean the verb “accept” (to agree to take)?");
+    }
+
+    // "I don't know weather he's coming" -> whether
+    if (t.lower === "weather" && prev && !/^(the|this|that|bad|good|nice|cold|hot|warm|some|any|of|in|great|lovely|terrible|our|your|my|their|what)$/.test(prev.lower) &&
+        next && /^(or|he|she|it|they|we|you|i|he's|she's|it's|they're|we're|you're|i'm|to|not|there|this|that)$/.test(next.lower)) {
+      add(t.start, t.end, "whether", "Did you mean “whether” (if)?");
+    }
+
+    // "Were are you going?" -> Where ; "Where going to the beach" -> We're
+    if (clauseStart && t.lower === "were" && next && /^(are|is|do|does|did|was|were|can|will|should|have|has)$/.test(next.lower)) {
+      add(t.start, t.end, "where", "Did you mean “where” (which place)?");
+    }
+    if (clauseStart && t.lower === "where" && next && /^(going|coming|leaving|having|trying|planning|getting|doing|staying|waiting|looking|moving|working|late|here|done|ready|sorry|fine|not|so|all|happy|back|almost|still|always|never|on|off|out|lost|good|okay|ok)$/.test(next.lower)) {
+      add(t.start, t.end, "we're", "Did you mean “we're” (we are)?");
+    }
+
+    // "There coming tomorrow" -> They're
+    if (clauseStart && t.lower === "there" && next && /^(coming|going|leaving|doing|trying|getting|having|making|saying|looking|waiting|playing|working|planning|not|so|always|never|really)$/.test(next.lower) &&
+        !(next2 && /^(to|be|is)$/.test(next2.lower) && /^(not|so|always|never|really)$/.test(next.lower))) {
+      add(t.start, t.end, "they're", "Did you mean “they're” (they are)?");
+    }
+
+    // "Whose coming tonight?" -> Who's
+    if (t.lower === "whose" && next && /^(\p{Ll}+ing|been|got|there|that|this|not|gonna)$/u.test(next.lower) && !/^(thing|king|ring|wing|building|wedding|meeting|feeling|morning|evening|painting|clothing|ceiling|darling|sibling|everything|something|nothing|anything)$/.test(next.lower)) {
+      add(t.start, t.end, "who's", "Did you mean “who's” (who is)?");
+    }
+
+    // "Is this you're bag?" -> your (a noun follows, then the sentence ends)
+    if (t.lower === "you're" && next && /^\p{Ll}+$/u.test(next.text) && !/(ing|ed|ly)$/.test(next.lower) &&
+        // A question ("Is this you're bag?") or a verb after the noun ("you're car is red").
+        !YOURE_FOLLOWERS.test(next.lower) && next2 && (next2.text === "?" || /^(is|was|are|were|has|looks)$/.test(next2.lower)) &&
+        frequency(next.lower) >= 3) {
+      add(t.start, t.end, "your", "Did you mean the possessive “your”?", { override: true });
+    }
+
+    // "Don't brake it" -> break (a car brakes; you break things)
+    if (/^(brake|brakes|braking)$/.test(t.lower) && next && /^(it|this|that|them|my|your|his|her|our|their|anything|something|everything|up|down|apart|free|out|into|the|a|an|me|him|us|news|records?)$/.test(next.lower) &&
+        !(next2 && /^(pedal|pedals|pads?|lights?|fluid|system|discs?|line)$/.test(next2.lower))) {
+      const fix = { brake: "break", brakes: "breaks", braking: "breaking" }[t.lower];
+      add(t.start, t.end, fix, `Did you mean “${fix}” (to smash, to split)? “${t.lower}” is about slowing a vehicle.`);
+    }
+
+    // "some advise" -> advice (the noun)
+    if (t.lower === "advise" && prev && /^(some|any|your|my|good|great|the|of|for|piece|his|her|their|our|bad|no|expert|legal|medical)$/.test(prev.lower)) {
+      add(t.start, t.end, "advice", "The noun is “advice”; “advise” is the verb.");
     }
 
     // "This are" -> "These are" ; "These is" -> "This is"
@@ -204,7 +280,7 @@ export function englishRules(paragraph, existing, frequency = () => 0) {
 
     // "I think its going to rain" -> it's (never a possessive before these)
     if (t.lower === "its" && next) {
-      const afterAdj = !next2 || isPunct(next2) || /^(to|that|for|when|if|because)$/.test(next2.lower);
+      const afterAdj = !next2 || isPunct(next2) || /^(to|that|for|when|if|because|outside|inside|today|tonight|here|now|again|in|out|and|but|so|at|right)$/.test(next2.lower);
       if (/^(going|getting|raining|snowing|been|not|ok|okay|a|an|the|my|your|our|just|already|about|too)$/.test(next.lower) ||
           (afterAdj && /^(fine|important|possible|impossible|nice|great|cold|hot|late|early|true|hard|easy|good|bad|done|ready|free|normal|weird|funny|sad|amazing|awesome|ok|okay)$/.test(next.lower))) {
         add(t.start, t.end, "it's", "Did you mean “it's” (it is, it has)? “Its” is the possessive.");
