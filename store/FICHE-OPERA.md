@@ -79,3 +79,63 @@ No account or login is needed: the extension works on any page with a text field
 • Moins de fausses alertes : le code, les numéros de version, les #hashtags, les noms étrangers et les mots empruntés (« un call », « déjà vu ») ne sont plus soulignés.
 • La langue est détectée phrase par phrase.
 ```
+
+## 5. Version anglaise (obligatoire sur Opera : langue par défaut)
+
+**Summary** :
+
+```text
+Free, open-source French and English spelling and grammar checker. Everything runs in your browser: nothing is sent to the Internet.
+```
+
+**Detailed description** :
+
+```text
+FreeCorrector fixes your mistakes wherever you write: email, social networks, forms, chat apps, online documents… Free, no account, no subscription, no ads.
+
+How it works
+• Mistakes are underlined as you type: red for spelling, orange for grammar, blue for typography.
+• Click an underlined word to see the recommended fix, with the other suggestions right below it.
+• A counter at the bottom right of the field shows how many mistakes there are. Click it to open the full list.
+• The "Corrector" page (toolbar menu) lets you paste a long text, see every mistake and fix them all in one click.
+
+French and English
+The language is detected automatically, sentence by sentence: a French email quoting an English sentence is checked in both languages. In English: your/you're, its/it's, their/there/they're, subject-verb agreement, articles, verb tenses, words typed for others (then/than, lose/loose, form/from…) and typos. In French: agreement, conjugation, homophones (a/à, et/est, ça/sa, ou/où…), past participles, subjunctive, accents, capitals, punctuation.
+
+Your texts stay with you
+Everything is analyzed inside your browser. FreeCorrector sends nothing over the Internet, collects no data and even works offline. The browser itself forbids it any network connection.
+
+Also
+• Personal dictionary ("Add to dictionary").
+• Turn it off on the sites you choose.
+• Picky mode for fine typography.
+• Works in rich text editors too (webmail, social networks, online tools).
+• Code, addresses, links and names are not taken for mistakes.
+• Undo with Ctrl+Z after a correction.
+
+Free software
+FreeCorrector is free software (GPL v3). It builds on two free engines, Grammalecte for French and Harper for English, and adds its own rules and context-aware ranking of suggestions. Source code: https://github.com/BenjiBurn/FreeCorrector
+
+Created by BenjiBurn.
+```
+
+## 6. Champs de la page de version
+
+| Champ | Valeur |
+|---|---|
+| Service website URL | vide (l'extension ne se connecte à aucun service) |
+| Extension support page URL | https://github.com/BenjiBurn/FreeCorrector/issues |
+| Source code URL (public) | https://github.com/BenjiBurn/FreeCorrector |
+| Source code URL (moderators) | https://github.com/BenjiBurn/FreeCorrector/tree/v1.1.0 (le tag de la version) |
+| License URL | https://github.com/BenjiBurn/FreeCorrector/blob/main/LICENSE |
+| Privacy policy URL | https://github.com/BenjiBurn/FreeCorrector/blob/main/PRIVACY.md |
+
+**Build instructions** :
+
+```text
+Any OS (built on Windows 10). Node.js 18 or later; no npm install needed, the build has no dependencies.
+1. Download the source: https://github.com/BenjiBurn/FreeCorrector/archive/refs/tags/v1.1.0.zip and unzip it.
+2. In the unzipped folder, run: node scripts/build.js chromium
+3. The package is written to dist/freecorrector-1.1.0-chromium.zip (unpacked copy in dist/chromium/).
+Our own code is not minified or bundled: the build only copies src/ and adapts manifest.json for Chromium. The two engines in src/vendor/ are unmodified copies of Grammalecte 2.3.0 and harper.js 2.10.0 (npm), see NOTE_FOR_REVIEWERS.md.
+```
