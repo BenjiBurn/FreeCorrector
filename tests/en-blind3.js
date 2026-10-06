@@ -21,7 +21,7 @@ module.exports = [
   ["She speaks english very well.", "english", "English"],
   ["I will meet you on monday.", "monday", "Monday"],
   ["Its not a big deal.", "Its", "It's"],
-  ["There are less people here today.", null, null],
+  ["There are less people here today.", "less", "fewer"],
   ["I'm going to bed, goodnight!", null, null],
   ["I could of done better.", "could of", "could have"],
   ["Everyone are welcome.", "are", "is"],

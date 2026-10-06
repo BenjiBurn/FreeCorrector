@@ -22,6 +22,58 @@ const IRREGULAR_PLURALS = /^(children|people|men|women|feet|teeth|mice|geese|pol
 const YOUR_NOUNS = /^(help|time|message|email|e-mail|support|patience|answer|reply|feedback|response|understanding|attention|kindness|advice|work|effort|efforts|order|question|questions|interest|call|letter|gift|hospitality|cooperation|consideration|trust|comments|input|invitation|offer|application)$/;
 // Nouns typed where the verb was meant, after "to" or a modal.
 const VERB_FOR_NOUN = { discus: "discuss", breath: "breathe", advice: "advise", loose: "lose", belief: "believe", proof: "prove", choise: "choose", chose: "choose" };
+// Misspellings with a known fix, and irregular verbs or plurals given a
+// regular ending ("teached", "womans"): Harper's nearest words miss them.
+const EN_MISSPELLINGS = {
+  febuary: "february", wensday: "wednesday", wendsday: "wednesday", wednsday: "wednesday", tuesay: "tuesday", thrusday: "thursday",
+  sence: "sense", consequenses: "consequences", wich: "which", whitch: "which", collegue: "colleague", collegues: "colleagues",
+  mispell: "misspell", mispelled: "misspelled", supercede: "supersede", tounge: "tongue", definately: "definitely",
+  definatly: "definitely", definitly: "definitely", seperate: "separate", seperately: "separately", occured: "occurred",
+  occurence: "occurrence", accomodate: "accommodate", accomodation: "accommodation", untill: "until", beleive: "believe",
+  recieve: "receive", recieved: "received", acheive: "achieve", acheived: "achieved", begining: "beginning", calender: "calendar",
+  concious: "conscious", foriegn: "foreign", grammer: "grammar", harrass: "harass", millenium: "millennium",
+  noticable: "noticeable", persue: "pursue", posession: "possession", prefered: "preferred", reccomend: "recommend",
+  recomend: "recommend", refered: "referred", sieze: "seize", succesful: "successful", successfull: "successful",
+  threshhold: "threshold", vaccuum: "vacuum", wierd: "weird", truely: "truly", tommorow: "tomorrow", tommorrow: "tomorrow",
+  tomorow: "tomorrow", neccessary: "necessary", necesary: "necessary", goverment: "government", enviroment: "environment",
+  embarass: "embarrass", embarassed: "embarrassed", existance: "existence", independant: "independent", publically: "publicly",
+  arguement: "argument", basicly: "basically", buisness: "business", carribean: "caribbean", cemetary: "cemetery",
+  completly: "completely", curiousity: "curiosity", dilemna: "dilemma", embarassing: "embarrassing", experiance: "experience",
+  familar: "familiar", finaly: "finally", florescent: "fluorescent", freind: "friend", gaurd: "guard", happend: "happened",
+  immediatly: "immediately", knowlege: "knowledge", liason: "liaison", libary: "library", lisence: "license",
+  maintainance: "maintenance", mischevious: "mischievous", neighbour: "neighbour", occassion: "occasion", oppurtunity: "opportunity",
+  peice: "piece", posible: "possible", priviledge: "privilege", probaly: "probably", realy: "really", rember: "remember",
+  restaraunt: "restaurant", rythm: "rhythm", sargent: "sergeant", similiar: "similar", sincerly: "sincerely", speach: "speech",
+  stregth: "strength", suprise: "surprise", suprised: "surprised", temperture: "temperature", thier: "their", tought: "taught",
+  truley: "truly", unfortunatly: "unfortunately", usualy: "usually", wonderfull: "wonderful", writting: "writing",
+  wether: "whether", adress: "address", alot: "a lot", alright: "alright",
+  // regularized irregular verbs and plurals
+  teached: "taught", buyed: "bought", thinked: "thought", goed: "went", runned: "ran", catched: "caught", bringed: "brought",
+  eated: "ate", drinked: "drank", writed: "wrote", speaked: "spoke", falled: "fell", feeled: "felt", keeped: "kept",
+  sleeped: "slept", swimmed: "swam", telled: "told", winned: "won", knowed: "knew", growed: "grew", throwed: "threw",
+  drawed: "drew", freezed: "froze", hided: "hid", maked: "made", sayed: "said", standed: "stood", understanded: "understood",
+  gived: "gave", taked: "took", comed: "came", becomed: "became", beginned: "began", breaked: "broke", choosed: "chose",
+  drived: "drove", fighted: "fought", finded: "found", forgetted: "forgot", getted: "got", holded: "held", losed: "lost",
+  meaned: "meant", meeted: "met", readed: "read", rided: "rode", sended: "sent", shaked: "shook", shooted: "shot",
+  sitted: "sat", spended: "spent", stealed: "stole", sticked: "stuck", striked: "struck", sweared: "swore", weared: "wore",
+  leaved: "left", selled: "sold", seeked: "sought", flied: "flew", hurted: "hurt", hitted: "hit", costed: "cost",
+  womans: "women", mans: "men", childs: "children", mouses: "mice", foots: "feet", tooths: "teeth", gooses: "geese",
+  persons: "persons", sheeps: "sheep", fishs: "fish", knifes: "knives", wifes: "wives", lifes: "lives", leafs: "leaves",
+  wolfs: "wolves", thiefs: "thieves", halfs: "halves", shelfs: "shelves", potatos: "potatoes", tomatos: "tomatoes",
+};
+delete EN_MISSPELLINGS.persons;
+delete EN_MISSPELLINGS.neighbour;
+delete EN_MISSPELLINGS.alright;
+
+// Simple past typed where the participle goes ("I have ate").
+const EN_PAST_TO_PARTICIPLE = {
+  ate: "eaten", went: "gone", saw: "seen", did: "done", wrote: "written", took: "taken", gave: "given", spoke: "spoken",
+  drank: "drunk", ran: "run", came: "come", began: "begun", broke: "broken", chose: "chosen", drove: "driven", forgot: "forgotten",
+  knew: "known", rode: "ridden", rang: "rung", sang: "sung", swam: "swum", threw: "thrown", wore: "worn", grew: "grown",
+  flew: "flown", drew: "drawn", fell: "fallen", stole: "stolen", hid: "hidden", shook: "shaken", tore: "torn", woke: "woken",
+  bit: "bitten", froze: "frozen", sank: "sunk", shrank: "shrunk", stank: "stunk", mistook: "mistaken", forgave: "forgiven",
+};
+
 // Real words that are usually a misspelled -ing form after "be".
 const ING_TYPOS = { planing: "planning", stoping: "stopping", shoping: "shopping", geting: "getting", runing: "running", siting: "sitting", writting: "writing", comming: "coming" };
 // Always capitalized; "may", "march", "august", "polish", "turkey" are left out.
@@ -344,6 +396,211 @@ export function englishRules(paragraph, existing, frequency = () => 0) {
     // "We are planing a trip" -> planning ("planing" is gliding over water)
     if (prev && /^(am|is|are|was|were|be|been|being|i'm|we're|you're|they're|he's|she's|it's|not)$/.test(prev.lower) && ING_TYPOS[t.lower]) {
       add(t.start, t.end, ING_TYPOS[t.lower], `Did you mean “${ING_TYPOS[t.lower]}”?`);
+    }
+
+    // ---------- Known misspellings and regularized irregular forms ----------
+
+    // "Febuary", "wich", "teached", "womans": the fix is known. Also catches
+    // capitalized ones Harper skips as names ("Wensday").
+    const known = EN_MISSPELLINGS[t.lower];
+    if (known && /^[\p{L}]+$/u.test(t.text)) {
+      const fix = /^\p{Lu}/u.test(t.text) ? known[0].toUpperCase() + known.slice(1) : known;
+      add(t.start, t.end, fix, `Did you mean “${fix}”?`, { override: true, category: "spelling", keepCase: true });
+    }
+
+    // ---------- Real-word confusions ----------
+
+    const L1 = prev?.lower ?? "", R1 = next?.lower ?? "", R2 = next2?.lower ?? "";
+    const atEnd = !next || isPunct(next);
+    const confuse = (fix, message) => add(t.start, t.end, fix, message ?? `Did you mean “${fix}”?`, { override: true });
+
+    // "I left my keys over their." -> there ; "They're car" -> Their ; "They're is" -> There
+    if (t.lower === "their" && atEnd) confuse("there", "“Their” needs a noun after it: did you mean “there”?");
+    if (t.lower === "they're" && next && /^(is|are|was|were|isn't|aren't|wasn't|weren't)$/.test(R1)) confuse("there");
+    if (t.lower === "they're" && next && /^\p{Ll}+$/u.test(next.text) && !/(ing|ed|ly)$/.test(R1) && !YOURE_FOLLOWERS.test(R1) &&
+        next2 && /^(is|was|are|were|has|have|looks|seems|broke|needs)$/.test(R2) && frequency(R1) >= 3) {
+      confuse("their", "Did you mean the possessive “their”?");
+    }
+    // "I think there going to be late" -> they're
+    if (t.lower === "there" && next && /^(going|coming|leaving|doing|trying|getting|having|making|saying|looking|waiting|playing|working|planning|not|so|always|never|really|late|right|wrong|here|done|ready|busy|sure)$/.test(R1) &&
+        prev && /^(think|thought|hope|guess|know|knew|sure|say|said|that|because|if|when|but|and|so|maybe|probably)$/.test(L1) &&
+        !(next2 && /^(to|be|is)$/.test(R2) && /^(not|so|always|never|really)$/.test(R1))) {
+      confuse("they're", "Did you mean “they're” (they are)?");
+    }
+    // "We have too cats" -> two
+    if (t.lower === "too" && prev && /^(have|has|had|got|need|bought|buy|want|with|only|about|for|ate|saw|the|these|those|my|our)$/.test(L1) &&
+        next && /^\p{Ll}+s$/u.test(next.text) && !/(ss|us|is)$/.test(R1) && (!next2 || isPunct(next2) || /^(and|or|at|in|on|but|of)$/.test(R2)) &&
+        frequency(R1.slice(0, -1)) >= 3.5) {
+      confuse("two", "Did you mean the number “two”?");
+    }
+    // "Everyone came accept Tom" -> except
+    if (t.lower === "accept" && prev && (/^(came|went|arrived|left|everyone|everybody|all|everything|nobody|anyone|anything|everywhere|always|nothing|ate|finished|liked|loved|attended)$/.test(L1) ||
+        (/ed$/.test(L1) && next && /^\p{Lu}/u.test(next.text)))) {
+      confuse("except", "Did you mean “except” (but, apart from)?");
+    }
+    // "These trousers are too lose" -> loose
+    if (t.lower === "lose" && prev && /^(too|so|very|quite|bit|come|came|comes|break|broke|let|cut|hang|set|is|are|was|were|feel|feels|felt|run|ran|got|get|getting)$/.test(L1) && atEnd) {
+      confuse("loose", "Did you mean “loose” (not tight)? “Lose” means to misplace.");
+    }
+    // quiet / quite
+    if (t.lower === "quite" && prev && /^(be|is|was|keep|stay|very|so|too|stayed|remain|completely|been|being|totally|kept)$/.test(L1) &&
+        (atEnd || /^(during|please|in|at|and|for|now|while|until|here|there)$/.test(R1))) {
+      confuse("quiet", "Did you mean “quiet” (silent)?");
+    }
+    if (t.lower === "quiet" && next && /^(good|nice|well|sure|right|a|an|interesting|big|small|hard|easy|fast|often|late|early|bad|long|far|close|simple|different|old|new|expensive|cheap|funny|tired|busy|happy|sad|lot|clear|possible|likely|cold|hot|strong|true)$/.test(R1) &&
+        !(prev && /^(a|the|very|so|too|be|keep|stay|it|this|that|and)$/.test(L1))) {
+      confuse("quite", "Did you mean “quite” (fairly, very)?");
+    }
+    // principal / principle
+    if (t.lower === "principle" && prev && /^(school|vice|assistant|head|deputy|the school)$/.test(L1)) confuse("principal", "The head of a school is the “principal”.");
+    if (t.lower === "principal" && prev && /^(of|in|on)$/.test(L1) && atEnd) confuse("principle", "A rule or belief is a “principle”.");
+    // stationary / stationery
+    if (t.lower === "stationary" && ((prev && /^(office|writing|school|some|new|buy|bought|of)$/.test(L1)) || /^(for|supplies|shop|store|items)$/.test(R1)) &&
+        !/^(bike|bicycle|car|vehicle|object|position|front|wave|point|state|engine)$/.test(R1)) {
+      confuse("stationery", "Paper and pens are “stationery”; “stationary” means not moving.");
+    }
+    // complement / compliment
+    if (/^complement(s)?$/.test(t.lower) && (toks.slice(Math.max(0, i - 3), i).some((x) => /^(nice|kind|lovely|sweet|thanks|thank|nicest|best|great|big|many|huge)$/.test(x.lower)) ||
+        (/^on$/.test(R1) && /^(my|your|his|her|their|the|our)$/.test(R2))) && !/^(to|of|for)$/.test(R1)) {
+      confuse(t.lower.endsWith("s") ? "compliments" : "compliment", "Praise is a “compliment”.");
+    }
+    // desert / dessert
+    if (t.lower === "desert" && ((prev && /^(for|eat|ate|had|order|ordered|some|delicious|favorite|favourite|chocolate|the)$/.test(L1) && (atEnd || /^(menu|spoon|wine|fork|plate|was|is|and)$/.test(R1)) &&
+        !/^(the|a)$/.test(L1)) || /^(menu|spoon|wine|fork|plate)$/.test(R1))) {
+      confuse("dessert", "The sweet course is “dessert”.");
+    }
+    // "She lead the team last year" -> led
+    if (t.lower === "lead" && prev && /^(he|she|it)$/.test(L1) && next && !/^(to)$/.test(R1)) confuse("led", "Past tense of “lead”: “led”.");
+    // "We past the museum" -> passed
+    if (t.lower === "past" && prev && /^(i|we|they|you|he|she|it|just|already|finally)$/.test(L1) && next && /^(the|a|an|my|by|it|him|her|them|away|out|our|your|his|their|me|us)$/.test(R1)) {
+      confuse("passed", "The verb is “passed”.");
+    }
+    // piece / peace
+    if (t.lower === "piece" && next?.lower === "and" && /^(quiet|love)$/.test(R2)) confuse("peace");
+    if (t.lower === "peace" && R1 === "of" && /^(cake|pie|pizza|paper|bread|wood|furniture|art|music|cheese|chocolate|land|evidence|information|advice|equipment|jewelry|the|my|your|it|that|this|toast|meat|fruit|work|news|software)$/.test(R2)) {
+      confuse("piece", "A part of something is a “piece”.");
+    }
+    // "take a brake" -> break
+    if (t.lower === "brake" && ((prev && /^(lunch|coffee|summer|spring|winter|christmas|tea|easter)$/.test(L1)) ||
+        (L1 === "a" && toks[i - 2] && /^(take|took|taking|takes|need|needs|have|having|had|deserve|short|quick|little)$/.test(toks[i - 2].lower)))) {
+      confuse("break", "A pause is a “break”.");
+    }
+    // hear / here
+    if (t.lower === "hear" && prev && /^(over|come|right|in|out|from|near)$/.test(L1) && (atEnd || /^(and|now|to|please|quickly|for|with|then)$/.test(R1))) confuse("here", "Did you mean “here” (this place)?");
+    if (t.lower === "here" && prev && /^(didn't|can't|can|couldn't|could|to|will|won't|cannot|i|you|we|they|did|don't|doesn't)$/.test(L1) &&
+        next && /^(you|me|him|her|them|it|that|the|anything|what|about|from|a|an|this|those|these|everything|nothing|something)$/.test(R1)) {
+      confuse("hear", "Did you mean “hear” (with your ears)?");
+    }
+    // "I no the answer" -> know
+    if (t.lower === "no" && prev && /^(i|you|we|they|don't|didn't|doesn't|to|not)$/.test(L1) &&
+        next && /^(the|that|what|how|why|where|when|who|it|him|her|them|you|about|if|whether|anything|everything|this)$/.test(R1)) {
+      confuse("know", "Did you mean “know” (be aware)?");
+    }
+    // "What should I where to the wedding?" -> wear
+    if (t.lower === "where" && prev && toks[i - 2] && /^(should|could|would|will|can|shall|might|must|to|i'll|gonna)$/.test(toks[i - 2].lower) && /^(i|you|we|they|he|she)$/.test(L1) &&
+        next && /^(a|my|your|his|her|the|it|that|this|to|something|anything|on|tonight|today|tomorrow|for)$/.test(R1)) {
+      confuse("wear", "Clothes: “wear”.");
+    }
+    // "Please right your name" -> write
+    if (t.lower === "right" && prev && /^(please|to|will|can|should|must|i'll|could|would|don't|didn't|i|you|we|they|and)$/.test(L1) &&
+        next && /^(your|my|a|the|down|it|me|him|her|them|back|an|this|that|something|an|letters|emails)$/.test(R1) &&
+        !(next2 && /^(wrong|wrongs|ship|thing|answer|way|side|place|time|now|away|choice|person|one)$/.test(R2)) && !/^(is|are|was|be)$/.test(L1)) {
+      confuse("write", "Did you mean “write” (with a pen)?");
+    }
+    // "I need to by some milk" -> buy
+    if (t.lower === "by" && prev && /^(to|will|can|could|should|must|i'll|didn't|don't|gonna|wanna|let's)$/.test(L1) &&
+        next && /^(some|a|an|the|me|it|them|new|more|one|two|tickets|food|milk|groceries|something|anything|her|him|us|you|my|your|his|our|their|this|that|these|those)$/.test(R1) &&
+        toks[i - 2] && /^(need|needs|want|wants|going|have|has|had|forgot|went|go|plan|planning|like|wanted|needed|i|we|you|they|he|she|let's|time)$/.test(toks[i - 2].lower)) {
+      confuse("buy", "Did you mean “buy” (purchase)?");
+    }
+    // "construction cite" -> site
+    if (/^cites?$/.test(t.lower) && prev && /^(construction|web|building|camp|work|job|camping|archaeological|heritage|the|a|this|our|their|test)$/.test(L1) && !/^(the|a)$/.test(L1) || (/^cites?$/.test(t.lower) && /^(web)$/.test(L1))) {
+      confuse(t.lower.endsWith("s") ? "sites" : "site", "A place is a “site”.");
+    }
+    // "Dogs are not aloud" -> allowed
+    if (t.lower === "aloud" && prev && /^(not|are|is|be|been|were|was|isn't|aren't|wasn't|weren't|never|n't)$/.test(L1)) confuse("allowed", "Did you mean “allowed” (permitted)?");
+    // through / threw
+    // ("kicked it through the posts": "it" is an object there, not the subject.)
+    if (t.lower === "through" && prev && /^(he|she|i|we|they|you)$/.test(L1) && next && /^(the|a|it|his|her|my|away|up|out|them|him|me|our|their|your|stones|rocks)$/.test(R1)) {
+      confuse("threw", "Past of “throw”: “threw”.");
+    }
+    if (t.lower === "threw" && prev && !/^(he|she|i|we|they|you|it|who|and|that)$/.test(L1) &&
+        (/(ed|ing)$/.test(L1) || /^(went|ran|go|walk|run|drive|drove|fly|flew|get|got|come|came|pass|look|read|sailed|all|halfway|straight|right)$/.test(L1)) &&
+        next && /^(the|a|an|it|my|your|our|their|this|that|town|traffic|security)$/.test(R1)) {
+      confuse("through", "Did you mean “through” (from one side to the other)?");
+    }
+    // "can't bare the noise" -> bear
+    if (t.lower === "bare" && prev && /^(can't|cannot|couldn't|to|can|could|won't|i|not)$/.test(L1) && next && /^(the|it|this|that|to|with|him|her|them|any|you|me|being|seeing|hearing)$/.test(R1)) {
+      confuse("bear", "To tolerate is to “bear”.");
+    }
+    // "bus fair" -> fare
+    if (t.lower === "fair" && prev && /^(bus|taxi|train|cab|subway|metro|airline|plane|return|single|tram|ferry|air)$/.test(L1)) confuse("fare", "The price of a ticket is the “fare”.");
+    // "Our plain landed" -> plane
+    if (t.lower === "plain" && next && /^(landed|took|takes|crashed|tickets|ticket|ride|flight|leaves|left|departs|lands|was|is|seat|journey)$/.test(R1) &&
+        prev && /^(the|our|my|a|their|his|her|your)$/.test(L1) && !/^(text|english|white|yogurt|truth|sight)$/.test(R1)) {
+      if (/^(landed|took|takes|crashed|tickets|ticket|ride|flight|leaves|left|departs|lands|seat|journey)$/.test(R1) || /(airport|flight|landed|pilot|takeoff|delayed)/.test(paragraph.toLowerCase())) confuse("plane", "An aircraft is a “plane”.");
+    }
+    // "lead roll" -> role
+    if (t.lower === "roll" && ((prev && /^(lead|leading|main|key|important|major|starring|supporting|title)$/.test(L1)) || R1 === "model")) confuse("role", "A part in a play is a “role”.");
+    // "heart and sole" -> soul
+    if (t.lower === "sole" && ((L1 === "and" && toks[i - 2]?.lower === "heart") || /^(mate|mates|music|food|searching)$/.test(R1))) confuse("soul");
+    // "Don't waist your money" -> waste
+    if (t.lower === "waist" && ((next && /^(your|my|our|their|his|her|time|money|of|it|food|energy|away|any|no)$/.test(R1)) || (prev && /^(don't|to|a|such|will|won't|never|total|complete)$/.test(L1) && !/^(a|her|his|my|your)$/.test(L1)))) {
+      confuse("waste", "Did you mean “waste” (use badly)?");
+    }
+    // "next weak" -> week
+    if (t.lower === "weak" && prev && /^(next|last|this|per|every|each|a|one|two|three|that)$/.test(L1) && (atEnd || /^(ago|and|or|for|at|on|in|to|i|we|you)$/.test(R1)) && !/^(a)$/.test(L1)) {
+      confuse("week", "Seven days make a “week”.");
+    }
+    if (t.lower === "weak" && L1 === "a" && /^(ago|later|from)$/.test(R1)) confuse("week", "Seven days make a “week”.");
+
+    // ---------- Agreement ----------
+
+    // "The list of items are" -> is ; "Neither of them are" -> is ; "Each of the students have" -> has
+    if (/^(are|have|were|do)$/.test(t.lower)) {
+      const fix = { are: "is", have: "has", were: "was", do: "does" }[t.lower];
+      // "neither/either/each/one of (the) X are"
+      let k = i - 1;
+      while (k > i - 5 && k >= 0 && toks[k].lower !== "of") k--;
+      const head = toks[k - 1];
+      if (k >= 1 && toks[k].lower === "of" && head && /^(neither|either|each|one|list|set|box|bag|collection|pile|stack|group|series)$/.test(head.lower) &&
+          (head.lower !== "group" && head.lower !== "series" || toks[k - 2]?.lower === "the") &&
+          // ("a set of rules – were those of Eton": a dash or comma breaks the phrase.)
+          !toks.slice(k + 1, i).some((x) => /^(who|that|which)$/.test(x.lower) || !/[\p{L}\p{N}]/u.test(x.text))) {
+        add(t.start, t.end, fix, `The subject is “${head.lower}”: singular verb.`, { override: true });
+      }
+    }
+    // "There is many reasons" -> are
+    if (/^(is|was)$/.test(t.lower) && L1 === "there" && next && /^(many|several|few|two|three|four|five|numerous|various|lots|plenty|loads|dozens|hundreds|thousands)$/.test(R1)) {
+      add(t.start, t.end, t.lower === "is" ? "are" : "were", "The noun is plural: “there are”.", { override: true });
+    }
+    // "I have never ate sushi" -> eaten
+    if (EN_PAST_TO_PARTICIPLE[t.lower] && prev && (/^(have|has|had|'ve|i've|we've|you've|they've|he's|she's|haven't|hasn't|hadn't)$/.test(L1) ||
+        (/^(never|already|just|ever|not|always|recently|finally)$/.test(L1) && toks[i - 2] && /^(have|has|had|'ve|i've|we've|you've|they've|haven't|hasn't|hadn't)$/.test(toks[i - 2].lower)))) {
+      add(t.start, t.end, EN_PAST_TO_PARTICIPLE[t.lower], `After “have”, use the past participle: “${EN_PAST_TO_PARTICIPLE[t.lower]}”.`, { override: true });
+    }
+    // "between you and I" -> you and me
+    if (t.lower === "you" && next?.lower === "and" && toks[i + 2]?.text === "I" && prev && /^(between|for|with|to|from|like|than|about|of|at|behind|against|without)$/.test(L1)) {
+      add(t.start, toks[i + 2].end, "you and me", "After a preposition, use “me”: “between you and me”.", { override: true, keepCase: true });
+    }
+    // "Myself and Sarah will" -> "Sarah and I"
+    if (clauseStart && t.lower === "myself" && next?.lower === "and" && next2 && toks[i + 3] && !isPunct(toks[i + 3])) {
+      add(t.start, next2.end, `${next2.text} and I`, "As a subject, use “I”, and put yourself last: “Sarah and I”.", { override: true, keepCase: true });
+    }
+    // "less people" -> fewer
+    if (t.lower === "less" && next && (R1 === "people" || (/^\p{Ll}+s$/u.test(next.text) && !/(ss|us|is|ics|news)$/.test(R1) && frequency(R1.slice(0, -1)) >= 3.5 && !/^(than|and|of)$/.test(R1))) &&
+        !NOT_PLURAL.test(R1)) {
+      add(t.start, t.end, /^\p{Lu}/u.test(t.text) ? "Fewer" : "fewer", "With countable plurals, use “fewer”.", { override: true, keepCase: true });
+    }
+    // "I don't know nothing" -> anything
+    if (/^(nothing|nobody|nowhere|no one)$/.test(t.lower) && toks.slice(Math.max(0, i - 3), i).some((x) => /^(don't|didn't|doesn't|can't|won't|isn't|aren't|wasn't|weren't|haven't|hasn't|couldn't|wouldn't|shouldn't|never|not)$/.test(x.lower))) {
+      const fix = { nothing: "anything", nobody: "anybody", nowhere: "anywhere", "no one": "anyone" }[t.lower];
+      add(t.start, t.end, fix, "Double negative: use “anything” after a negative verb.", { override: true });
+    }
+    // "I can't hardly hear you" -> can hardly
+    if (/^(can't|couldn't|don't|didn't|won't|wouldn't|cannot)$/.test(t.lower) && next?.lower === "hardly") {
+      const fix = { "can't": "can", cannot: "can", "couldn't": "could", "don't": "do", "didn't": "did", "won't": "will", "wouldn't": "would" }[t.lower];
+      add(t.start, next.end, `${fix} hardly`, "“Hardly” is already negative.", { override: true });
     }
 
     // "I seen", "they done" -> "saw", "did"
