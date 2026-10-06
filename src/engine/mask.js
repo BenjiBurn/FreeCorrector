@@ -19,6 +19,14 @@ self.fcMaskCode = (text) => {
     .replace(/(?<![\p{L}\p{N}_])((?:[\w.-]+\/)*[\w-]*\.(?:json|js|mjs|cjs|ts|tsx|jsx|yaml|yml|md|txt|env|example|html|css|scss|py|sh|toml|ini|xml|csv|lock|cfg|conf|log|sql|rs|java|kt|rb|php|cpp|vue|svelte|zip|tar|gz|exe|dll|dmg|apk)(?:\.[\w]+)*)(?![\p{L}\p{N}_])/giu, blank)
     // identifiers: camelCase ("fetchUser", "macOS"), snake_case, calls "parse()"
     .replace(/(?<![\p{L}\p{N}_])(\p{Ll}+\p{Lu}[\p{L}\p{N}]*|[\p{L}\p{N}]+_[\p{L}\p{N}_]+|[\p{L}\p{N}_.]+\(\w*\))(?![\p{L}\p{N}_])/gu, blank)
+    // PascalCase: "TypeError", "JavaScript", "McDonald's"
+    .replace(/(?<![\p{L}\p{N}_])\p{Lu}\p{Ll}+\p{Lu}[\p{L}\p{N}]*(?:['’]s)?(?![\p{L}\p{N}_])/gu, blank)
+    // Letters with digits (H2O, CO2, v2.3.1, NW1, mp3) become digits: still a
+    // number to the sentence ("dans la v2.3.1"), never a word to correct.
+    // Not texting words ("bi1", "ri1"): those are mistakes.
+    .replace(/(?<![\p{L}\p{N}_])\p{L}+\p{N}[\p{L}\p{N}]*(?![\p{L}\p{N}_])/gu, (m) => (/^\p{Ll}+1$/u.test(m) ? m : m.replace(/\p{L}/gu, (c) => "0".repeat(c.length))))
+    // #hashtags and #channels
+    .replace(/(?<![\p{L}\p{N}_&])#[\p{L}\p{N}_-]+/gu, blank)
     // command-line options: --watch, -v, -d
     .replace(/(?<=^|\s)(--[a-z][\w-]*|-[a-zA-Z]{1,2})(?=\s|$|[.,;)])/gm, blank)
     // all-consonant lowercase commands: npm, nvm, pnpm (not "bcp", "mdr", "km")

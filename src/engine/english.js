@@ -10,6 +10,7 @@ import { slimBinary } from "../vendor/harper/slimBinary.js";
 import { englishRules, contractionFor } from "./english-rules.js";
 import "./informal.js";
 import "./mask.js";
+import "./collocations.js";
 import "./sentence-rules.js";
 
 const { fcSentenceRules } = self;
@@ -369,6 +370,15 @@ async function lintParagraph(paragraph) {
       // "cancelled", "colour", "organise" are right in British English (and
       // "canceled" in American): only picky mode asks for the chosen dialect.
       if (!picky && (kind === "Spelling" || kind === "Typo") && replacements.some((r) => isDialectVariant(word, r))) continue;
+      // "He had had enough", "I think that that idea": right as written.
+      if (kind === "Repetition" && /^(had|that)\s+(had|that)$/i.test(word)) continue;
+      // "Notwithstanding the foregoing": a preposition, not a discourse marker wanting a comma.
+      if (!picky && kind === "Punctuation" && replacements.every((r) => r === `${word},`) &&
+          /^\s+(the|a|an|this|that|these|those|his|her|my|your|our|their|its|any|all|such)\b/i.test(paragraph.slice(end))) continue;
+      // Accented words in English text are borrowed ("crème", "déjà"): not typos.
+      if ((kind === "Spelling" || kind === "Typo") && /[^\x00-\x7F’]/.test(word)) continue;
+      // Right after a blanked word ("Siobhán and"): not the start of a sentence.
+      if (kind === "Capitalization" && forHarper.slice(0, offset).trimEnd().length !== paragraph.slice(0, offset).trimEnd().length) continue;
       // Guesses with nothing to offer ("You may be missing a preposition").
       if (kind === "Miscellaneous" && !replacements.length) continue;
       // Never lowercase the first word of a sentence ("Who's coming?").
@@ -431,7 +441,9 @@ export async function check(text) {
   // blanked (same length, so offsets hold) instead of costing seconds.
   const original = text;
   // Code (`npm install`, config.json, fetchUser) is not English prose: blanked too.
-  text = self.fcMaskCode(text).replace(/\S{41,}/g, (s) => " ".repeat(s.length));
+  text = self.fcMaskCode(text).replace(/\S{41,}/g, (s) => " ".repeat(s.length))
+    // "déjà vu", "café au lait": borrowed phrases are not English to check.
+    .replace(self.FC_LOAN_PHRASES, (s) => " ".repeat(s.length));
   const matches = [];
   let paraStart = 0;
   let prevEnd = "";
@@ -442,6 +454,21 @@ export async function check(text) {
       if (!cached) {
         const harper = await lintParagraph(paragraph);
         const own = englishRules(paragraph, harper, frequency);
+        // "the mane entrance", "hard word": a slip inside a set phrase.
+        for (const s of self.fcCollocationSlips(paragraph, "en")) {
+          if (own.some((m) => m.offset < s.end && s.start < m.offset + m.length)) continue;
+          own.push({
+            override: true,
+            offset: s.start,
+            length: s.end - s.start,
+            word: s.word,
+            message: `Did you mean “${s.fix}”?`,
+            replacements: [s.fix],
+            ruleId: "FC_EN_COLLOCATION",
+            category: "grammar",
+            label: CATEGORY_LABEL.grammar,
+          });
+        }
         const overriding = own.filter((m) => m.override);
         const kept = harper.filter((h) => !overriding.some((o) => o.offset < h.offset + h.length && h.offset < o.offset + o.length));
         cached = [...kept, ...own];

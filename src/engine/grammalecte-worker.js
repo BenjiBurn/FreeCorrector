@@ -28,6 +28,7 @@ importScripts(
   VENDOR + "fr/gc_engine.js",
   "suggestions.js",
   "confusions.js",
+  "collocations.js",
   "rules.js",
   "informal.js",
   "mask.js",
@@ -122,7 +123,7 @@ const COMMON_MISSPELLINGS = {
   occurence: "occurrence", résonnance: "résonance", vraissemblable: "vraisemblable", chaqu: "chaque",
   malgrés: "malgré", parmis: "parmi", hormi: "hormis", certe: "certes", jusqua: "jusqu’à", ormis: "hormis",
   onions: "oignons", onion: "oignon", qualitée: "qualité", économic: "économique", enviromnent: "environnement",
-  enviroment: "environnement", envoierai: "enverrai", envoierais: "enverrais", envoiera: "enverra", envoierons: "enverrons",
+  enviroment: "environnement", envoierai: "enverrai", envoierais: "enverrais", envoiera: "enverra", envoierons: "enverrons", envoyerai: "enverrai", envoyeras: "enverras", envoyera: "enverra", envoyerons: "enverrons", envoyerez: "enverrez", envoyeront: "enverront", envoyerais: "enverrais", envoyerait: "enverrait", apartir: "à partir",
   envoieront: "enverront", envoyerai: "enverrai", envoyerais: "enverrais", envoyera: "enverra", appercevoir: "apercevoir",
   // Regular endings put on irregular verbs.
   résoudu: "résolu", mouru: "mort", prendu: "pris", metté: "mis", mettu: "mis", ouvri: "ouvert", offri: "offert",
@@ -313,6 +314,8 @@ function checkParagraph(paragraph) {
   for (const token of spellChecker.parseParagraph(paragraph)) {
     const word = token.sValue;
     if (fcLooksLikeProperNoun(paragraph, token.nStart, word)) continue;
+    // Only part of a word the tokenizer split on a foreign letter ("Nguy|ễn").
+    if (/[\p{L}\p{M}]/u.test(paragraph[token.nEnd] ?? "") || /[\p{L}\p{M}]/u.test(paragraph[token.nStart - 1] ?? "")) continue;
     // "dispo", "resto", "mdr": informal on purpose.
     if (self.FC_INFORMAL_WORDS.has(word.toLowerCase())) continue;
     // "soeur", "coeur": most keyboards have no "œ"; a typographic nicety only.
@@ -344,6 +347,9 @@ function checkParagraph(paragraph) {
       url: err.URL || "",
     };
     if (!picky && fcIsTypographicOnly(m.word, m.replacements)) continue;
+    // Holidays ("le 14 Juillet", "le 8 Mai") and titles ("Germinal") keep their capital.
+    if (/maj_mois/.test(m.ruleId) && (/^(vendémiaire|brumaire|frimaire|nivôse|pluviôse|ventôse|germinal|floréal|prairial|messidor|thermidor|fructidor)$/i.test(m.word) ||
+        /(^|\s)(14|1er|8|11|15)\s+$/.test(paragraph.slice(0, err.nStart)))) continue;
     // Optional commas ("passée chez toi, mais") are style, for picky mode.
     if (!picky && /virgules_manquantes/.test(m.ruleId)) continue;
     // "Elle s’est fait mal", "elle s’est fait opérer": "fait" stays invariable.
@@ -354,6 +360,21 @@ function checkParagraph(paragraph) {
   }
 
   const custom = fcCustomRules(paragraph, spellChecker, [...spelling, ...grammar]);
+  // "mot de basse", "une dent de lit": a slip inside a set phrase.
+  for (const s of self.fcCollocationSlips(paragraph, "fr")) {
+    if (custom.some((m) => m.offset < s.end && s.start < m.offset + m.length)) continue;
+    custom.push({
+      override: true,
+      offset: s.start,
+      length: s.end - s.start,
+      word: s.word,
+      message: `Faute de frappe probable : « ${s.fix} » plutôt que « ${s.word} ».`,
+      replacements: [s.fix],
+      ruleId: "FC_COLLOCATION",
+      category: "grammar",
+      label: CATEGORY_LABEL.grammar,
+    });
+  }
   const urls = fcUrlRanges(paragraph);
   const overriding = custom.filter((m) => m.override);
   const notOverridden = (m) => !overriding.some((o) => overlaps(o, m));

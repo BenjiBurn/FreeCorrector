@@ -606,7 +606,9 @@ export function englishRules(paragraph, existing, frequency = () => 0) {
     }
 
     // "I seen", "they done" -> "saw", "did"
-    if (prev && /^(i|you|we|they|he|she)$/.test(prev.lower) && (t.lower === "seen" || t.lower === "done")) {
+    // ("Seldom have I seen", "Had they done": an inverted auxiliary before the subject.)
+    if (prev && /^(i|you|we|they|he|she)$/.test(prev.lower) && (t.lower === "seen" || t.lower === "done") &&
+        !/^(have|has|had|haven't|hasn't|hadn't)$/.test(toks[i - 2]?.lower ?? "")) {
       add(t.start, t.end, t.lower === "seen" ? "saw" : "did", `“${t.lower}” needs an auxiliary (“have ${t.lower}”); the simple past is “${t.lower === "seen" ? "saw" : "did"}”.`);
     }
 
@@ -698,6 +700,8 @@ export function englishRules(paragraph, existing, frequency = () => 0) {
     }
     // "I'm agree" -> I agree
     if (t.lower === "i'm" && /^(agree|disagree)$/.test(R1)) add(t.start, next.end, `I ${R1}`, "“Agree” is a verb: no “am” before it.", { override: true, keepCase: true });
+
+    roundThreeRules(toks, i, paragraph, add, frequency);
   }
 
   // ---------- Phrases borrowed from other languages ----------
@@ -725,7 +729,7 @@ const EN_PRESENT_TO_PAST = {
 
 // [regex (group 1 = text kept before the error), fix, message]
 const EN_PHRASES = [
-  [/(^|[^\p{L}])explain me\b/giu, "explain to me", "One explains something to someone: “explain to me”."],
+  [/(^|[^\p{L}])(explain|explains|explained|explaining) (me|him|her|us|them)\b/giu, (w) => w.replace(/ (\p{L}+)$/u, " to $1"), "One explains something to someone: “explain to me”."],
   [/(^|[^\p{L}])(?=(make|makes|made|making) (a|some) (photo|photos|picture|pictures)\b)(make|makes|made|making)/giu, (w) => ({ make: "take", makes: "takes", made: "took", making: "taking" })[w.toLowerCase()], "In English, you “take” a photo."],
   [/(^|[^\p{L}])married with\b/giu, "married to", "One is “married to” someone."],
   [/(^|[^\p{L}])(depends|depend|depending|depended) of\b/giu, (w) => w.replace(/ of$/i, " on"), "“Depend on”, not “depend of”."],
@@ -739,6 +743,580 @@ const EN_PHRASES = [
   [/(^|[^\p{L}])(discuss|discussed|discussing) about\b/giu, (w) => w.replace(/ about$/i, ""), "“Discuss” takes no “about”."],
   [/(^|[^\p{L}])(suggested|suggest|suggests) (him|her|them|me|us) to\b/giu, (w) => w.replace(/ (him|her|them|me|us) to$/i, (_, p) => ` ${p === "me" ? "I" : p === "us" ? "we" : p === "him" ? "he" : p === "her" ? "she" : "they"}`), "“Suggest that he…”, not “suggest him to”."],
 ];
+
+// ---------- Subject–verb agreement ----------
+
+// Verbs whose base form is not also a past form ("cut", "put", "read" are left out).
+const EN_VERBS = new Set(("say know seem explain forget make need want think believe understand go come take give eat drink " +
+  "arrive leave teach speak bark love hate prefer enjoy agree remember live become bring buy sell send write tell ask try " +
+  "sing swim wait appear belong contain depend deserve exist include involve mean own require suppose wish wonder feel " +
+  "sound taste smell help keep hold lose win pay meet grow happen decide cause allow expect remain suggest consider " +
+  "provide create build continue learn follow drive ride wash wear carry fix miss reach sleep start begin finish work " +
+  "play cook look see get do have watch call talk walk run stop open close use find sit stand fly cry study worry hurry " +
+  "apply reply deny annoy destroy stay pray travel visit listen answer notice realize recognize manage change move smile " +
+  "laugh complain argue apologize promise refuse accept imagine admire attend avoid borrow lend check choose collect " +
+  "compare count cover cross dance deliver describe design develop discover dream drop earn enter fail fill guess hope " +
+  "improve invite join jump kiss knock like mention mind mix offer order organize paint pass plan plant point practice " +
+  "prepare press prevent print produce protect pull push raise receive relax remove repeat rent repair rest return ring " +
+  "rush save search serve share shout show sign smoke solve spell spend steal suffer support survive tend test thank " +
+  "touch train translate trust turn type vote wake warn waste weigh whisper yell snore bite shine rain snow").split(" "));
+// Also frequent nouns: the verb reading needs a verb-like word after it.
+const EN_NOUN_VERBS = /^(work|play|cook|look|call|talk|walk|run|stop|open|close|use|change|smile|laugh|plan|hope|rest|return|report|order|offer|dream|dance|drink|help|sleep|start|finish|wish|need|love|watch|visit|show|sign|point|press|print|ring|rush|save|search|share|shout|smoke|spell|support|test|touch|train|trust|turn|type|vote|warn|waste|cover|cross|drop|fill|fix|guess|jump|kiss|knock|mix|paint|pass|plant|practice|repair|rent|study|travel|answer|notice|change|promise|design|dream|fly|cry|ride|drive|walk|swim|sing|wait|stand|rain|snow|bite|shine|taste|smell|sound|feel)$/;
+const EN_AFTER_VERB = /^(a|an|the|my|your|his|her|our|their|its|this|that|these|those|some|any|all|every|me|you|him|us|them|it|to|at|in|on|for|with|about|from|into|like|so|very|really|too|well|hard|a|lot|much|more|here|there|home|back|out|up|down|off|over|away|late|early|fast|slowly|quickly|clearly|everything|something|anything|nothing|everyone|what|how|when|where|why|if|whether|money|time|people|good|bad|great|strange|weird|nice|tired|happy|sad|all|night|day|long|loudly|properly|perfectly|twice|once|again|together|alone|by|around|through|during|until|after|before|every)$/;
+const EN_ADV = /^(always|never|often|usually|sometimes|really|still|just|also|only|rarely|seldom|generally|normally|actually|even|already|hardly|barely|truly|clearly|certainly|probably|definitely|typically|mostly|constantly|frequently|occasionally)$/;
+const EN_INDEF = /^(everyone|everybody|nobody|someone|somebody|anyone|anybody|everything|nothing|something|anything)$/;
+const EN_DET_SG = /^(a|an|this|that|every|each|one|another)$/;
+const EN_DET_PL = /^(these|those|many|several|both|few|two|three|four|five|six|seven|eight|nine|ten)$/;
+const EN_DET_ANY = /^(the|my|your|his|her|our|their|its)$/;
+const EN_IRREG_PL = /^(people|children|men|women|police|feet|teeth|mice|geese|cattle)$/;
+// Collective or Latin nouns: both agreements are in use.
+const EN_EITHER_NUMBER = /^(data|media|criteria|phenomena|bacteria|staff|crew|team|family|audience|committee|government|jury|couple|faculty|class|band|group|public|army|majority|minority|pair|series|species|means|headquarters|politics|statistics|percent|percentage|total|half|rest|none|all|most|some|any|kind|type|sort|variety|range|lot|lots|number|part|portion|third|quarter|handful|dozen|bit|amount|plenty|bunch|set)$/;
+const EN_SUBJ_STOP = /^(to|i|you|he|she|it|we|they|who|which|whose|and|or|but|is|are|was|were|be|been|being|am|has|have|had|do|does|did|will|would|can|could|should|shall|may|might|must|not|there|here|than|as|if|when|because|so|then|me|him|us|them|what|where|how|why)$/;
+const EN_PREP = /^(of|in|on|at|from|for|with|near|behind|inside|outside|under|about|between|among|without|across|around|into|over|after|before|during|through|throughout|within|against|towards|toward|via|per|like|including|than|beyond|below|above|along|beside)$/;
+const EN_CLAUSE_OPENER = /^(because|if|when|while|although|though|since|so|but|that|think|thinks|thought|know|knew|said|says|hope|guess|believe|maybe|then|unless|until|once|whether|after|before|and)$/;
+const EN_SUBJUNCTIVE = /^(suggest|suggests|suggested|recommend|recommends|recommended|insist|insists|insisted|demand|demands|demanded|require|requires|required|request|requests|requested|essential|important|necessary|vital|crucial|imperative|propose|proposed|proposes|urge|urged|ask|asked|lest)$/;
+
+const isBoundary = (t) => !t || !/[\p{L}\p{N}]/u.test(t.text);
+
+function enThirdPerson(v) {
+  if (v === "have") return "has";
+  if (/(s|sh|ch|x|z|o)$/.test(v)) return `${v}es`;
+  if (/[^aeiou]y$/.test(v)) return `${v.slice(0, -1)}ies`;
+  return `${v}s`;
+}
+function enBaseOfThird(w) {
+  if (w === "has") return "have";
+  const tries = [w.replace(/ies$/, "y"), w.replace(/es$/, ""), w.replace(/s$/, "")];
+  return tries.find((b) => b !== w && EN_VERBS.has(b) && enThirdPerson(b) === w) ?? null;
+}
+
+// "sg", "pl" or null for a noun token.
+function enNounNumber(tok, frequency) {
+  const w = tok.lower;
+  if (EN_EITHER_NUMBER.test(w)) return null;
+  if (EN_IRREG_PL.test(w)) return "pl";
+  if (NOT_PLURAL.test(w) || /(ss|us|is|ics|news)$/.test(w)) return "sg";
+  if (/s$/.test(w)) {
+    const sing = /ies$/.test(w) ? `${w.slice(0, -3)}y` : /(sh|ch|x|z|ss)es$/.test(w) ? w.slice(0, -2) : w.slice(0, -1);
+    return frequency(sing) >= 3 ? "pl" : null;
+  }
+  return frequency(w) >= 2.5 && !/(ing|ed|ly)$/.test(w) ? "sg" : null;
+}
+
+// The subject before the verb at `vi`: { num: "sg" | "pl" | "i" } or null.
+// Pronouns, "everyone", or a determiner + noun at the start of a clause, with
+// prepositional phrases after the noun ("the price of these shoes").
+function enSubject(toks, vi, frequency) {
+  let e = vi - 1;
+  while (e >= 0 && EN_ADV.test(toks[e].lower)) e--;
+  if (e < 0) return null;
+  const opens = (s, allowAnd) => {
+    const p = toks[s - 1];
+    if (toks.slice(Math.max(0, s - 4), s).some((x) => EN_SUBJUNCTIVE.test(x.lower))) return false;
+    return isBoundary(p) || (EN_CLAUSE_OPENER.test(p.lower) && (allowAnd || !/^(and|that)$/.test(p.lower)));
+  };
+  const p = toks[e];
+  if (/^(he|she|it)$/.test(p.lower)) return opens(e, p.lower !== "it") ? { num: "sg" } : null;
+  if (/^(they|we)$/.test(p.lower)) return opens(e, true) ? { num: "pl" } : null;
+  if (p.text === "I") return opens(e, true) ? { num: "i" } : null;
+  for (let s = e; s >= Math.max(0, e - 9); s--) {
+    const w = toks[s];
+    if (!/^[\p{L}-]+$/u.test(w.text)) return null;
+    const isDet = EN_DET_SG.test(w.lower) || EN_DET_PL.test(w.lower) || EN_DET_ANY.test(w.lower) || EN_INDEF.test(w.lower);
+    if (isDet && opens(s, false)) {
+      const words = toks.slice(s + 1, e + 1);
+      // Lowercase words only: no names or titles ("The New York office").
+      if (words.some((x) => !/^[\p{Ll}-]+$/u.test(x.text) || EN_SUBJ_STOP.test(x.lower))) return null;
+      if (EN_INDEF.test(w.lower)) return !words.length || EN_PREP.test(words[0].lower) ? { num: "sg" } : null;
+      const firstPrep = words.findIndex((x) => EN_PREP.test(x.lower));
+      const nounPart = firstPrep < 0 ? words : words.slice(0, firstPrep);
+      const head = nounPart[nounPart.length - 1];
+      if (!head || /(ing|ed|ly)$/.test(head.lower)) return null;
+      // A noun phrase: no second determiner, no verb ("the method returns a").
+      if (nounPart.some((x, k) => EN_DET_SG.test(x.lower) || EN_DET_ANY.test(x.lower) || EN_DET_PL.test(x.lower) || /(ed|ing|ly)$/.test(x.lower) ||
+          /^(below|above|alone|together|again|too|also|first|last|next|here|there|now|today|yesterday|tomorrow|then|ago|later|earlier|before|after)$/.test(x.lower) ||
+          (k < nounPart.length - 1 && enBaseOfThird(x.lower)))) return null;
+      // The verb follows a noun, not a preposition or a determiner ("a drift in the point").
+      if (EN_PREP.test(words.at(-1).lower) || EN_DET_ANY.test(words.at(-1).lower) || EN_DET_SG.test(words.at(-1).lower)) return null;
+      // "Ten dollars is too much": an amount is singular.
+      if (/^(dollars|euros|pounds|cents|years|hours|minutes|seconds|miles|kilometers|kilometres|percent|days|weeks|months|meters|metres|feet|inches|grams|kilos|liters|litres|gallons)$/.test(head.lower)) return null;
+      let num = enNounNumber(head, frequency);
+      // "A lot of people", "the majority of students": the noun after "of" decides.
+      if (/^(lot|lots|majority|bunch|plenty|half|rest|none|most|some|all|any)$/.test(head.lower) && words[firstPrep]?.lower === "of") {
+        const after = words.slice(firstPrep + 1);
+        const nextPrep = after.findIndex((x) => EN_PREP.test(x.lower));
+        const inner = (nextPrep < 0 ? after : after.slice(0, nextPrep)).at(-1);
+        num = inner ? enNounNumber(inner, frequency) : null;
+      }
+      if (!num) return null;
+      if (EN_DET_SG.test(w.lower) && num === "pl" && /^(this|that)$/.test(w.lower)) return null;
+      if (EN_DET_PL.test(w.lower) && num === "sg") return null;
+      return { num };
+    }
+    if (EN_SUBJ_STOP.test(w.lower)) return null;
+  }
+  return null;
+}
+
+const EN_PROFESSIONS = /^(engineer|doctor|teacher|nurse|lawyer|architect|student|developer|designer|accountant|artist|actor|actress|writer|journalist|programmer|dentist|pharmacist|scientist|chef|waiter|waitress|consultant|translator|photographer|musician|pilot|mechanic|electrician|plumber|farmer|firefighter|secretary|receptionist|cashier|analyst|researcher|professor|surgeon|veterinarian|psychologist|therapist|economist|entrepreneur|freelancer|intern|banker|baker|butcher|carpenter|lecturer|manager|director|officer|soldier|policeman|salesman|editor|programmer|tutor|volunteer)$/;
+const EN_UNCOUNT_STRICT = /^(news|advice|weather|information|furniture|homework|luggage|baggage|equipment|feedback|traffic|knowledge|evidence|machinery|garbage|rubbish|scenery|vocabulary)$/;
+const EN_GERUND_VERBS = /^(enjoy|enjoys|enjoyed|enjoying|avoid|avoids|avoided|avoiding|finish|finished|finishes|consider|considered|considering|considers|mind|minds|minded|keep|keeps|kept|suggest|suggested|suggests|recommend|recommended|recommends|practice|practiced|practise|quit|quits|deny|denied|denies|risk|risked|miss|missed|misses|imagine|imagined|admit|admitted|admits|postpone|postponed|delay|delayed|dislike|disliked|resent|appreciate|appreciated)$/;
+const EN_INFINITIVE_VERBS = /^(decide|decided|decides|refuse|refused|refuses|afford|agree|agreed|agrees|promise|promised|promises|expect|expected|manage|managed|manages|fail|failed|fails|offer|offered|offers|threaten|threatened|choose|chose|chosen|intend|intended|pretend|pretended|deserve|deserved|hope|hoped|hopes|plan|planned|plans|want|wanted|wants|wish|wished|learn|learned|learnt|seem|seemed|seems|tend|tended|tends|attempt|attempted|arrange|arranged|demand|demanded|prepare|prepared|struggle|struggled|hesitate|hesitated)$/;
+const EN_PAST_TO_BASE = { sent: "send", went: "go", came: "come", saw: "see", gave: "give", took: "take", made: "make", bought: "buy", told: "tell", ate: "eat", wrote: "write", met: "meet", chose: "choose", brought: "bring", thought: "think", found: "find", left: "leave", spoke: "speak", drove: "drive", knew: "know", forgot: "forget", sat: "sit", stood: "stand", paid: "pay", sold: "sell", taught: "teach", caught: "catch", began: "begin", ran: "run", won: "win", lost: "lose", spent: "spend", heard: "hear", felt: "feel", kept: "keep", slept: "sleep", fell: "fall", flew: "fly", grew: "grow", drew: "draw", broke: "break", woke: "wake", wore: "wear", sang: "sing", swam: "swim", did: "do" };
+const EN_BASE_TO_PAST = Object.fromEntries(Object.entries(EN_PAST_TO_BASE).map(([p, b]) => [b, p]));
+const EN_PAST_MARK = /^(yesterday|ago)$/;
+const EN_PROPER_NO_THE = /^(United|Netherlands|Philippines|Bahamas|Maldives|Czech|Dominican|UK|USA|US|EU|UAE)$/;
+
+function enPastOf(v, frequency) {
+  if (EN_BASE_TO_PAST[v]) return EN_BASE_TO_PAST[v];
+  const regular = /e$/.test(v) ? `${v}d` : /[^aeiou]y$/.test(v) ? `${v.slice(0, -1)}ied` : /^[^aeiou]*[aeiou][bdgmnprt]$/.test(v) && v.length <= 4 ? `${v}${v.slice(-1)}ed` : `${v}ed`;
+  return EN_VERBS.has(v) && frequency(regular) >= 2.5 ? regular : null;
+}
+
+function roundThreeRules(toks, i, paragraph, add, frequency) {
+  const t = toks[i];
+  const prev = toks[i - 1], next = toks[i + 1], next2 = toks[i + 2];
+  const L1 = prev?.lower ?? "", L2 = toks[i - 2]?.lower ?? "", R1 = next?.lower ?? "", R2 = next2?.lower ?? "";
+  const atEnd = !next || isPunct(next);
+  const fix = (replacement, message, start = t.start, end = t.end, keepCase = false) => add(start, end, replacement, message, { override: true, keepCase });
+  const sentence = (() => {
+    let s = i, e = i;
+    while (s > 0 && !/^[.!?]$/.test(toks[s - 1].text)) s--;
+    while (e < toks.length - 1 && !/^[.!?]$/.test(toks[e + 1].text)) e++;
+    return toks.slice(s, e + 1);
+  })();
+  const inSentence = (re) => sentence.some((x) => re.test(x.lower));
+  const clauseStart = isBoundary(prev) || /^(and|but|so|because|if|when|then)$/.test(L1);
+
+  // ---------- Agreement ----------
+  if (/^[\p{Ll}']+$/u.test(t.text)) {
+    const subject = (/^(is|was|are|were|has|have|do|does|don't|doesn't|isn't|aren't|wasn't|weren't|hasn't|haven't)$/.test(t.lower) ||
+      EN_VERBS.has(t.lower) || enBaseOfThird(t.lower)) ? enSubject(toks, i, frequency) : null;
+    if (subject) {
+      const toSg = { are: "is", were: "was", have: "has", do: "does", "don't": "doesn't", "aren't": "isn't", "weren't": "wasn't", "haven't": "hasn't" };
+      const toPl = Object.fromEntries(Object.entries(toSg).map(([a, b]) => [b, a]));
+      const verbLike = (atEnd && !EN_NOUN_VERBS.test(t.lower)) || EN_AFTER_VERB.test(R1) || /^\d/.test(R1);
+      // "if he were to win", "I wish she were here": the subjunctive.
+      const subjunctive = t.lower === "were" && toks.slice(Math.max(0, i - 4), i).some((x) => /^(if|wish|wished|though|whether|suppose|imagine)$/.test(x.lower));
+      if (subject.num === "sg" && toSg[t.lower] && !(t.lower === "do" && !verbLike) && !subjunctive) {
+        fix(toSg[t.lower], "The subject is singular: use a singular verb.");
+      } else if (subject.num === "pl" && toPl[t.lower]) {
+        fix(toPl[t.lower], "The subject is plural: use a plural verb.");
+      } else if (subject.num === "i" && /^(is|are)$/.test(t.lower)) {
+        fix("am", "With “I”, use “am”.");
+      } else if (subject.num === "sg" && EN_VERBS.has(t.lower) && !/^(be|do|have)$/.test(t.lower) && verbLike && R1 !== "to" &&
+          !(t.lower === "like" && !/^(it|this|that|him|her|them|me|you|us|to|my|your|his|our|their)$/.test(R1)) || subject.num === "sg" && t.lower === "use" && R1 !== "to" && verbLike) {
+        const third = enThirdPerson(t.lower);
+        if (frequency(third) >= 2.5) fix(third, `The subject is singular: “${third}”.`);
+      } else if (subject.num === "pl") {
+        const base = enBaseOfThird(t.lower);
+        if (base && base !== "have" && (atEnd || EN_AFTER_VERB.test(R1))) fix(base, `The subject is plural: “${base}”.`);
+      }
+    }
+  }
+  // "Mathematics are", "Your advice were", "The news were" -> singular
+  if (/^(are|were|have)$/.test(t.lower) && /^(mathematics|physics|economics|advice|information|furniture|equipment|homework|luggage|knowledge|feedback|research|traffic|weather)$/.test(L1) &&
+      (isBoundary(toks[i - 2]) || /^(the|your|my|his|her|our|their|this|that|some|any|no)$/.test(L2))) {
+    fix({ are: "is", were: "was", have: "has" }[t.lower], `“${L1}” is singular.`);
+  }
+  // "The manager, along with his assistants, are" -> is
+  if (/^(are|were|have)$/.test(t.lower) && L1 === ",") {
+    const open = toks.slice(Math.max(0, i - 10), i).findIndex((x, k, arr) => x.lower === "," && /^(along|together|as|including|accompanied|in)$/.test(arr[k + 1]?.lower ?? ""));
+    const base = Math.max(0, i - 10);
+    if (open >= 0) {
+      const head = toks[base + open - 1];
+      const det = toks[base + open - 2];
+      if (head && det && EN_DET_ANY.test(det.lower) && isBoundary(toks[base + open - 3]) && enNounNumber(head, frequency) === "sg") {
+        fix({ are: "is", were: "was", have: "has" }[t.lower], `The subject is “${head.lower}”: singular verb.`);
+      }
+    }
+  }
+  // "Every student and teacher were" -> was
+  if (/^(are|were|have)$/.test(t.lower) && toks[i - 4] && /^(every|each)$/.test(toks[i - 4].lower) && L2 === "and" && isBoundary(toks[i - 5])) {
+    fix({ are: "is", were: "was", have: "has" }[t.lower], "“Every … and …” takes a singular verb.");
+  }
+  // "Where is my glasses?", "Has the guests arrived?", "Does your parents know?"
+  if (/^(is|was|has|does|doesn't|isn't|wasn't|hasn't)$/.test(t.lower) && (isBoundary(prev) || /^(where|what|how|why|when|who)$/.test(L1)) &&
+      next && /^(the|my|your|his|her|our|their|these|those)$/.test(R1) && next2 && enNounNumber(next2, frequency) === "pl" &&
+      !(toks[i + 3] && /^(of|in|on|at)$/.test(toks[i + 3].lower))) {
+    fix({ is: "are", was: "were", has: "have", does: "do", "doesn't": "don't", "isn't": "aren't", "wasn't": "weren't", "hasn't": "haven't" }[t.lower], "The noun is plural: plural verb.");
+  }
+  // "Do she want?" -> Does ; "Why does they" -> do
+  if (/^(do|don't)$/.test(t.lower) && /^(he|she)$/.test(R1) && (isBoundary(prev) || /^(where|what|how|why|when|who)$/.test(L1)) && next2 && /^\p{Ll}+$/u.test(next2.text)) {
+    fix(t.lower === "do" ? "does" : "doesn't", "With “he” or “she”: “does”.");
+  }
+  if (/^(does|doesn't)$/.test(t.lower) && /^(they|we|you|i)$/.test(R1) && (isBoundary(prev) || /^(where|what|how|why|when|who)$/.test(L1))) {
+    fix(t.lower === "does" ? "do" : "don't", `With “${R1}”: “do”.`);
+  }
+  // "There's many reasons" -> There are ; "Here's the documents" -> Here are
+  if (t.lower === "there's" && /^(many|several|few|lots|plenty|two|three|four|five|numerous|various|some)$/.test(R1) && (R1 !== "some" || enNounNumber(next2 ?? { lower: "" }, frequency) === "pl")) {
+    fix("there are", "The noun is plural: “there are”.");
+  }
+  if (t.lower === "here's" && next && /^(the|my|your|some|these|those|all|our|his|her|their)$/.test(R1) && next2 && enNounNumber(next2, frequency) === "pl" &&
+      !(toks[i + 3] && /^(of|for)$/.test(toks[i + 3].lower))) {
+    fix("here are", "The noun is plural: “here are”.");
+  }
+  // "I is" -> am
+  if (t.lower === "is" && prev?.text === "I") fix("am", "With “I”, use “am”.");
+
+  // ---------- Articles ----------
+  // "I am engineer" -> an engineer
+  if (EN_PROFESSIONS.test(t.lower) && /^(am|'m|i'm|is|was|be|become|became|becomes|as)$/.test(L1) && (atEnd || /^(at|in|for|and|with|from|who|of|by|working|since)$/.test(R1)) &&
+      !(L1 === "as" && /^(such|well|same)$/.test(L2))) {
+    fix(`${/^[aeio]/.test(t.lower) ? "an" : "a"} ${t.text}`, "A job takes an article: “a doctor”, “an engineer”.", t.start, t.end, true);
+  }
+  // "The life is beautiful" -> Life
+  if (isBoundary(prev) && t.lower === "the" && /^(life|love|happiness|nature|humanity|society|friendship|honesty|patience|courage|freedom)$/.test(R1) && /^(is|was|can|isn't|will|makes|gives)$/.test(R2)) {
+    fix(next.text[0].toUpperCase() + next.text.slice(1), "In general statements, no “the”: “Life is beautiful”.", t.start, next.end, true);
+  }
+  // "a good news", "a great advice" -> good news
+  if (/^(a|an)$/.test(t.lower) && next) {
+    const adj = next && !EN_UNCOUNT_STRICT.test(R1) && /^\p{Ll}+$/u.test(next.text) && frequency(R1) >= 3 && !/^(lot|bit|piece|little|few|great deal)$/.test(R1);
+    const noun = EN_UNCOUNT_STRICT.test(R1) ? next : adj && EN_UNCOUNT_STRICT.test(R2) && !/^(piece|bit|lot|word|slice)$/.test(R1) ? next2 : null;
+    const after = noun && toks[toks.indexOf(noun) + 1];
+    if (noun && (isBoundary(after) || /^(for|from|about|on|in|at|to|during|today|yesterday|tonight|this|and|but|or|so|that|which|i|we|you|he|she|they|it|my|your|is|was|were|are|will|can|could|should|would|has|have|had|with|by)$/.test(after.lower))) {
+      fix(paragraph.slice(next.start, noun.end), `“${noun.lower}” is uncountable: no “a”.`, t.start, noun.end, true);
+    }
+  }
+  // "plays the tennis" -> plays tennis
+  if (t.lower === "the" && /^(play|plays|played|playing|like|likes|love|loves|watch|watches|watched)$/.test(L1) &&
+      /^(tennis|football|soccer|basketball|golf|chess|volleyball|baseball|hockey|rugby|cricket|badminton|poker|handball)$/.test(R1)) {
+    fix(next.text, "Sports and games take no article: “play tennis”.", t.start, next.end, true);
+  }
+  // "been to United States" -> the United States
+  if (EN_PROPER_NO_THE.test(t.text) && (t.text !== "United" || /^(States|Kingdom|Nations|Arab)$/.test(next?.text ?? "")) && t.text.length > 3 &&
+      /^(to|in|from|visit|visited|visiting|across|of|about|for|left|leave|around|throughout)$/.test(L1)) {
+    const end = t.text === "United" ? next.end : t.end;
+    fix(`the ${paragraph.slice(t.start, end)}`, "This country name takes “the”.", t.start, end, true);
+  }
+  // "Moon was very bright" -> The moon
+  if (isBoundary(prev) && /^(Moon|Sun|Sky|Internet)$/.test(t.text) && /^(is|was|rises|rose|sets|set|shines|shone|came|comes|looks|looked|will|has|had)$/.test(R1)) {
+    fix(`The ${t.lower}`, "“The moon”, “the sun”: they take “the”.", t.start, t.end, true);
+  }
+  // "He is best player" -> the best
+  if (/^(best|worst|biggest|smallest|tallest|oldest|youngest|fastest|strongest|greatest|highest|lowest|richest|smartest|nicest|largest|longest|shortest)$/.test(t.lower) &&
+      /^(is|was|are|were|'s|be|become|became|it's|he's|she's|that's)$/.test(L1) && next && /^\p{Ll}+$/u.test(next.text) && frequency(R1) >= 3 &&
+      !/(ed|ly)$/.test(R1) && !/^(for|when|to|if|in|at|on|of|and|but|or|with|by|as|than|so|because|left|known|kept|done|used|served|avoided|described|seen|eaten|enjoyed|friends|buds)$/.test(R1) &&
+      next2 && /^(on|in|at|of|i|we|you|ever|that|for|this|team|class|school|ever)$/.test(R2)) {
+    fix(`the ${t.lower}`, "A superlative takes “the”: “the best player”.", t.start, t.end, true);
+  }
+
+  // ---------- Verb forms ----------
+  // "I enjoy to swim" -> swimming
+  if (t.lower === "to" && EN_GERUND_VERBS.test(L1) && !/^(the|a|an|my|your|his|her|its|our|their|of|this|that)$/.test(L2) && next && /^\p{Ll}+$/u.test(next.text) && EN_VERBS.has(R1) && !/^(the|a|my|your|it|him|her|them|me|us)$/.test(R1)) {
+    fix(ingForm(R1), `After “${L1}”, use the -ing form: “${ingForm(R1)}”.`, t.start, next.end);
+  }
+  // "We decided going" -> to go
+  if (EN_INFINITIVE_VERBS.test(L1) && /^\p{Ll}+ing$/u.test(t.text) && !/^(something|nothing|anything|everything|thing|morning|evening|meeting|building|wedding|ceiling|king|ring|spring|string|thing)$/.test(t.lower)) {
+    const base = [t.lower.replace(/ing$/, ""), t.lower.replace(/ing$/, "e"), t.lower.replace(/(.)\1ing$/, "$1"), t.lower.replace(/ying$/, "ie")].find((b) => EN_VERBS.has(b) && ingForm(b) === t.lower);
+    if (base) fix(`to ${base}`, `After “${L1}”, use “to” + verb: “to ${base}”.`);
+  }
+  // "made me to clean", "let me to explain" -> made me clean
+  if (t.lower === "to" && /^(me|him|her|us|them|you)$/.test(L1) && /^(make|makes|made|making|let|lets|letting|have|had|help|helps|helped|watch|watched|saw|see|heard|hear)$/.test(L2) &&
+      next && EN_VERBS.has(R1) && L2 !== "help") {
+    fix(next.text, `After “${L2} ${L1}”, no “to”: “${L2} ${L1} ${R1}”.`, t.start, next.end, true);
+  }
+  // "You must to submit" -> must submit
+  if (t.lower === "to" && /^(must|can|could|should|will|would|might|may|shall|cannot|can't|mustn't|shouldn't|won't|wouldn't|couldn't)$/.test(L1) && next && /^\p{Ll}+$/u.test(next.text) && (EN_VERBS.has(R1) || R1 === "be")) {
+    fix(next.text, `After “${L1}”, no “to”.`, t.start, next.end, true);
+  }
+  // "When I was a child, I use to play" -> used to
+  if (t.lower === "use" && R1 === "to" && /^(i|we|they|you|he|she)$/.test(L1) && next2 && EN_VERBS.has(R2) && !/^(did|didn't|does|do)$/.test(L2)) {
+    fix("used", "The habit in the past is “used to”.");
+  }
+  // "I'm used to wake up" -> waking
+  if (prev?.lower === "to" && L2 === "used" && /^(i'm|we're|you're|they're|he's|she's|am|get|got|getting)$/.test(toks[i - 3]?.lower ?? "") &&
+      !/^(is)$/.test(toks[i - 3]?.lower ?? "") && EN_VERBS.has(t.lower) && !/^(be)$/.test(t.lower)) {
+    fix(ingForm(t.lower), "“Be used to” is followed by the -ing form.");
+  }
+  // "I am here since 2019" -> have been ; "I know him since" -> have known
+  const sinceAt = toks.slice(i + 1, i + 6).findIndex((x) => x.lower === "since");
+  const since = sinceAt >= 0 && toks[i + 1 + sinceAt + 1] && /^(\d{4}|last|yesterday|monday|tuesday|wednesday|thursday|friday|saturday|sunday|january|february|march|april|may|june|july|august|september|october|november|december|childhood|then|we|i|he|she|they|high|school|college|the|my|our|this|early|birth)$/.test(toks[i + 1 + sinceAt + 1].lower) &&
+    !toks.slice(i + 1, i + 1 + sinceAt).some((x) => isBoundary(x) || /^(been|ever)$/.test(x.lower));
+  if (since && /^(am|is|are|'m|'re|i'm|we're|they're|you're|he's|she's)$/.test(t.lower) && (/^(am|is|are)$/.test(t.lower) ? /^(i|we|they|you|he|she)$/.test(L1) : true)) {
+    const third = /^(is|he's|she's)$/.test(t.lower);
+    const subj = /^(i'm|we're|they're|you're|he's|she's)$/.test(t.lower) ? `${t.text.replace(/'.*$/, "")} ` : "";
+    const ing = next && /ing$/.test(R1) ? next : null;
+    fix(`${subj}${third ? "has" : "have"} been${ing ? ` ${ing.text}` : ""}`, "With “since”, use the present perfect: “have been”.", t.start, ing ? ing.end : t.end);
+  }
+  if (since && /^(i|we|they|you)$/.test(L1) && /^(know|live|work|have|love|study|teach|play|own)$/.test(t.lower) && isBoundary(toks[i - 2]) !== false) {
+    const pp = { know: "known", live: "lived", work: "worked", have: "had", love: "loved", study: "studied", teach: "taught", play: "played", own: "owned" }[t.lower];
+    fix(`have ${pp}`, "With “since”, use the present perfect.");
+  }
+  // "I am working here for five years" -> have been working
+  if (/^(am|are|'m|'re|i'm|we're|they're)$/.test(t.lower) && next && /^(working|living|studying|learning|teaching|waiting|playing)$/.test(R1)) {
+    const k = toks.slice(i + 2, i + 6).findIndex((x) => x.lower === "for");
+    const after = k >= 0 ? toks.slice(i + 3 + k, i + 6 + k).map((x) => x.lower) : [];
+    if (k >= 0 && /^(\d+|two|three|four|five|six|seven|eight|nine|ten|many|several|a|over|almost|nearly)$/.test(after[0] ?? "") && after.some((x) => /^(years|months|year|month|decades)$/.test(x)) &&
+        !inSentence(/^(next|will|going|until|tomorrow)$/)) {
+      const subj = /^(i'm|we're|they're)$/.test(t.lower) ? `${t.text.replace(/'.*$/, "")} ` : "";
+      fix(`${subj}have been ${next.text}`, "For a duration up to now, use “have been …ing”.", t.start, next.end);
+    }
+  }
+  // "If I would have known" -> had known
+  if (t.lower === "would" && R1 === "have" && next2 && /(ed|en|wn|ne|ght|ung|ade|aid|ept|ent|ost|old|ound|ood|eard|ew)$/.test(R2) &&
+      toks.slice(Math.max(0, i - 3), i).some((x, k, arr) => x.lower === "if" && /^(i|you|we|they|he|she|it)$/.test(arr[k + 1]?.lower ?? ""))) {
+    fix(`had ${next2.text}`, "After “if”, use the past perfect: “if I had known”.", t.start, next2.end, true);
+  }
+  // "If it will rain tomorrow" -> rains
+  if (t.lower === "will" && /^(it|he|she|they|we|you|i)$/.test(L1) && L2 === "if" && next && EN_VERBS.has(R1) && R1 !== "be") {
+    const verb = /^(it|he|she)$/.test(L1) ? enThirdPerson(R1) : R1;
+    fix(verb, "After “if”, use the present, not “will”.", t.start, next.end, true);
+  }
+  // "Last summer we travel to Portugal", "I send you the file yesterday" -> past
+  if (/^(i|we|they|you|he|she)$/.test(L1) && (isBoundary(toks[i - 2]) || /^(summer|year|week|month|night|weekend|yesterday|monday|tuesday|wednesday|thursday|friday|saturday|sunday|morning|time|ago|then)$/.test(L2)) &&
+      /^\p{Ll}+$/u.test(t.text) && (EN_VERBS.has(t.lower)) && (inSentence(EN_PAST_MARK) || sentence.some((x, k) => x.lower === "last" && /^(summer|year|week|month|night|weekend|monday|tuesday|wednesday|thursday|friday|saturday|sunday|time|winter|spring|autumn|fall)$/.test(sentence[k + 1]?.lower ?? ""))) &&
+      !inSentence(/^(will|would|can|could|usually|always|often|every|tomorrow|next|since|ago,|should|must)$/)) {
+    const past = enPastOf(t.lower, frequency);
+    if (past) fix(past, `A past event: the simple past “${past}”.`);
+  }
+  // "Can you sent me", "Let's met", "to chose" -> base form
+  if (EN_PAST_TO_BASE[t.lower] && t.lower !== "did" && ((/^(you|i|we|they|he|she)$/.test(L1) && /^(can|could|will|would|should|shall|may|might|must|did|didn't|do|does|don't|doesn't)$/.test(L2) && isBoundary(toks[i - 3])) ||
+      /^(let's|to|can't|cannot|couldn't|won't|wouldn't|shouldn't|didn't|don't|doesn't)$/.test(L1)) &&
+      !(L1 === "to" && /^(used|go|went|back|come|came|close|next|due|according)$/.test(L2)) && !/^(left|found|felt|lost|spent|kept)$/.test(t.lower)) {
+    fix(EN_PAST_TO_BASE[t.lower], `After “${L1}”, the base form: “${EN_PAST_TO_BASE[t.lower]}”.`);
+  }
+  // "I have 25 years old" -> am
+  if (/^(have|has|'ve)$/.test(t.lower) && next && /^(\d+|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety)$/.test(R1) &&
+      R2 === "years" && toks[i + 3]?.lower === "old") {
+    fix({ i: "am", he: "is", she: "is", it: "is" }[L1] ?? "are", "Age uses “be”: “I am 25 years old”.");
+  }
+  // "He said me" -> told me
+  if (/^(said|say|says|saying)$/.test(t.lower) && /^(me|him|her|us|them)$/.test(R1) && next2 && (/^(that|he|she|i|we|they|it|you|the|to|about|this|what|how)$/.test(R2) || isBoundary(next2))) {
+    const tell = { said: "told", say: "tell", says: "tells", saying: "telling" }[t.lower];
+    fix(`${tell} ${next.text}`, `One “says” something, but “tells” someone: “${tell} ${R1}”.`, t.start, next.end, true);
+  }
+  // "enough good" -> good enough
+  if (t.lower === "enough" && next && /^(good|big|old|fast|strong|tall|smart|warm|cold|high|long|clear|close|safe|clean|cheap|large|small|serious|quick|loud|ready|rich|wide|deep|hot|early|late|mature|experienced|qualified)$/.test(R1) &&
+      (atEnd || isBoundary(next2) || /^(to|for)$/.test(R2))) {
+    fix(`${next.text} enough`, "“Enough” comes after the adjective: “good enough”.", t.start, next.end, true);
+  }
+  // "It's the more beautiful city I've seen" -> most
+  if (t.lower === "more" && L1 === "the" && next && /^\p{Ll}+$/u.test(next.text) && next2 && /^\p{Ll}+$/u.test(next2.text) &&
+      toks[i + 3] && (/^(i|i've|we've|you've|ever|we|you)$/.test(toks[i + 3].lower) || toks[i + 3].lower === "in" && toks[i + 4]?.lower === "the" && /^(world|country|city|town|class|team|family|school|universe)$/.test(toks[i + 5]?.lower ?? "")) && !/^(the|than|you|i|we|he|she|they)$/.test(R1) && R2 !== "the") {
+    fix("most", "Among all: the superlative “the most”.");
+  }
+  // "How long time" -> How long
+  if (t.lower === "how" && R1 === "long" && R2 === "time" && !/^(ago)$/.test(toks[i + 3]?.lower ?? "")) {
+    fix(paragraph.slice(t.start, next.end), "“How long” already means “how much time”.", t.start, next2.end, true);
+  }
+  // "a lot of works to do" -> work
+  if (t.lower === "works" && /^(of|much)$/.test(L1) && R1 === "to" && R2 === "do") fix("work", "“Work” (tasks) is uncountable.");
+  // "going to the home" -> going home
+  if (t.lower === "the" && R1 === "home" && /^(to)$/.test(L1) && /^(go|going|went|goes|come|coming|came|get|got|getting|drive|walk|run|head|heading|back|return|returned)$/.test(L2) && (!next2 || isPunct(next2) || /^(now|tonight|soon|early|late|after|before|and)$/.test(R2))) {
+    fix("home", "“Go home”: no “to the”.", toks[i - 1].start, next.end);
+  }
+  // "First we eat, than we watch", "and than watched" -> then
+  if (t.lower === "than" && (L1 === "," || L1 === "and" || isBoundary(prev)) &&
+      !toks.slice(Math.max(0, i - 6), i).some((x) => /^(more|less|rather|other|better|worse|fewer|different)$/.test(x.lower) || /er$/.test(x.lower) && frequency(x.lower) >= 3 && /^(bigger|smaller|older|younger|faster|slower|higher|lower|longer|shorter|easier|harder|cheaper|larger|greater|later|earlier|sooner)$/.test(x.lower)) &&
+      next && /^(we|i|you|they|he|she|it|the|go|went|watched|ate|left|came|come|start|started|after|later)$/.test(R1)) {
+    fix("then", "In a sequence of events: “then”.");
+  }
+  // "new close for work" -> clothes
+  if (t.lower === "close" && /^(new|buy|bought|wash|washing|washed|clean|dirty|wear|wearing|winter|summer|baby|warm|old|my|your|his|her|their|our)$/.test(L1) &&
+      (atEnd || /^(for|to|and|on|in|at|from|are|were|off)$/.test(R1)) && !(L1 === "my" && /^(to)$/.test(R1)) && !/^(my|your|his|her|their|our)$/.test(L1)) {
+    fix("clothes", "Things you wear are “clothes”.");
+  }
+  // "I'll except your offer", "I didn't except him to call"
+  if (t.lower === "except" && /^(i'll|we'll|you'll|they'll|he'll|she'll|i'd|we'd|happy|glad|pleased)$/.test(L1) && next && /^(your|the|this|that|his|her|their|our|it|my)$/.test(R1)) {
+    fix("accept", "Did you mean the verb “accept” (to agree to take)?");
+  }
+  if (t.lower === "except" && /^(i|you|we|they|didn't|don't|doesn't|never|not|wouldn't)$/.test(L1) && /^(him|her|them|you|me|it|us|that|this|the)$/.test(R1) && next2 && (R2 === "to" || /^(that|this)$/.test(R1))) {
+    fix("expect", "Did you mean “expect” (think it will happen)?");
+  }
+  // ", expect in August" -> except
+  if (t.lower === "expect" && L1 === "," && /^(in|on|at|during|for|when|maybe|perhaps|weekends|sundays|mondays|holidays)$/.test(R1)) fix("except", "Did you mean “except” (apart from)?");
+  // "He's knew to the team" -> new
+  if (t.lower === "knew" && /^(he's|she's|it's|i'm|you're|we're|they're|is|am|are|was|were|be|brand|something|completely|totally|relatively|fairly|very|so)$/.test(L1)) fix("new", "Did you mean “new” (not old)?");
+  // "I'd rather stay hear." -> here
+  if (t.lower === "hear" && /^(stay|live|wait|sit|stand|work|stop|stays|lives|waiting|here|be|been|come|came|right|over)$/.test(L1) && (atEnd || /^(and|for|with|until|tonight|today|now|alone|forever)$/.test(R1))) {
+    fix("here", "Did you mean “here” (this place)?");
+  }
+  // "a long weak at work" -> week
+  if (t.lower === "weak" && (/^(long|busy|whole|entire|hard|crazy|great|good|bad|tough|rough|short)$/.test(L1) && /^(at|of|and|for|in|but|so|i|we)$/.test(R1) || atEnd && /^(long|busy|crazy|tough|rough)$/.test(L1))) {
+    fix("week", "Seven days make a “week”.");
+  }
+  // "I'm going to sea a movie" -> see
+  if (t.lower === "sea" && /^(to|will|can|could|i|we|you|they|let's|go|come|gonna|wanna|would|should|must|didn't|don't|can't)$/.test(L1) &&
+      next && /^(a|the|you|him|her|it|them|what|if|how|me|us|your|my|that|this|why|who|where)$/.test(R1) && !(L1 === "to" && /^(go|went|going|sail|sailed|swim|out|back|fall|fell|head|headed)$/.test(L2))) {
+    fix("see", "Did you mean the verb “see”?");
+  }
+  // "a grate party", "That's grate!" -> great
+  if (t.lower === "grate" && ((/^(a|so|very|really|such|pretty|quite|was|is|it's|that's|sounds|looks|feel|feels|felt|had|have)$/.test(L1) && (atEnd || /^(party|idea|time|job|day|place|movie|team|game|news|show|book|trip|night|weekend|food|friend|deal|opportunity|choice|view|question|work|way|and|to|for|!)$/.test(R1))) &&
+      !/^(cheese|it|the|carrots|onions)$/.test(R1) && !/^(fire|iron|metal)$/.test(L1))) {
+    fix("great", "Did you mean “great”?");
+  }
+  // "text you latter" -> later
+  if (t.lower === "latter" && !/^(the|this|these|in|of|a)$/.test(L1) && (atEnd || /^(today|tonight|on|this|in|than|when|and|then|after)$/.test(R1))) {
+    fix("later", "Did you mean “later” (afterwards)? “The latter” means the second one.");
+  }
+  // "witch is annoying", "witch one" -> which
+  if (t.lower === "witch" && !/^(a|the|wicked|good|bad|old|evil|her|his|my|your|white|sea|green|little|young)$/.test(L1) &&
+      (L1 === "," || /^(one|is|was|of|i|we|you|they|he|she|means|makes|made|has|have|would|will|can|could|should|it|way|ones|to|car|book|color|colour)$/.test(R1))) {
+    fix("which", "Did you mean “which”?");
+  }
+  // "barley awake" -> barely
+  if (t.lower === "barley" && (/^(was|is|were|are|am|be|i|could|can|he|she|they|we|you|had|have|'m|still|just|i'm|it's|it|we're|they're)$/.test(L1) ||
+      /^(awake|alive|know|knew|slept|sleep|eat|ate|enough|there|able|any|touched|made|hear|heard|see|saw|noticed|passed|managed|recognized|visible|audible|speak|spoke|moved|move|breathing|standing|walk|remember|remembered|survived|finished|started|begun|legal|recognizable|keep|kept)$/.test(R1))) {
+    fix("barely", "Did you mean “barely” (hardly)?");
+  }
+  // "a loyal costumer" -> customer
+  if (/^costumers?$/.test(t.lower) && (/^(loyal|regular|new|happy|satisfied|valued|potential|repeat|unhappy|angry|existing|our|every|each|dear)$/.test(L1) || /^(service|support|satisfaction|care|feedback|reviews?|base|experience)$/.test(R1))) {
+    fix(t.lower.endsWith("s") ? "customers" : "customer", "A buyer is a “customer”.");
+  }
+  // "as a manger" -> manager
+  if (/^mangers?$/.test(t.lower) && !inSentence(/^(jesus|baby|christmas|nativity|hay|stable|ox|donkey|cattle|lying|lay)$/) &&
+      (/^(as|store|project|general|sales|account|office|hiring|marketing|product|team|new|regional|branch|assistant|operations|our|my|your|his|her|their)$/.test(L1) || inSentence(/^(department|team|office|company|work|job|meeting|boss|project|staff|employees|hired|promoted)$/))) {
+    fix(t.lower.endsWith("s") ? "managers" : "manager", "Did you mean “manager”?");
+  }
+  // "the bets pizza in town" -> best
+  if (t.lower === "bets" && /^(the|my|your|our|their|his|her)$/.test(L1) && next && /^\p{Ll}+$/u.test(next.text) && frequency(R1) >= 3 &&
+      !/^(on|are|were|is|was|placed|and|of|for|have|had|off|were|will|made|from|i|we|you)$/.test(R1) && !/(ed|ing)$/.test(R1)) {
+    fix("best", "Did you mean “best”?");
+  }
+  // "Can you sent me", handled above; "I send you the file yesterday" by the past rule.
+  // "The were very happy" -> They
+  if (t.lower === "the" && isBoundary(prev) && /^(were|are|have|had|will|would|can|could|should|did|do|don't|didn't|weren't|aren't|haven't|said|told)$/.test(R1)) {
+    fix("they", "Did you mean “they”?");
+  }
+  // "I think hat we should" -> that
+  if (t.lower === "hat" && /^(think|thought|say|said|know|knew|hope|believe|sure|so|mean|feel|felt|realize|realized|guess|assume|is|was|seems|glad|sad|happy|sorry|remember|forgot|told|tell|me|you|him|her|us|them|now|fact)$/.test(L1) &&
+      /^(we|i|you|he|she|they|it|the|this|there|my|your|our|his|her|their|everyone|nobody|someone)$/.test(R1)) {
+    fix("that", "Did you mean “that”?");
+  }
+  // "Where were you went I called" -> when
+  if (t.lower === "went" && /^(i|you|he|she|we|they)$/.test(R1) && next2 && (/ed$/.test(R2) || EN_PAST_TO_BASE[R2] || /^(was|were|got|came|left|arrived)$/.test(R2)) &&
+      (!/^(i|you|he|she|we|they|it)$/.test(L1) || /^(were|was|are|is)$/.test(L2))) {
+    fix("when", "Did you mean “when”?");
+  }
+  // "a nice women" -> woman ; "Three woman" -> women
+  if (t.lower === "women" && /^(a|an|one|this|that|every|each|another)$/.test(L1) || t.lower === "women" && /^(a|an|one|this|that|every|each|another)$/.test(L2) && /^\p{Ll}+$/u.test(prev?.text ?? "") && frequency(L1) >= 3 && !/^(of|men|young)$/.test(L1)) {
+    if (!/^'?s$/.test(R1)) fix("woman", "One person: “woman”.");
+  }
+  if (t.lower === "woman" && /^(two|three|four|five|six|seven|eight|nine|ten|many|several|few|these|those|some|other|both|\d+)$/.test(L1) && !/^('s|s)$/.test(R1)) {
+    fix("women", "More than one: “women”.");
+  }
+  if (t.lower === "men" && /^(a|an|one|this|every|each|another)$/.test(L1) && !/^('s|s)$/.test(R1)) fix("man", "One person: “man”.");
+  // "upset abut it" -> about
+  if (t.lower === "abut" && (/^(upset|worried|happy|sad|sorry|excited|nervous|talk|talking|talked|think|thinking|thought|know|knew|care|cares|cared|forget|forgot|asked|ask|told|tell|said|heard|hear|read|learn|learned|nothing|something|all|more|anything|everything|curious|serious|wrong|right|sure|complain|complained|mad|angry|crazy|concerned|thinking|dream|dreamed|feel|felt|joke|joking|story|questions|question|is|was|it's|what's)$/.test(L1) ||
+      /^(it|this|that|the|my|your|his|her|them|me|you|what|how|us|our|their|an|a)$/.test(R1) && /^(talk|think|care|know|worry|forget|ask|tell|hear|read|learn|is|was)/.test(L1))) {
+    fix("about", "Did you mean “about”?");
+  }
+  // "Please let me now", "I don't now what" -> know ; "I know have three kids" -> now
+  if (t.lower === "now" && ((/^(me|us)$/.test(L1) && /^(let|lets)$/.test(L2)) || /^(don't|didn't|doesn't|do|to|you|i|we|they|dont|didnt)$/.test(L1) && !/^(by|on|until|for|and|is|was|that's|it's|right)$/.test(R1)) &&
+      next && /^(what|how|if|why|where|who|that|the|anything|about|whether|when|which|you|him|her|them|it|this|everything|something)$/.test(R1)) {
+    fix("know", "Did you mean “know” (be aware)?");
+  }
+  if (t.lower === "know" && /^(i|we|they|you|he|she)$/.test(L1) && /^(have|has|am|is|are|live|lives|work|works|own|owns|go|need)$/.test(R1) && isBoundary(toks[i - 2])) {
+    fix("now", "Did you mean “now” (at this time)?");
+  }
+  // "I'm doing find" -> fine ; "Did you fine your keys?" -> find
+  if (t.lower === "find" && /^(doing|feel|feeling|feels|felt|look|looks|looked|be|is|am|'m|it's|that's|i'm|everything's|all|perfectly|totally|just|seems|sounds)$/.test(L1) && (atEnd || /^(thanks|thank|now|today|and|but|with)$/.test(R1))) {
+    fix("fine", "Did you mean “fine”?");
+  }
+  if (t.lower === "fine" && /^(did|didn't|can't|cannot|couldn't|can|could|you|we|i|to)$/.test(L1) && next && /^(your|my|his|her|out|it|them|anything|something|our|their|any|a|the)$/.test(R1) &&
+      !(L1 === "to" && !/^(your|my|out|it|anything|something)$/.test(R1)) && !/^(they)$/.test(L1) && (L1 !== "you" || /^(did|can|could|didn't|can't|will|would|to)$/.test(L2))) {
+    fix("find", "Did you mean “find”?");
+  }
+  // "Where you at the party last night?" -> Were
+  if (t.lower === "where" && isBoundary(prev) && /^(you|they|we)$/.test(R1) && /^(at|in|there|here|home|ready|sure|able|happy|late|asleep|awake|busy|ok|okay|alone|really|still|also|both|all|going|coming|planning|trying|thinking|talking|aware|serious|out|the)$/.test(R2) &&
+      !(R2 === "at" && (isPunct(toks[i + 3]) || !toks[i + 3]))) {
+    fix("were", "Did you mean “were”?");
+  }
+  // "wash my cloths" -> clothes
+  if (t.lower === "cloths" && /^(my|your|his|her|our|their|new|dirty|wear|wearing|fold|iron|wash|washed|winter|summer|baby|warm|clean)$/.test(L1) && !/^(and)$/.test(R1)) fix("clothes", "Things you wear are “clothes”.");
+  // "We had diner at" -> dinner
+  if (/^diner$/.test(t.lower) && /^(had|have|having|for|after|before|during|eat|ate|make|cook|cooking|skip|skipped|over|serve|served|made|tonight's|our|until|at)$/.test(L1) && !(L1 === "at" && R1 === "on")) {
+    fix("dinner", "The evening meal is “dinner”.");
+  }
+  // "an even batter dancer" -> better
+  if (t.lower === "batter" && (R1 === "than" || /^(even|much|far|way|no|any|lot|getting|get|feel|feeling|feels|felt|sound|sounds|looks|look|is|was|it's|that's|much|so)$/.test(L1) && !/^(for|of|is|mix|mixture)$/.test(R1) && L1 !== "the")) {
+    fix("better", "Did you mean “better”?");
+  }
+  // "on the tale" -> table
+  if (t.lower === "tale" && L1 === "the" && /^(on|under|at|off|from|around|across|onto)$/.test(L2)) fix("table", "Did you mean “table”?");
+  // "He quite his job" -> quit
+  if (t.lower === "quite" && /^(i|he|she|we|they|you|to|will|just|finally|eventually|never)$/.test(L1) && /^(his|her|my|their|our|your|smoking|drinking|school|work|job|it|college)$/.test(R1)) {
+    fix("quit", "Did you mean “quit” (stop, leave)?");
+  }
+  // "I hope you a feeling better" -> are
+  if (t.lower === "a" && /^(you|we|they)$/.test(L1) && next && /^\p{Ll}+ing$/u.test(next.text) && !/^(thing|king|ring|wing|building|wedding|meeting|feeling|morning|evening|painting|clothing|ceiling|darling|sibling|string|spring|swing|sting|thing)$/.test(R1) || t.lower === "a" && /^(you|we|they)$/.test(L1) && R1 === "feeling" && /^(better|good|ok|okay|well|great|fine|sick|tired)$/.test(R2)) {
+    fix("are", "Did you mean “are”?");
+  }
+  // "I'd love", "Ill call you back" -> I'd, I'll
+  if (t.text === "Id" && /^(love|like|rather|be|say|have|go|prefer|better|recommend|appreciate|suggest|never|probably|been|really|also|just|do|need)$/.test(R1)) fix("I'd", "Apostrophe missing: “I'd”.", t.start, t.end, true);
+  if ((t.text === "Ill" || t.text === "ill" && clauseStart && isBoundary(prev)) && /^(call|be|see|send|get|do|let|text|try|have|take|go|check|bring|make|come|tell|talk|help|pick|meet|need|ask|look|wait|never|probably|just|definitely|email|write|buy|pay|give|keep|think)$/.test(R1)) {
+    fix("I'll", "Apostrophe missing: “I'll”.", t.start, t.end, true);
+  }
+  // "Let's meetup" -> meet up ; "any thing" -> anything
+  if (t.lower === "meetup" && /^(let's|lets|to|can|could|we|should|will|i|you|they|must)$/.test(L1)) fix("meet up", "The verb is two words: “meet up”.");
+  if (t.lower === "any" && R1 === "thing" && (isBoundary(next2) || /^(else|you|i|we|for|to|about|that|from)$/.test(R2))) fix("anything", "One word: “anything”.", t.start, next.end);
+  // "on Monday Morning", "to the Beach", "My Sister" -> lowercase
+  if (/^\p{Lu}\p{Ll}+$/u.test(t.text) && /^(morning|afternoon|evening|night|beach|park|sister|brother|friend|school|university|college|office|hospital|church|city|country|summer|winter|spring|autumn|weekend|birthday|dinner|lunch|breakfast|movie|family|house|home|car|dog|cat|teacher|boss|team|company|store|restaurant|gym|pool|lake|river|mountain|ocean|airport|station|hotel|street|town|village|garden|kitchen|cousin|uncle|aunt|neighbor|neighbour|wife|husband|son|daughter|baby|kids|children|weather|homework|exam|test|class|meeting|party|vacation|holiday|trip|money|job|work|food|coffee|tea|beer|wine)$/.test(t.lower) &&
+      prev && !isBoundary(prev) && !/^\p{Lu}/u.test(next?.text ?? "") && !/^(of|de)$/.test(R1) &&
+      !toks.slice(Math.max(0, i - 3), i - 1).some((x, k, arr) => /^\p{Lu}/u.test(x.text) && !isBoundary(toks[Math.max(0, i - 3) + k - 1]) && !/^(monday|tuesday|wednesday|thursday|friday|saturday|sunday)$/.test(x.lower)) && !/["“'‘]\s*$/.test(paragraph.slice(Math.max(0, t.start - 2), t.start))) {
+    // Lowercase word before it ("to the Beach"), or a day ("Monday Morning"),
+    // or the sentence's first word ("My Sister"): not part of a name.
+    const dayBefore = /^(monday|tuesday|wednesday|thursday|friday|saturday|sunday)$/.test(L1);
+    const firstWord = isBoundary(toks[i - 2]) && /^(my|your|our|his|her|their|the|a|this|next|last|every)$/.test(L1);
+    if (/^\p{Ll}/u.test(prev.text) && /^(to|at|in|on|from|my|your|our|his|her|their|this|next|last|every|a|the|and|with|for)$/.test(L1) || dayBefore || firstWord) {
+      fix(t.lower, "A common noun takes no capital letter here.", t.start, t.end, true);
+    }
+  }
+  // "layed on the beach" -> lay ; "She payed" -> paid ; "He brang" -> brought
+  if (t.lower === "layed") fix(/^(on|in|down|there|back|around|awake|still|low|flat)$/.test(R1) ? "lay" : "laid", "The past of “lie” is “lay”; of “lay”, “laid”.");
+  if (t.lower === "payed" && R1 !== "out") fix("paid", "The past of “pay” is “paid”.");
+  if (t.lower === "brang" || t.lower === "brung") fix("brought", "The past of “bring” is “brought”.");
+  if (/^(wendesday|wenesday|wedensday|wedsday)$/.test(t.lower)) fix("Wednesday", "Did you mean “Wednesday”?", t.start, t.end, true);
+
+  // ---------- Words confused with a neighbour ----------
+  if (t.lower === "principle" && R1 === "of" && /^(the|our|my|your|this|a)$/.test(R2) && /^(school|college|academy|high|university)$/.test(toks[i + 3]?.lower ?? "")) fix("principal", "The head of a school is the “principal”.");
+  if (t.lower === "principal" && (L1 === "in" && isBoundary(toks[i - 2]) || L1 === "of" && /^(matter|question)$/.test(toks[i - 2]?.lower ?? ""))) fix("principle", "A rule or belief is a “principle”.");
+  if (t.lower === "stationery" && /^(remain|remained|remains|stay|stayed|stays|completely|perfectly|is|was|be|kept|keep|remaining|staying)$/.test(L1) && !/^(store|shop|supplies|set|items|section|cupboard)$/.test(R1)) {
+    fix("stationary", "Not moving: “stationary”. Paper and pens are “stationery”.");
+  }
+  if (/^compliments?$/.test(t.lower) && /^(perfect|ideal|natural|nice|great|good|excellent|wonderful|lovely)$/.test(L1) && R1 === "to" && /^(the|a|any|your|each|this|our|my|its)$/.test(R2) &&
+      !/^(chef|cook|you|your|my|her|his|staff|team|host)$/.test(toks[i + 3]?.lower ?? "") && L1 !== "nice") {
+    fix(t.lower.endsWith("s") ? "complements" : "complement", "Something that goes well with another is a “complement”.");
+  }
+  if (t.lower === "passed" && /^(rode|ran|walked|drove|go|walk|run|drive|ride|flew|biked|sped|raced|hurried|rushed|went|cycled|jogged|strolled|sailed|swam)$/.test(L1) && /^(the|it|him|her|me|us|them|my|your|our|a|an|this|that)$/.test(R1)) {
+    fix("past", "Moving beyond: “past”.");
+  }
+  if (t.lower === "all" && R1 === "ready" && (/^(have|has|had|'ve|i've|we've|you've|they've|he's|she's)$/.test(L1) || next2 && /^\p{Ll}+(ed|en)$/u.test(next2.text))) {
+    fix("already", "Before this moment: “already”.", t.start, next.end);
+  }
+  if (t.lower === "sight" && /^(to|will|can|must|should|please|always|properly|correctly)$/.test(L1) &&
+      (/^(sources|source|references|reference|examples|studies|evidence|papers|articles|quotes|authors|three|two|four|five|several|your|all)$/.test(R1) || /^(the|a)$/.test(R1) && /^(source|sources|study|article|paper|author|reference)$/.test(R2))) {
+    fix("cite", "To quote a source is to “cite” it.");
+  }
+  if (t.lower === "complementary" && /^(breakfast|drinks|drink|coffee|tickets|ticket|wifi|wi-fi|parking|shuttle|access|meal|meals|upgrade|snacks|copy|samples|champagne|dessert|room|bottle|beverages|water|tea)$/.test(R1)) {
+    fix("complimentary", "Free of charge: “complimentary”.");
+  }
+  if (t.lower === "board" && /^(so|was|were|am|'m|get|got|getting|feel|feeling|bit|really|very|too|i'm|being|totally|completely|extremely|super|kinda|already|become|became)$/.test(L1) &&
+      (atEnd || /^(during|with|in|at|by|and|that|because|so|out|stiff)$/.test(R1))) {
+    fix("bored", "Did you mean “bored” (not interested)?");
+  }
+  if (t.lower === "break" && /^(pedal|pedals|pads|pad|fluid|lights|light|system|line|lever|discs|disc|cable|cables|caliper)$/.test(R1) && !/^(lunch|coffee|a)$/.test(L1)) {
+    fix("brake", "The pedal that slows a car is the “brake”.");
+  }
+  if (t.lower === "dessert" && (/^(crossed|crossing|cross|across|through|sahara|sandy|vast|arid|scorching|gobi|mojave|hot)$/.test(L1) || L1 === "the" && /^(crossed|crossing|cross|across|through|into|in)$/.test(L2) && /^(by|on|in|for|at)$/.test(R1))) {
+    fix("desert", "Sand and dunes: a “desert”.");
+  }
+  if (t.lower === "patients" && (/^(lose|lost|losing|test|testing|tried|try|trying|of|no|little|more|much|enough|great|infinite|endless|requires|require|needs|need|takes|take|have|has|had|show|shows|showed)$/.test(L1) && /^(with|for|and|to)$/.test(R1) && /^(her|his|my|your|their|our|me|him|them|us|you|kids|children|the|it|this)$/.test(R2) || L1 === "of" && L2 === "lot" && /^(with|for)$/.test(R1) && /^(her|his|my|your|their|our|me|him|them|us|you|kids|children)$/.test(R2))) {
+    fix("patience", "Calm waiting is “patience”.");
+  }
+  if (t.lower === "waste" && /^(her|his|my|your|their|the)$/.test(L1) && /^(around|round|at|on|to|her|his)$/.test(L2) && inSentence(/^(belt|dress|pants|trousers|apron|tied|wrapped|skirt|jeans|hips|tight)$/)) fix("waist", "The middle of the body is the “waist”.");
+  if (t.lower === "thrown" && L1 === "the" && (atEnd || /^(of|and|in|room|for)$/.test(R1)) && toks.slice(Math.max(0, i - 4), i).some((x) => /^(heir|ascend|ascended|claim|claimed|to|on|sat|king|queen|throne)$/.test(x.lower))) {
+    fix("throne", "A king's seat is a “throne”.");
+  }
+  if (t.lower === "capitol" && t.text === "capitol" && R1 === "of" && /^\p{Lu}/u.test(next2?.text ?? "")) fix("capital", "The main city of a country is its “capital”.");
+  if (t.lower === "angle" && /^(guardian|little|fallen|snow|like)$/.test(L1)) fix("angel", "A heavenly being is an “angel”.");
+  if (t.lower === "angle" && L1 === "an" && L2 === "like") fix("angel", "A heavenly being is an “angel”.");
+  if (t.lower === "angel" && (/^(right|acute|obtuse|wide|different|steep|sharp|camera|measure|measured|the)$/.test(L1) && R1 === "of" && /^(the|a|this|that|each|incidence|elevation)$/.test(R2) || /^(right|acute|obtuse|wide|camera)$/.test(L1))) {
+    fix("angle", "Geometry: an “angle”.");
+  }
+  if (t.lower === "costume" && /^(loyal|regular|valued|satisfied)$/.test(L1)) fix("customer", "A buyer is a “customer”.");
+}
 
 // The apostrophe form of a contraction typed without it, or null.
 // `prevWord` picks the right agreement: "she dont" -> "doesn't".

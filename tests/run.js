@@ -91,7 +91,11 @@ async function score(call, corpus, verbose) {
     }
     stats.detected++;
     const repl = hit.replacements.map(norm);
-    const rank = repl.indexOf(norm(expected));
+    // Same corrected sentence counts as the same fix ("an" -> "a" for "an university" -> "a university").
+    const wanted = norm(text.slice(0, at) + expected + text.slice(at + wrong.length));
+    const fixedWith = (r) => norm(text.slice(0, hit.offset) + r + text.slice(hit.offset + hit.length));
+    let rank = repl.indexOf(norm(expected));
+    if (rank !== 0 && wanted.length && fixedWith(hit.replacements[0] ?? "") === wanted) rank = 0;
     if (rank === 0) stats.top1++;
     if (rank >= 0 && rank < 3) stats.top3++;
     if (rank !== 0) {
@@ -141,18 +145,22 @@ if (require.main === module) {
   (async () => {
     const verbose = process.argv.includes("--all");
     const only = process.argv.find((a) => a === "fr" || a === "en");
+    // Any other argument keeps only the corpora whose name contains it.
+    const pick = process.argv.slice(2).filter((a) => !["fr", "en", "--all"].includes(a));
+    const wanted = (corpus) => !pick.length || pick.some((p) => corpus.includes(p));
     if (only !== "en") {
       const call = loadWorker("engine/grammalecte-worker.js");
       call("init", { options: { apos: false, num: false } });
-      for (const corpus of ["./fr-corpus.js", "./fr-holdout.js", "./fr-blind.js", "./fr-blind2.js", "./fr-blind3.js", "./fr-blind4.js", "./fr-dumb.js", "./fr-dumb2.js", "./fr-blind5.js", "./fr-blind-agent-a.js", "./fr-blind-agent-b.js", "./fr-blind-agent-e.js", "./clean-messages.js", "./clean-agent-d.js", "./clean-agent-g.js"]) {
-        if (!fs.existsSync(path.join(__dirname, corpus))) continue;
+      for (const corpus of ["./fr-corpus.js", "./fr-holdout.js", "./fr-blind.js", "./fr-blind2.js", "./fr-blind3.js", "./fr-blind4.js", "./fr-dumb.js", "./fr-dumb2.js", "./fr-blind5.js", "./fr-blind-agent-a.js", "./fr-blind-agent-b.js", "./fr-blind-agent-e.js", "./fr-blind-agent-h.js", "./mix-blind-agent-k.js", "./clean-messages.js", "./clean-agent-d.js", "./clean-agent-g.js", "./clean-agent-j.js"]) {
+        if (!wanted(corpus) || !fs.existsSync(path.join(__dirname, corpus))) continue;
         console.log(`\n=== ${corpus}`);
         await score(call, require(corpus).fr ?? require(corpus), verbose);
       }
     }
     if (only !== "fr") {
       const call = await loadEnglish();
-      for (const corpus of ["./en-corpus.js", "./en-holdout.js", "./en-blind2.js", "./en-blind3.js", "./en-blind4.js", "./en-dumb.js", "./en-dumb2.js", "./en-blind-agent-c.js", "./en-blind-agent-f.js", "./clean-messages.js", "./clean-agent-d.js", "./clean-agent-g.js"]) {
+      for (const corpus of ["./en-corpus.js", "./en-holdout.js", "./en-blind2.js", "./en-blind3.js", "./en-blind4.js", "./en-dumb.js", "./en-dumb2.js", "./en-blind-agent-c.js", "./en-blind-agent-f.js", "./en-blind-agent-i.js", "./mix-blind-agent-k.js", "./clean-messages.js", "./clean-agent-d.js", "./clean-agent-g.js", "./clean-agent-j.js"]) {
+        if (!wanted(corpus) || !fs.existsSync(path.join(__dirname, corpus))) continue;
         console.log(`\n=== ${corpus}`);
         await score(call, require(corpus).en ?? require(corpus), verbose);
       }
