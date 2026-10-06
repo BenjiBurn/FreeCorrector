@@ -275,10 +275,24 @@ function codePointToUtf16(text) {
 }
 
 // Unknown capitalized words in the middle of a sentence are names.
-function looksLikeName(text, start, word) {
+const FOREIGN_LETTERS = /[łøåßğşıčćžšőűăţșțđħŋþðæéèêëàâîïôûùçñãõáíóúäöü]/i;
+const HONORIFIC = /(^|[\s(])(Mr|Mrs|Ms|Mx|Dr|Prof|St|Sr|Jr|Rev|Capt|Sgt|Lt|Col|Gen|Gov|Sen|Rep)\.?\s*$/;
+
+function looksLikeName(text, start, word, replacements = []) {
+  // @mentions and #hashtags
+  if (/[@#][\w.-]*$/.test(text.slice(Math.max(0, start - 30), start))) return true;
   if (word[0] === word[0].toLowerCase()) return false;
   const before = text.slice(0, start).trimEnd();
-  return before !== "" && !/[.!?…:"“(\n]$/.test(before);
+  if (before !== "" && !/[.!?…:"“(\n]$/.test(before)) return true;
+  // At the start of a sentence: "Mrs. García", "José made…", "Priya, Diego and Mei".
+  if (HONORIFIC.test(before)) return true;
+  // Contractions and split words are typos, not names ("Dont", "Alot", "Im").
+  if (contractionFor(word) || replacements.some((r) => r.replace(/[\s'’]/g, "").toLowerCase() === word.toLowerCase())) return false;
+  if (FOREIGN_LETTERS.test(word)) return true;
+  // A first name the frequency list knows well (it comes from film subtitles;
+  // typos such as "alot" or "untill" are far less frequent than names).
+  if (frequency(word) >= 3) return true;
+  return /^\s*(,|and\b|&)\s*\p{Lu}/u.test(text.slice(start + word.length));
 }
 
 // The same word in another English spelling: colour/color, organise/organize,
@@ -324,8 +338,6 @@ async function lintParagraph(paragraph) {
       if (forHarper.slice(offset, end) !== word) continue;
       const kind = lint.lint_kind();
       const category = KIND_CATEGORY[kind] ?? "grammar";
-      // Names ("Ceylon", "Turkey") are not errors, whatever Harper files them as.
-      if (kind !== "Capitalization" && /^[\p{L}'’-]+$/u.test(word) && looksLikeName(paragraph, offset, word)) continue;
       if (!picky && PICKY_KINDS.has(kind)) continue;
       const replacements = [];
       for (const s of lint.suggestions()) {
@@ -334,6 +346,16 @@ async function lintParagraph(paragraph) {
         if (!replacements.includes(r)) replacements.push(r);
       }
       if (!picky && kind === "Formatting" && TYPOGRAPHY_ONLY(word, replacements)) continue;
+      // Names ("Ceylon", "Turkey", "José") are not errors, whatever Harper files them as.
+      if ((kind === "Spelling" || kind === "Typo" || !/^(Their|There|They're|Your|You're|Its|It's|Whose|Who's|Then|Than|Were|Where|Affect|Effect)$/i.test(word)) &&
+          kind !== "Capitalization" && /^[\p{L}'’-]+$/u.test(word) && looksLikeName(paragraph, offset, word, replacements)) continue;
+      // "going there tomorrow": a place adverb, never "their" before these.
+      if (/^there$/i.test(word) && replacements[0]?.toLowerCase() === "their" &&
+          /^\s*([,.;:!?)]|$|(tomorrow|today|tonight|now|yesterday|soon|again|later|and|but|with|for|at|by|alone|together|too|early|late|once|first|last|before|after|on|in|until|till|anymore|already|yet)\b)/i.test(paragraph.slice(end))) continue;
+      // Closed compounds ("roadmap", "website"): only picky mode asks to split them.
+      if (!picky && kind === "WordChoice" && replacements.length && replacements.every((r) => r.includes(" ") && r.replace(/[\s-]/g, "") === word)) continue;
+      // "Mr. and Mrs.": an abbreviation's period does not end the sentence.
+      if (kind === "Capitalization" && /\b(Mr|Mrs|Ms|Dr|Prof|St|vs|etc|e\.g|i\.e|approx|no|Jr|Sr)\.\s*$/i.test(paragraph.slice(0, offset))) continue;
       // "lol", "gonna", "congrats": informal on purpose.
       if (self.FC_INFORMAL_WORDS.has(word.toLowerCase())) continue;
       // "cancelled", "colour", "organise" are right in British English (and

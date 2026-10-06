@@ -27,6 +27,7 @@ importScripts(
   VENDOR + "fr/gc_rules_graph.js",
   VENDOR + "fr/gc_engine.js",
   "suggestions.js",
+  "confusions.js",
   "rules.js",
   "informal.js",
   "sentence-rules.js"
@@ -97,6 +98,13 @@ const PHONETIC_VERBS = [
   [/^fes(ons)$/, ["faisons"]],
   [/^(fesez|faisez|fesé)$/, ["faites"]],
   [/^disez$/, ["dites"]],
+  [/^(venent|vienent)$/, ["viennent"]],
+  [/^(prenent|prène|prènent)$/, ["prennent"]],
+  [/^(comprenent)$/, ["comprennent"]],
+  [/^(aprenent|apprenent)$/, ["apprennent"]],
+  [/^(tienent)$/, ["tiennent"]],
+  [/^(croivent|croyent)$/, ["croient"]],
+  [/^(voyent|voivent)$/, ["voient"]],
   [/^(fesant)$/, ["faisant"]],
 ];
 
@@ -112,11 +120,28 @@ const COMMON_MISSPELLINGS = {
   traditionel: "traditionnel", exceptionel: "exceptionnel", rationel: "rationnel", fonctionel: "fonctionnel",
   occurence: "occurrence", résonnance: "résonance", vraissemblable: "vraisemblable", chaqu: "chaque",
   malgrés: "malgré", parmis: "parmi", hormi: "hormis", certe: "certes", jusqua: "jusqu’à", ormis: "hormis",
+  // Regular endings put on irregular verbs.
+  résoudu: "résolu", mouru: "mort", prendu: "pris", metté: "mis", mettu: "mis", ouvri: "ouvert", offri: "offert",
+  souffri: "souffert", couvri: "couvert", découvri: "découvert", craindu: "craint", peindu: "peint", éteindu: "éteint",
+  joindu: "joint", plaindu: "plaint", naissu: "né", vivu: "vécu", conclu: "conclu", recevu: "reçu", apercevu: "aperçu",
+  boivé: "bu", buvé: "bu", savu: "su", pouvu: "pu", voulé: "voulu", asseyé: "assis", assoyé: "assis",
 };
+
+// Plurals of -al / -ail nouns: "chevals" -> chevaux, "festivaux" -> festivals,
+// "vitrails" -> vitraux, "jeus" -> jeux. Only when the result is a real word.
+function irregularPlural(lower) {
+  const tries = [];
+  if (/als$/.test(lower)) tries.push(lower.replace(/als$/, "aux"));
+  if (/aux$/.test(lower)) tries.push(lower.replace(/aux$/, "als"));
+  if (/ails$/.test(lower)) tries.push(lower.replace(/ails$/, "aux"));
+  if (/(eus|aus|eaus)$/.test(lower)) tries.push(lower.replace(/s$/, "x"));
+  if (/(ous)$/.test(lower)) tries.push(lower.replace(/s$/, "x"));
+  return tries.find((w) => spellChecker.isValidToken(w)) ?? null;
+}
 
 function spellSuggestions(word, before = "") {
   const lower = word.toLowerCase();
-  const known = COMMON_MISSPELLINGS[lower];
+  const known = COMMON_MISSPELLINGS[lower] ?? irregularPlural(lower);
   if (known) {
     const fixed = word[0] === word[0].toUpperCase() ? known[0].toUpperCase() + known.slice(1) : known;
     const forms = [fixed];

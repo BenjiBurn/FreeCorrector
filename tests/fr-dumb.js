@@ -71,7 +71,7 @@ module.exports = [
   ["Il faut dans parler.", "dans", "d’en"],
   // tout / tous
   ["Tous le monde est là.", "Tous", "Tout"],
-  ["Je les ai tout vus.", null, null],
+  ["Je les ai tout vus.", "tout", "tous"],
   // près / prêt
   ["Je suis près à partir.", "près", "prêt"],
   // plutôt / plus tôt
@@ -109,7 +109,7 @@ module.exports = [
   // SMS style
   ["Slt sa va ?", "sa", "ça"],
   ["Koi de neuf ?", "Koi", "Quoi"],
-  ["Pk tu dis ça ?", null, null],
+  ["Pk tu dis ça ?", "Pk", "Pourquoi"],
   ["Je c pas.", "c", "sais"],
   ["Ta vu le match ?", "Ta", "T’as"],
   ["Ta raison.", "Ta", "T’as"],

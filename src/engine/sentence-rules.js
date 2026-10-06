@@ -72,7 +72,11 @@ function fcSentenceRules(paragraph, existing, spellChecker, prevEnd, lang = "fr"
   const listItem =
     FC_LIST_MARKER.test(paragraph) || /[:;,]/.test(prevEnd) || /[;,:]\s*$/.test(paragraph);
   // A signature after a closing ("Bien à vous, Claire Martin") ends without a period.
-  const signature = /,\s*(\p{Lu}[\p{L}.'’-]*)(\s+\p{Lu}[\p{L}.'’-]*){0,2}\s*$/u.test(paragraph);
+  // "Bien à vous, Claire Martin", "À bientôt, Ahmed et Leïla", "… ! Bisous",
+  // and posts ending with #hashtags or @mentions.
+  const signature = /,\s*(\p{Lu}[\p{L}.'’-]*)(\s+(et|and|&)?\s*\p{Lu}[\p{L}.'’-]*){0,3}\s*$/u.test(paragraph) ||
+    /[.!?…]\s*(bisous|bises|biz|gros bisous|cordialement|amicalement|merci|bonne journée|bonne soirée|cheers|thanks|best|love|xoxo|xx|regards)\s*$/iu.test(paragraph) ||
+    /(^|\s)[#@][\p{L}\p{N}_.-]+\s*$/u.test(paragraph);
 
   const first = FC_FIRST_WORD.exec(paragraph);
   if (first && !listItem) {
