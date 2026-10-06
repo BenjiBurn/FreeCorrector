@@ -236,8 +236,10 @@ function rankParagraph(paragraph, paraStart, found) {
       // rarer word: in "a fait sont travail", "sont travaux" would agree too,
       // but "son" is the word that was meant. ("commence à travaillé" keeps
       // "travailler", as common as the word typed.)
+      // Any rule, when the alternative is a far rarer word: "dans le maisons"
+      // -> "les maisons", not "le méson".
       (!(earlier = fixesAnEarlierError(start, m)) ||
-        (/conf_|^FC_/.test(earlier.ruleId) && Math.max(0, ...m.replacements.map(fcFrequency)) < fcFrequency(m.word) - 1))
+        ((/conf_|^FC_/.test(earlier.ruleId) ? 1 : 2.5) < fcFrequency(m.word) - Math.max(0, ...m.replacements.map(fcFrequency))))
     ) {
       continue;
     }

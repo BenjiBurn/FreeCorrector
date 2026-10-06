@@ -332,7 +332,7 @@ function fcCustomRules(paragraph, spellChecker, existing) {
       const end = (tok) => !tok || /^[,.;:!?)]$/.test(tok.text) || /^(de|d’|que|qu’|pour|à|quand|si|comme)$/.test(tok.lower);
       const adj = (tok) => fcHas(morph(tok), /:A/);
       const adverb = /^(vraiment|très|trop|tellement|super|hyper|assez|plutôt|pas|bien|si|vachement|carrément|toujours|jamais|déjà|encore|plus|moins|aussi)$/.test(next.lower);
-      const word = /^(dommage|normal|vrai|faux|possible|impossible|génial|nul|bon|bien|grave|incroyable|parti|fini|clair|sûr|ok|cool|top|parfait|pareil|mieux|pire|ça|moi|toi|lui|elle|nous|vous|eux|elles)$/.test(next.lower);
+      const word = /^(dommage|normal|vrai|faux|possible|impossible|génial|nul|bon|bien|grave|incroyable|parti|fini|clair|sûr|ok|cool|top|parfait|pareil|mieux|pire|ça|moi|toi|lui|elle|nous|vous|eux|elles|promis|réglé|noté|compris|prévu|décidé|certain|sûr|juré|fait|tout|parti|gagné|perdu|mort|foutu|cuit|bon|pas)$/.test(next.lower);
       if ((word && end(next2)) || (adverb && next2 && (adj(next2) || /^(dommage|grave|normal|génial|nul|bon|bien|top|clair|sûr|pareil|mieux|pire|possible)$/.test(next2.lower)) && end(tokens[i + 3]))) {
         add(t, "c’est", "Confusion probable : « c’est » (cela est) ; aucun nom ne suit.", true);
       }
@@ -494,6 +494,54 @@ function fcCustomRules(paragraph, spellChecker, existing) {
     // "Les gens qui son venus" -> sont
     if (t.lower === "son" && prevLower === "qui" && next && fcHas(morph(next), /:V[^/]*:Q/)) {
       add(t, "sont", "Confusion probable : « sont » (verbe être) plutôt que « son ».", true);
+    }
+
+    // ---------- Typos that make another real word ----------
+
+    // "Elle et partie", "il et là" -> est ("il", "on", "ça" are never coordinated)
+    if (t.lower === "et" && prev && next && ((/^(il|on|ça|cela|c’)$/.test(prevLower) && !/^(moi|toi|lui|elle|nous|vous|eux|elles)$/.test(next.lower)) ||
+        (prevLower === "elle" && fcHas(morph(next), /:(V[^/]*:Q|A|W)/) && !/^(moi|toi|lui|elle|nous|vous|eux|elles|son|sa|ses|mon|ma|mes|ton|ta|tes|un|une|le|la|les|des|leur|leurs)$/.test(next.lower) && /^\p{Ll}/u.test(next.text)))) {
+      add(t, "est", "Confusion probable : « est » (verbe être) plutôt que « et ».", true);
+    }
+
+    // "C’est du la bombe" -> de ("du" is already "de le")
+    if (t.lower === "du" && next && /^(la|le|les|l’|un|une)$/.test(next.lower)) {
+      add(t, "de", "« Du » contient déjà l’article : « de la », « de l’ ».", true);
+    }
+
+    // "Je suis ne en 1990" -> né
+    if (t.lower === "ne" && /^(suis|es|est|sommes|êtes|sont|étais|était|étaient|être|été)$/.test(prevLower) &&
+        next && /^(en|à|au|aux|le|la|dans|un|une|à|pendant|avant|après|il|chez|sous)$/.test(next.lower)) {
+      add(t, "né", "Participe du verbe naître : « né ».", true);
+    }
+
+    // "Il fait chaux" -> chaud
+    if (t.lower === "chaux" && /^(fait|faisait|fera|ferait|trop|très|si|plus|aussi|assez|super|tellement|vraiment)$/.test(prevLower)) {
+      add(t, "chaud", "Confusion probable : « chaud » (température) plutôt que « chaux ».", true);
+    }
+
+    // "Tu viens avec mois ?" -> moi
+    if (t.lower === "mois" && /^(avec|pour|sans|chez|contre|vers|derrière|devant|sauf|selon|comme|et|toi|que)$/.test(prevLower) &&
+        (!next || /^[.!?,;:)]$/.test(next.text) || /^(et|aussi|non|même|seul)$/.test(next.lower))) {
+      add(t, "moi", "Confusion probable : « moi » (pronom) plutôt que « mois ».", true);
+    }
+
+    // "De tout mont cœur" -> mon
+    if (t.lower === "mont" && next && fcHas(morph(next), /:N/) && /^\p{Ll}/u.test(next.text) &&
+        !/^(le|du|au|un|ce|des|les|aux|du)$/.test(prevLower)) {
+      add(t, "mon", "Faute de frappe probable : « mon » (possessif) plutôt que « mont ».", true);
+    }
+
+    // "Il parle trop for" -> fort ("en mon for intérieur" is fine)
+    if (t.lower === "for" && prev && /^(trop|très|si|plus|aussi|moins|assez|parle|parles|parlez|crie|cries|frappe|tape|joue|vraiment|super|tellement)$/.test(prevLower) &&
+        !(next && next.lower === "intérieur")) {
+      add(t, "fort", "Faute de frappe probable : « fort » plutôt que « for ».", true);
+    }
+
+    // "aujourd hui" -> aujourd’hui
+    if (t.lower === "aujourd" && next?.lower === "hui") {
+      add({ start: t.start, end: next.end, text: paragraph.slice(t.start, next.end) }, apo("aujourd’hui"),
+        "« Aujourd’hui » s’écrit avec une apostrophe.", true);
     }
 
     // ---------- Usage ----------
