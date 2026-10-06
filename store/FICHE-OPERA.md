@@ -57,6 +57,7 @@ Créé par BenjiBurn.
 | Catégorie | Productivité |
 | Langue | Français |
 | Icône (64×64) | `store/opera/icone-64.png` |
+| Image promotionnelle (300×188, facultative) | `store/opera/promo-300x188.png` |
 | Captures d’écran (800×500) | `store/opera/capture-1-bulle-800x500.png`, `capture-2-correcteur-800x500.png`, `capture-3-anglais-800x500.png`, `capture-4-liste-800x500.png` |
 | Licence | GPL-3.0 |
 | Site | https://github.com/BenjiBurn/FreeCorrector |
