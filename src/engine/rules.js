@@ -1618,6 +1618,14 @@ function fcRoundFourRules(tokens, i, { add, morph, apo, paragraph, spellChecker 
       tokens.slice(Math.max(s, i - 4), i - 1).some((x) => /^(ne|n’)$/.test(x.lower)) && next && nounOnly(next) && !/^(tout)$/.test(R1)) {
     add(t, /^[aeiouyéèêâîôûœh]/.test(R1) ? apo("d’") : "de", "Après une négation : « de » (je ne mange plus de gluten).", true);
   }
+  // "dommage de pas l’avoir fait", "pour jamais oublier" -> de ne pas (a negated infinitive)
+  if (/^(pas|jamais)$/.test(t.lower) && /^(de|pour)$/.test(L1)) {
+    let k = i + 1;
+    while (tokens[k] && /^(l’|le|la|les|me|m’|te|t’|se|s’|y|en|lui|leur|nous|vous)$/.test(tokens[k].lower)) k++;
+    if (tokens[k] && fcHas(morph(tokens[k]), /:Y/)) {
+      add(t, `ne ${t.lower}`, "Il manque l’adverbe de négation « ne » (« de ne pas le faire »).", true);
+    }
+  }
   // "lu sur le journal" -> dans le journal
   if (t.lower === "sur" && /^(le|un|ce)$/.test(R1) && /^(journal|magazine|livre|roman|dictionnaire)$/.test(R2) && /^(lu|lire|lis|lit|vu|écrit|trouvé)$/.test(L1)) {
     add(t, "dans", "On lit quelque chose « dans » le journal.", true);

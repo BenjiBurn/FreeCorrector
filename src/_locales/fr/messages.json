@@ -8,6 +8,7 @@
   "popupOpenEditor": { "message": "Ouvrir le correcteur" },
   "popupOptions": { "message": "Options et dictionnaire" },
   "popupDemo": { "message": "Page de test" },
+  "popupPickyHint": { "message": "Typographie fine, « ne » oubliés, répétitions" },
   "credit": { "message": "Créé par BenjiBurn" },
 
   "menuCheckSelection": { "message": "Corriger avec FreeCorrector" },

@@ -106,4 +106,7 @@ module.exports = [
   ["Ça fait longtemps qu’on ne s’est pas vus.", null, null],
   ["Nous nous sommes promenés au bord de la mer.", null, null],
   ["Voici les documents que tu m’as demandés.", null, null],
+  // Reported by the user (2026-10-07): no "que", so no subjunctive.
+  ["Tu nous as gavé avec les SUV depuis 3 ans, et finalement tu prend une grosse berline.", "prend", "prends"],
+  ["Je veux que demain tu prend le train.", "prend", "prennes"],
 ];

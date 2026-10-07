@@ -51,9 +51,13 @@ const OPTION_CATEGORY = {
   conf: "grammar", loc: "grammar", gn: "grammar", infi: "grammar",
   conj: "grammar", ppas: "grammar", imp: "grammar", inte: "grammar",
   vmode: "grammar", date: "grammar",
-  bs: "style", pleo: "style", eleu: "style", neg: "style",
+  neg: "grammar",
+  bs: "style", pleo: "style", eleu: "style",
   redon1: "style", redon2: "style",
 };
+
+// The missing "ne", from Grammalecte ("je sais pas") or our rules ("de pas le faire").
+const FC_NEG_RULE = "g2__neg_ne_manquant";
 
 const CATEGORY_LABEL = {
   spelling: "Orthographe",
@@ -237,6 +241,19 @@ function preferParticiple(replacements, participles) {
   return best ? [best, ...replacements.filter((r) => r !== best)] : replacements;
 }
 
+// "et finalement tu prend une berline" -> prends, not "prennes": the
+// subjunctive only comes after a "que" (or "qu’") earlier in the sentence.
+function preferIndicative(text, start, replacements) {
+  if (replacements.length < 2) return replacements;
+  const before = text.slice(Math.max(0, start - 80), start).split(/[.!?;]/).pop();
+  if (/(^|[^\p{L}])qu(e|’|')/iu.test(before)) return replacements;
+  const subjunctiveOnly = (r) => {
+    const morphs = spellChecker.getMorph(r);
+    return morphs.some((m) => /:(Sp|Sq)/.test(m)) && !morphs.some((m) => /:(Ip|Iq|Is|If|K|E|Q|N|A)/.test(m));
+  };
+  return [...replacements.filter((r) => !subjunctiveOnly(r)), ...replacements.filter(subjunctiveOnly)];
+}
+
 function overlaps(a, b) {
   return a.offset < b.offset + b.length && b.offset < a.offset + a.length;
 }
@@ -308,6 +325,7 @@ function rankParagraph(paragraph, paraStart, found) {
       if (only) m.replacements = [...m.replacements.filter((r) => only.includes(r)), ...only.filter((r) => !m.replacements.includes(r))];
       m.replacements = preferParticiple(m.replacements, participles);
       m.replacements = agreeWithSubject(fixed, start + delta, m.replacements);
+      m.replacements = preferIndicative(fixed, start + delta, m.replacements);
     }
     m.replacements = m.replacements.slice(0, MAX_SHOWN_SUGGESTIONS);
     const best = m.replacements[0];
@@ -377,11 +395,30 @@ function checkParagraph(paragraph) {
     // "Elle s’est fait mal", "elle s’est fait opérer": "fait" stays invariable.
     if (m.word === "fait" && /ppas/.test(m.ruleId) &&
         /^\s+(mal|\p{L}+(er|ir|re))(?!\p{L})/u.test(paragraph.slice(err.nEnd))) continue;
+    if (/neg_ne_manquant/.test(m.ruleId)) {
+      // "il avance pas à pas": "pas" is a noun there.
+      if (/^\s+pas\s+à\s+pas/.test(paragraph.slice(err.nEnd))) continue;
+      // One rule whatever the pattern, so "turn off this rule" covers them all.
+      m.ruleId = FC_NEG_RULE;
+      // "Tu vas pas" -> "ne vas", not "n’vas" (elision only before a vowel).
+      m.replacements = m.replacements.map((r) => r.replace(/^([nN])[’'](?![aeiouyhéèêâîôûœ])/u, "$1e "));
+      // "C’est pas" -> "Ce n’est pas", not "CE N’".
+      const letters = m.word.replace(/\P{L}/gu, "");
+      if (letters.length < 2 || letters !== letters.toUpperCase()) {
+        m.replacements = m.replacements.map((r) => {
+          const low = r.toLowerCase();
+          return m.word[0] === m.word[0].toUpperCase() ? low[0].toUpperCase() + low.slice(1) : low;
+        });
+      }
+    }
     // An unknown word is the more useful report; drop grammar noise on top of it.
     if (!spelling.some((s) => overlaps(s, m))) grammar.push(m);
   }
 
-  const custom = fcCustomRules(paragraph, spellChecker, [...spelling, ...grammar]);
+  // Like Grammalecte's, our missing-"ne" rule is for picky mode: "je sais pas" is fine in a chat.
+  const custom = fcCustomRules(paragraph, spellChecker, [...spelling, ...grammar])
+    .filter((m) => picky || !/^FC_NE_(PAS|JAMAIS)$/.test(m.ruleId));
+  for (const m of custom) if (/^FC_NE_(PAS|JAMAIS)$/.test(m.ruleId)) m.ruleId = FC_NEG_RULE;
   // "mot de basse", "une dent de lit": a slip inside a set phrase.
   for (const s of self.fcCollocationSlips(paragraph, "fr")) {
     if (custom.some((m) => m.offset < s.end && s.start < m.offset + m.length)) continue;

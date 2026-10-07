@@ -6,6 +6,7 @@ fcLocalizePage();
   const enabledBox = document.getElementById("enabled");
   const siteBox = document.getElementById("site-enabled");
   const siteRow = document.getElementById("site-row");
+  const pickyBox = document.getElementById("picky");
 
   const [tab] = await fcApi.tabs.query({ active: true, currentWindow: true });
   const host = fcHostOf(tab?.url ?? "");
@@ -17,7 +18,15 @@ fcLocalizePage();
     siteRow.classList.toggle("disabled", !settings.enabled);
     document.getElementById("site").textContent = host;
     siteBox.checked = !settings.disabledSites.includes(host);
+    pickyBox.checked = settings.picky;
+    document.getElementById("picky-row").classList.toggle("disabled", !settings.enabled);
   }
+
+  pickyBox.addEventListener("change", async () => {
+    settings.picky = pickyBox.checked;
+    await fcSetSettings({ picky: settings.picky });
+    render();
+  });
 
   enabledBox.addEventListener("change", async () => {
     settings.enabled = enabledBox.checked;

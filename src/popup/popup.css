@@ -34,6 +34,12 @@ header p {
   word-break: break-all;
 }
 
+.row .hint {
+  display: block;
+  margin-top: 2px;
+  font-size: 11px;
+}
+
 .row.disabled {
   opacity: 0.5;
   pointer-events: none;

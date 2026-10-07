@@ -8,6 +8,7 @@
   "popupOpenEditor": { "message": "Open the proofreader" },
   "popupOptions": { "message": "Options and dictionary" },
   "popupDemo": { "message": "Test page" },
+  "popupPickyHint": { "message": "Fine typography, French missing “ne”, repetitions" },
   "credit": { "message": "Made by BenjiBurn" },
 
   "menuCheckSelection": { "message": "Check with FreeCorrector" },

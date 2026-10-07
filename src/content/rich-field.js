@@ -223,9 +223,27 @@ class FcRichField extends FcFieldBase {
     return range;
   }
 
-  replaceText(offset, length, replacement) {
+  async replaceText(offset, length, replacement) {
+    const before = this.readText();
+    if (!this.selectRange(offset, length)) return;
+    // Editors like those of chat and social sites keep their own copy of the
+    // selection, updated on "selectionchange", which fires a moment later;
+    // typing right away would insert at their stale caret ("ÇaCa").
+    await new Promise((resolve) => setTimeout(resolve, 0));
     const range = this.selectRange(offset, length);
     if (!range) return;
+    this.insertText(range, replacement);
+    // Still only inserted, the old word after the new one: remove it.
+    await new Promise((resolve) => setTimeout(resolve, 30));
+    const after = this.readText();
+    if (after === before.slice(0, offset) + replacement + before.slice(offset) &&
+        this.selectRange(offset + replacement.length, length)) {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      if (this.selectRange(offset + replacement.length, length)) document.execCommand("delete");
+    }
+  }
+
+  insertText(range, replacement) {
     let ok = false;
     try {
       ok = document.execCommand("insertText", false, replacement);

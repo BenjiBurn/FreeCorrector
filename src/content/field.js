@@ -271,9 +271,9 @@ class FcFieldBase {
       this.scheduleCheck(0);
       return;
     }
-    this.replaceText(offset, length, replacement);
     // Some editors apply the change asynchronously: catch up afterwards.
-    setTimeout(() => this.poll(), 50);
+    Promise.resolve(this.replaceText(offset, length, replacement))
+      .finally(() => setTimeout(() => this.poll(), 50));
   }
 
   select(match) {

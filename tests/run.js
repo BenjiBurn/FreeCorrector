@@ -156,6 +156,13 @@ if (require.main === module) {
         console.log(`\n=== ${corpus}`);
         await score(call, require(corpus).fr ?? require(corpus), verbose);
       }
+      // The missing "ne" is only reported in picky mode.
+      if (wanted("./fr-ne.js")) {
+        const picky = loadWorker("engine/grammalecte-worker.js");
+        picky("init", { options: { fcPicky: true, neg: true } });
+        console.log("\n=== ./fr-ne.js (mode exigeant)");
+        await score(picky, require("./fr-ne.js"), verbose);
+      }
     }
     if (only !== "fr") {
       const call = await loadEnglish();
