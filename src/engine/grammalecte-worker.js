@@ -254,6 +254,15 @@ function preferIndicative(text, start, replacements) {
   return [...replacements.filter((r) => !subjunctiveOnly(r)), ...replacements.filter(subjunctiveOnly)];
 }
 
+// "T’aurai pas été invitée" -> aurais: a "t’" opening the clause, right
+// before the verb, is the familiar "tu" ("il t’aurait dit" keeps its subject).
+function preferTu(text, start, replacements) {
+  if (replacements.length < 2) return replacements;
+  if (!/(^|[.!?;:,«"—]\s*|(^|\s)(et|mais|si|que|qu’|qu'|quand|parce que|car|donc|ou)\s+)[tT][’']$/.test(text.slice(Math.max(0, start - 20), start))) return replacements;
+  const tu = (r) => spellChecker.getMorph(r).some((m) => /:V.*:2s/.test(m));
+  return [...replacements.filter(tu), ...replacements.filter((r) => !tu(r))];
+}
+
 function overlaps(a, b) {
   return a.offset < b.offset + b.length && b.offset < a.offset + a.length;
 }
@@ -326,6 +335,7 @@ function rankParagraph(paragraph, paraStart, found) {
       m.replacements = preferParticiple(m.replacements, participles);
       m.replacements = agreeWithSubject(fixed, start + delta, m.replacements);
       m.replacements = preferIndicative(fixed, start + delta, m.replacements);
+      m.replacements = preferTu(fixed, start + delta, m.replacements);
     }
     m.replacements = m.replacements.slice(0, MAX_SHOWN_SUGGESTIONS);
     const best = m.replacements[0];

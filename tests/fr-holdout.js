@@ -109,4 +109,9 @@ module.exports = [
   // Reported by the user (2026-10-07): no "que", so no subjunctive.
   ["Tu nous as gavé avec les SUV depuis 3 ans, et finalement tu prend une grosse berline.", "prend", "prends"],
   ["Je veux que demain tu prend le train.", "prend", "prennes"],
+  // "t’" opening a clause is the familiar "tu".
+  ["T’aurai pas été invitée de toute façon.", "aurai", "aurais"],
+  ["Franchement, t’aurai adoré.", "aurai", "aurais"],
+  ["Il t’aurai dit la vérité.", "aurai", "aurait"],
+  ["T’as vu ça ?", null, null],
 ];
