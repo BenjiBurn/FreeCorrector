@@ -1,4 +1,4 @@
-# Fiche Microsoft Edge Add-ons — FreeCorrector 1.2.0
+# Fiche Microsoft Edge Add-ons — FreeCorrector 1.2.1
 
 Inscription gratuite : https://partner.microsoft.com/dashboard/microsoftedge/overview
 (compte Microsoft, programme « Microsoft Edge » du Partner Center).
@@ -7,7 +7,7 @@ Edge utilise le même paquet que Chrome et Opera (format Chromium).
 
 ## 1. Packages
 
-Fichier à envoyer : `dist/freecorrector-1.2.0-chromium.zip`
+Fichier à envoyer : `dist/freecorrector-1.2.1-chromium.zip`
 
 ## 2. Availability
 
@@ -146,5 +146,5 @@ free
 ## 5. Notes for certification (au moment de « Publish »)
 
 ```text
-No account or login is needed: the extension works on any page with a text field. Everything runs locally (CSP connect-src 'self'): no network requests, no data collected, no remote code. Our own code is neither minified nor bundled; the two engines are unmodified copies of Grammalecte 2.3.0 and harper.js 2.10.0 (see NOTE_FOR_REVIEWERS.md). The "offscreen" permission hosts the checking Web Workers, which a service worker cannot start. Source and build instructions: https://github.com/BenjiBurn/FreeCorrector/tree/v1.2.0 (node scripts/build.js chromium). To test: type "je suis aller au marché" or "Their going tomorow" in any text field, or open the toolbar menu and click "Ouvrir le correcteur".
+No account or login is needed: the extension works on any page with a text field. Everything runs locally (CSP connect-src 'self'): no network requests, no data collected, no remote code. Our own code is neither minified nor bundled; the two engines are unmodified copies of Grammalecte 2.3.0 and harper.js 2.10.0 (see NOTE_FOR_REVIEWERS.md). The "offscreen" permission hosts the checking Web Workers, which a service worker cannot start. Source and build instructions: https://github.com/BenjiBurn/FreeCorrector/tree/v1.2.1 (node scripts/build.js chromium). To test: type "je suis aller au marché" or "Their going tomorow" in any text field, or open the toolbar menu and click "Ouvrir le correcteur".
 ```

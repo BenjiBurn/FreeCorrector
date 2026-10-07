@@ -1,4 +1,4 @@
-# Fiche Chrome Web Store — FreeCorrector 1.2.0
+# Fiche Chrome Web Store — FreeCorrector 1.2.1
 
 Chaque texte est dans un bloc : copier le contenu du bloc tel quel dans le champ indiqué.
 Tableau de bord : https://chrome.google.com/webstore/devconsole
@@ -19,7 +19,7 @@ Tableau de bord : https://chrome.google.com/webstore/devconsole
 ## 1. Créer l’élément et envoyer le paquet
 
 1. Bouton **+ Nouvel élément** (New item).
-2. Envoyer `dist/freecorrector-1.2.0-chromium.zip`.
+2. Envoyer `dist/freecorrector-1.2.1-chromium.zip`.
 3. Le tableau de bord ouvre la fiche du nouvel élément, avec des onglets à gauche. Remplir les
    onglets ci-dessous, en enregistrant (Save draft) à chaque fois.
 

@@ -1,11 +1,11 @@
-# Fiche Opera Add-ons — FreeCorrector 1.2.0
+# Fiche Opera Add-ons — FreeCorrector 1.2.1
 
 Chaque texte est dans un bloc : copier le contenu du bloc tel quel dans le champ indiqué.
 Opera utilise le même paquet que Chrome et Edge (format Chromium).
 
 ## 1. Fichier à envoyer
 
-`dist/freecorrector-1.2.0-chromium.zip`
+`dist/freecorrector-1.2.1-chromium.zip`
 
 ## 2. Fiche
 
@@ -129,7 +129,7 @@ Created by BenjiBurn.
 | Service website URL | vide (l'extension ne se connecte à aucun service) |
 | Extension support page URL | https://github.com/BenjiBurn/FreeCorrector/issues |
 | Source code URL (public) | https://github.com/BenjiBurn/FreeCorrector |
-| Source code URL (moderators) | https://github.com/BenjiBurn/FreeCorrector/tree/v1.2.0 (le tag de la version) |
+| Source code URL (moderators) | https://github.com/BenjiBurn/FreeCorrector/tree/v1.2.1 (le tag de la version) |
 | License URL | https://github.com/BenjiBurn/FreeCorrector/blob/main/LICENSE |
 | Privacy policy URL | https://github.com/BenjiBurn/FreeCorrector/blob/main/PRIVACY.md |
 
@@ -137,8 +137,8 @@ Created by BenjiBurn.
 
 ```text
 Any OS (built on Windows 10). Node.js 18 or later; no npm install needed, the build has no dependencies.
-1. Download the source: https://github.com/BenjiBurn/FreeCorrector/archive/refs/tags/v1.2.0.zip and unzip it.
+1. Download the source: https://github.com/BenjiBurn/FreeCorrector/archive/refs/tags/v1.2.1.zip and unzip it.
 2. In the unzipped folder, run: node scripts/build.js chromium
-3. The package is written to dist/freecorrector-1.2.0-chromium.zip (unpacked copy in dist/chromium/).
+3. The package is written to dist/freecorrector-1.2.1-chromium.zip (unpacked copy in dist/chromium/).
 Our own code is not minified or bundled: the build only copies src/ and adapts manifest.json for Chromium. The two engines in src/vendor/ are unmodified copies of Grammalecte 2.3.0 and harper.js 2.10.0 (npm), see NOTE_FOR_REVIEWERS.md.
 ```

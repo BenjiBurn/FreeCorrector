@@ -1,6 +1,6 @@
 # Notes de version à coller dans les stores
 
-## 1.2.0
+## 1.2.1
 
 **Français** (Firefox : « Notes de version » ; Opera : « Changelog ») :
 
@@ -33,9 +33,9 @@
 ```text
 No account or login is needed. Everything runs locally (CSP connect-src 'self'): no network requests, no data collected, no remote code. Our own code is neither minified nor bundled; the engines in vendor/ are unmodified copies of Grammalecte 2.3.0 and harper.js 2.10.0 (see NOTE_FOR_REVIEWERS.md).
 
-New in 1.2.0: the "contextMenus" permission, for a single right-click entry on selected text ("Check with FreeCorrector") that opens the extension's own editor page with that text (passed through storage.local). The interface is translated with _locales/ (default_locale "en").
+New in 1.2.1: the "contextMenus" permission, for a single right-click entry on selected text ("Check with FreeCorrector") that opens the extension's own editor page with that text (passed through storage.local). The interface is translated with _locales/ (default_locale "en").
 
-Build: download https://github.com/BenjiBurn/FreeCorrector/archive/refs/tags/v1.2.0.zip, run "node scripts/build.js firefox" (Node.js 18+, no dependencies), output in dist/freecorrector-1.2.0-firefox.zip.
+Build: download https://github.com/BenjiBurn/FreeCorrector/archive/refs/tags/v1.2.1.zip, run "node scripts/build.js firefox" (Node.js 18+, no dependencies), output in dist/freecorrector-1.2.1-firefox.zip.
 
 To test: type "je suis aller au marché" or "My brother work at a bank" in any text field; select some text and right-click "Check with FreeCorrector".
 ```
