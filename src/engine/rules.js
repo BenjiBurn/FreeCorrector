@@ -1288,8 +1288,13 @@ function fcRoundThreeRules(tokens, i, { add, morph, apo, paragraph, spellChecker
     let agree = null;
     if (/^(les|la|l’)$/.test(L2)) {
       // Only a noun set apart before ("Les clés, je les ai…"): the pronoun surely stands for it.
+      // The sentence must open on it ("Ça passe plus à la télé, on l’a oublié": not "la télé").
       const comma = tokens.slice(Math.max(s, i - 8), i - 2).findIndex((x) => x.text === ",");
-      if (comma >= 0) agree = fcNearestNoun(tokens, Math.max(s, i - 8) + comma, morph, L2 === "les" ? "p" : "s");
+      const head = tokens[s]?.lower ?? "";
+      if (comma >= 0 && Math.max(s, i - 8) + comma - s <= 5 &&
+          /^(les|la|le|l’|ces|cette|cet|ce|mes|tes|ses|nos|vos|leurs|ma|ta|sa|mon|ton|son|notre|votre|leur)$/.test(head)) {
+        agree = fcNearestNoun(tokens, Math.max(s, i - 8) + comma, morph, L2 === "les" ? "p" : "s");
+      }
     } else {
       const q = tokens.slice(Math.max(s, i - 6), i).map((x) => (x.lower === "qu’" ? "que" : x.lower)).lastIndexOf("que");
       const qi = q >= 0 ? Math.max(s, i - 6) + q : -1;

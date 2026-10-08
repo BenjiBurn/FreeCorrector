@@ -114,4 +114,8 @@ module.exports = [
   ["Franchement, t’aurai adoré.", "aurai", "aurais"],
   ["Il t’aurai dit la vérité.", "aurai", "aurait"],
   ["T’as vu ça ?", null, null],
+  // "l’" stands for a noun set apart at the start, not for any noun before a comma.
+  ["Ça passe même plus à la télé, on l’a oublié !", null, null],
+  ["Il pleuvait sur la ville, je l’ai quitté.", null, null],
+  ["Ma voiture, je l’ai vendu hier.", "vendu", "vendue"],
 ];
