@@ -151,7 +151,7 @@ if (require.main === module) {
     if (only !== "en") {
       const call = loadWorker("engine/grammalecte-worker.js");
       call("init", { options: { apos: false, num: false } });
-      for (const corpus of ["./fr-corpus.js", "./fr-holdout.js", "./fr-blind.js", "./fr-blind2.js", "./fr-blind3.js", "./fr-blind4.js", "./fr-dumb.js", "./fr-dumb2.js", "./fr-blind5.js", "./fr-blind-agent-a.js", "./fr-blind-agent-b.js", "./fr-blind-agent-e.js", "./fr-blind-agent-h.js", "./mix-blind-agent-k.js", "./fr-blind-agent-l.js", "./clean-messages.js", "./clean-agent-d.js", "./clean-agent-g.js", "./clean-agent-j.js", "./clean-agent-n.js"]) {
+      for (const corpus of ["./fr-corpus.js", "./fr-holdout.js", "./fr-blind.js", "./fr-blind2.js", "./fr-blind3.js", "./fr-blind4.js", "./fr-dumb.js", "./fr-dumb2.js", "./fr-blind5.js", "./fr-blind-agent-a.js", "./fr-blind-agent-b.js", "./fr-blind-agent-e.js", "./fr-blind-agent-h.js", "./mix-blind-agent-k.js", "./fr-blind-agent-l.js", "./fr-tense-agent-o.js", "./clean-messages.js", "./clean-agent-d.js", "./clean-agent-g.js", "./clean-agent-j.js", "./clean-agent-n.js"]) {
         if (!wanted(corpus) || !fs.existsSync(path.join(__dirname, corpus))) continue;
         console.log(`\n=== ${corpus}`);
         await score(call, require(corpus).fr ?? require(corpus), verbose);

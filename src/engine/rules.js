@@ -191,7 +191,7 @@ function fcCustomRules(paragraph, spellChecker, existing) {
   // which checkParagraph then drops ("je c’est" is "sais", not "s’est").
   // `replacement`: one fix, or several, best first.
   // `keepCase`: the fix is about the case itself ("Français" -> "français").
-  const add = (t, replacement, message, override = false, keepCase = false) => {
+  const add = (t, replacement, message, override = false, keepCase = false, category = "grammar") => {
     if (override ? out.some((m) => m.offset < t.end && t.start < m.offset + m.length) : !free(t)) return;
     const upper = !keepCase && t.text[0] === t.text[0].toUpperCase() && t.text[0] !== t.text[0].toLowerCase();
     const fixes = (Array.isArray(replacement) ? replacement : [replacement])
@@ -204,8 +204,8 @@ function fcCustomRules(paragraph, spellChecker, existing) {
       message,
       replacements: fixes,
       ruleId: `FC_${fixes[0].toUpperCase().replace(/[^A-Z]/g, "_")}`,
-      category: "grammar",
-      label: "Grammaire",
+      category,
+      label: category === "style" ? "Style" : "Grammaire",
     });
   };
 
@@ -1622,6 +1622,31 @@ function fcRoundFourRules(tokens, i, { add, morph, apo, paragraph, spellChecker 
   if (/^(du|des)$/.test(t.lower) && /^(plus|pas|jamais)$/.test(L1) && prev2 && fcHas(morph(prev2), /:V/) && !fcHas(morph(prev2), /:V0e/) &&
       tokens.slice(Math.max(s, i - 4), i - 1).some((x) => /^(ne|n’)$/.test(x.lower)) && next && nounOnly(next) && !/^(tout)$/.test(R1)) {
     add(t, /^[aeiouyéèêâîôûœh]/.test(R1) ? apo("d’") : "de", "Après une négation : « de » (je ne mange plus de gluten).", true);
+  }
+  // "Il roulait vite, mais j’ai juste le temps de voir" -> j’ai juste eu le temps (a past story)
+  if (/^(ai|as|a|avons|avez|ont)$/.test(t.lower) &&
+      (/^(j’|tu|il|elle|on|nous|vous|ils|elles)$/.test(L1) || L1 === "n’" && /^(je|tu|il|elle|on|nous|vous|ils|elles)$/.test(L2))) {
+    let k = i + 1;
+    if (/^(juste|seulement|pas)$/.test(R1)) k = i + 2;
+    else if (R1 === "tout" && R2 === "juste" || R1 === "à" && R2 === "peine") k = i + 3;
+    const w = (j) => tokens[j]?.lower ?? "";
+    const objectEnd = /^(le|la)$/.test(w(k)) && /^(temps|réflexe|force|courage|chance)$/.test(w(k + 1)) ? k + 2
+      : w(k) === "l’" && /^(impression|occasion)$/.test(w(k + 1)) ? k + 2
+      : /^(peur|envie)$/.test(w(k)) ? k + 1 : -1;
+    // "Je travaillais avant, maintenant j’ai juste le temps": back to the present.
+    const now = /(^| )(maintenant|aujourd’ ?hui|désormais|actuellement|dorénavant|demain|depuis|toujours|souvent|parfois|jamais|ce soir|ce matin|cette semaine|cette année|ce mois-ci|ce week-end|en ce moment|à présent|de nos jours|mais là|chaque|tous les|toutes les|quand|lorsque|s’il|s’ils|si je|si tu|si on|si nous|si vous|si elle|si elles)( |$)/;
+    // An action told in the past ("roulait", "arriva"), in the same clause: "il était menuisier ;
+    // moi, je n’ai pas la force" contrasts a past with the present. Nothing after a "que".
+    let from = i;
+    while (from > s && !/^[;:]$/.test(tokens[from - 1].text)) from--;
+    const before = tokens.slice(from, i);
+    if (k > i + 1 && objectEnd > 0 && /^(de|d’|que|qu’)$/.test(w(objectEnd)) && !now.test(words) &&
+        // ("disait qu’elle n’a pas": reported speech; "plus vite que moi" is only a comparison.)
+        !before.some((x, j) => /^(que|qu’)$/.test(x.lower) && j > 0 && fcHas(morph(before[j - 1]), /:V/) && !fcHas(morph(before[j - 1]), /:N|:A|:W/)) &&
+        before.some((x) => fcHas(morph(x), /:V[^/]*:(Iq|Is)/) && !fcHas(morph(x), /:N/) && !fcHas(morph(x), /^>(être|avoir)\//))) {
+      const fix = `${paragraph.slice(t.start, tokens[k - 1].end)} eu`;
+      add(span(t, tokens[k - 1]), fix, `Le récit est au passé : vouliez-vous écrire « ${fix} » ?`, true, true, "style");
+    }
   }
   // "dommage de pas l’avoir fait", "pour jamais oublier" -> de ne pas (a negated infinitive)
   if (/^(pas|jamais)$/.test(t.lower) && /^(de|pour)$/.test(L1)) {

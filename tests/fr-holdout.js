@@ -118,4 +118,6 @@ module.exports = [
   ["Ça passe même plus à la télé, on l’a oublié !", null, null],
   ["Il pleuvait sur la ville, je l’ai quitté.", null, null],
   ["Ma voiture, je l’ai vendu hier.", "vendu", "vendue"],
+  // A past story: "eu" is missing (reported by the user).
+  ["Il roulait sacrément plus vite que moi, mais j’ai juste le temps de voir une énorme masse.", "ai juste", "ai juste eu"],
 ];
