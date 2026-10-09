@@ -7,6 +7,7 @@ font les correcteurs du commerce, mais sans abonnement, sans compte et sans envo
 ligne de vos textes sur Internet : toute l’analyse tourne dans votre navigateur.
 
 **[➜ Installer FreeCorrector pour Firefox](https://addons.mozilla.org/fr/firefox/addon/freecorrector/)** (addons.mozilla.org)
+· **[➜ pour Chrome, Edge et Brave](https://chromewebstore.google.com/detail/pbojifdopikeihflcjikofbpfgebahdi)** (Chrome Web Store)
 · Site officiel : **[lapigeonnerie.fr/freecorrector](https://lapigeonnerie.fr/freecorrector)**
 
 - Soulignement des fautes dans les `<textarea>`, les champs texte et les éditeurs riches
@@ -36,9 +37,8 @@ suggestions.
 | Navigateur | Paquet | Store |
 |---|---|---|
 | Firefox 140+ | `dist/freecorrector-<version>-firefox.zip` | [addons.mozilla.org](https://addons.mozilla.org/fr/firefox/addon/freecorrector/) ✅ publié |
-| Chrome, Brave, Vivaldi (116+) | `dist/freecorrector-<version>-chromium.zip` | Chrome Web Store |
-| Edge | `dist/freecorrector-<version>-chromium.zip` | Edge Add-ons |
-| Opera | `dist/freecorrector-<version>-chromium.zip` | Opera add-ons |
+| Chrome, Edge, Brave, Vivaldi (116+) | `dist/freecorrector-<version>-chromium.zip` | [Chrome Web Store](https://chromewebstore.google.com/detail/pbojifdopikeihflcjikofbpfgebahdi) ✅ publié |
+| Opera | `dist/freecorrector-<version>-chromium.zip` | Opera add-ons (en cours de validation) |
 | Safari | à convertir sur macOS avec Xcode (`xcrun safari-web-extension-converter dist/chromium`) | App Store |
 
 Les paquets se construisent avec Node.js (aucune dépendance) :
@@ -175,8 +175,9 @@ qu'aucun ne plante, ne place mal un soulignement ou ne dépasse son budget de te
 - [x] Anglais (Harper)
 - [ ] Autres langues (espagnol, allemand…) via des moteurs libres
 - [x] Publication sur [addons.mozilla.org](https://addons.mozilla.org/fr/firefox/addon/freecorrector/) (octobre 2026)
-- [ ] Publication sur le Chrome Web Store et Edge Add-ons
-- [ ] Site web de présentation et d’installation
+- [x] Publication sur le [Chrome Web Store](https://chromewebstore.google.com/detail/pbojifdopikeihflcjikofbpfgebahdi) (octobre 2026)
+- [ ] Publication sur Opera add-ons
+- [x] Site web de présentation : [lapigeonnerie.fr/freecorrector](https://lapigeonnerie.fr/freecorrector)
 
 ## Auteur
 
