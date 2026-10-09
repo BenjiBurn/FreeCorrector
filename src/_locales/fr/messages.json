@@ -52,6 +52,7 @@
   "optNoSites": { "message": "FreeCorrector est actif sur tous les sites." },
   "optRemove": { "message": "Retirer" },
   "optFooter": { "message": "Créé par BenjiBurn · Logiciel libre (GPL v3) · Moteurs : Grammalecte (français), d’Olivier R., et Harper (anglais), d’Automattic." },
+  "optDonate": { "message": "Soutenir FreeCorrector par un don" },
 
   "catSpelling": { "message": "Orthographe" },
   "catGrammar": { "message": "Grammaire" },

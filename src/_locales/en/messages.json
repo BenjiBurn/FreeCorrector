@@ -52,6 +52,7 @@
   "optNoSites": { "message": "FreeCorrector is on for every site." },
   "optRemove": { "message": "Remove" },
   "optFooter": { "message": "Made by BenjiBurn · Free software (GPL v3) · Engines: Grammalecte (French), by Olivier R., and Harper (English), by Automattic." },
+  "optDonate": { "message": "Support FreeCorrector with a donation" },
 
   "catSpelling": { "message": "Spelling" },
   "catGrammar": { "message": "Grammar" },

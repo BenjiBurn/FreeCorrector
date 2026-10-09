@@ -143,3 +143,18 @@ footer {
   border-top: 1px solid var(--border);
   padding-top: 12px;
 }
+
+footer p {
+  margin: 0 0 6px;
+}
+
+.donate {
+  color: inherit;
+}
+
+.donate::before {
+  content: "♥";
+  display: inline-block;
+  margin-right: 5px;
+  color: #e11d48;
+}
