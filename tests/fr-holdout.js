@@ -118,6 +118,9 @@ module.exports = [
   ["Ça passe même plus à la télé, on l’a oublié !", null, null],
   ["Il pleuvait sur la ville, je l’ai quitté.", null, null],
   ["Ma voiture, je l’ai vendu hier.", "vendu", "vendue"],
+  // A missing accent: "trêve", not "crève" (reported by a user).
+  ["La treve de Noël a commencé.", "treve", "trêve"],
+  ["C’est la trève hivernale.", "trève", "trêve"],
   // The author's private joke: LA Renault Wind, LA Wind.
   ["J’ai garé le Wind devant chez moi.", "le", "la"],
   ["Je monte dans mon Renault Wind.", "mon", "ma"],

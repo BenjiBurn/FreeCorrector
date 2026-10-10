@@ -180,7 +180,10 @@ function spellSuggestions(word, before = "") {
     forms.only = [...forms];
     return forms;
   }
-  const out = fcSpellSuggestions(spellChecker, word, MAX_SPELL_SUGGESTIONS);
+  let out = fcSpellSuggestions(spellChecker, word, MAX_SPELL_SUGGESTIONS);
+  // Only an accent wrong or missing ("treve", "trève" -> trêve): a candidate with
+  // another first letter ("crève", "drève") is noise. ("Il appele" keeps "appelle".)
+  if (out.some((s) => fcPlain(s) === fcPlain(lower))) out = out.filter((s) => fcPlain(s)[0] === fcPlain(lower)[0]);
   if (!AUXILIARY_BEFORE.test(before)) return out;
   const participles = [];
   for (const s of out.slice(0, 4)) {
