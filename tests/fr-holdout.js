@@ -118,6 +118,11 @@ module.exports = [
   ["Ça passe même plus à la télé, on l’a oublié !", null, null],
   ["Il pleuvait sur la ville, je l’ai quitté.", null, null],
   ["Ma voiture, je l’ai vendu hier.", "vendu", "vendue"],
+  // The author's private joke: LA Renault Wind, LA Wind.
+  ["J’ai garé le Wind devant chez moi.", "le", "la"],
+  ["Je monte dans mon Renault Wind.", "mon", "ma"],
+  ["J’adore la Wind.", null, null],
+  ["Le Wind Festival commence demain.", null, null],
   // A past story: "eu" is missing (reported by the user).
   ["Il roulait sacrément plus vite que moi, mais j’ai juste le temps de voir une énorme masse.", "ai juste", "ai juste eu"],
 ];

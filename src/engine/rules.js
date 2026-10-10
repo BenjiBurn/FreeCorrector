@@ -1623,6 +1623,16 @@ function fcRoundFourRules(tokens, i, { add, morph, apo, paragraph, spellChecker 
       tokens.slice(Math.max(s, i - 4), i - 1).some((x) => /^(ne|n’)$/.test(x.lower)) && next && nounOnly(next) && !/^(tout)$/.test(R1)) {
     add(t, /^[aeiouyéèêâîôûœh]/.test(R1) ? apo("d’") : "de", "Après une négation : « de » (je ne mange plus de gluten).", true);
   }
+  // A private joke of the author's: it is LA Renault Wind, LA Wind ("le Wind" -> la).
+  const FC_WIND_FEM = { le: "la", un: "une", du: "de la", au: "à la", ce: "cette", cet: "cette", mon: "ma", ton: "ta", son: "sa" };
+  if (FC_WIND_FEM[t.lower] && (R1 === "wind" || R1 === "renault" && R2 === "wind")) {
+    const wind = R1 === "wind" ? next : next2;
+    const after = tokens[tokens.indexOf(wind) + 1];
+    // "le Wind Festival": another name, not the car.
+    if (!(R1 === "wind" && after && /^\p{Lu}/u.test(after.text))) {
+      add(t, FC_WIND_FEM[t.lower], "C’est LA Renault Wind, LA Wind : « la Wind ».", true);
+    }
+  }
   // "Il roulait vite, mais j’ai juste le temps de voir" -> j’ai juste eu le temps (a past story)
   if (/^(ai|as|a|avons|avez|ont)$/.test(t.lower) &&
       (/^(j’|tu|il|elle|on|nous|vous|ils|elles)$/.test(L1) || L1 === "n’" && /^(je|tu|il|elle|on|nous|vous|ils|elles)$/.test(L2))) {
