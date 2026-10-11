@@ -209,6 +209,33 @@ function fcCustomRules(paragraph, spellChecker, existing) {
     });
   };
 
+  // "nous les mecs ont aime", "ce soir ont va" -> on: "ont" before a conjugated
+  // verb (not a participle), with no plural subject of its own before it
+  // ("les enfants ont mange" is "ont mangé").
+  const ontIsOn = (k) => {
+    if (tokens[k]?.lower !== "ont") return false;
+    let j = k + 1;
+    while (tokens[j] && /^(se|s’|ne|n’|y|en|me|m’|te|t’|le|la|les|l’|lui|leur)$/.test(tokens[j].lower) && j < k + 3) j++;
+    const verb = tokens[j];
+    const ms = morph(verb);
+    // (Tenses and persons come grouped: "aime" is ":Ip:Sp:1s:3s".)
+    if (!verb || !fcHas(ms, /:V[^/]*:(Ip|Iq|If|K)(:\w+)*:3s/) || fcHas(ms, /:Q/) || (j > k + 1 && fcHas(ms, /:N/))) return false;
+    const before = tokens[k - 1];
+    if (!before || /^[.!?;:,«"]$/.test(before.text)) return true;
+    const afterNous = /^(les|des|mes|nos)$/.test(tokens[k - 2]?.lower ?? "") && tokens[k - 3]?.lower === "nous";
+    // "Les deux ont mange", "plusieurs ont" are plural subjects too.
+    if (/^(ils|elles|qui|eux|ceux|celles|tous|toutes|plusieurs|certains|certaines|beaucoup|nombreux|nombreuses|autres|plupart|\d+)$/.test(before.lower) ||
+        fcHas(morph(before), /:B/)) return false;
+    // A name ("Paul et Marie ont"), but not the capital of a first word ("Ici ont mange").
+    const sentenceStart = !tokens[k - 2] || /^[.!?]$/.test(tokens[k - 2].text);
+    if (!afterNous && (fcHas(morph(before), /:N[^/]*:[pi]|:M/) || /^\p{Lu}/u.test(before.text) && !sentenceStart)) return false;
+    return true;
+  };
+  // First, so that no agreement rule fixes this "ont" another way ("ce soir ont va" -> a).
+  for (let k = 0; k < tokens.length; k++) {
+    if (ontIsOn(k)) add(tokens[k], "on", "« Ont » est le verbe « avoir » : ici, c’est le pronom « on » (on aime, on va).", true);
+  }
+
   for (let i = 0; i < tokens.length; i++) {
     const t = tokens[i];
     const prev = tokens[i - 1];

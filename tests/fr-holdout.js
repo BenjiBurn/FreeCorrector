@@ -118,6 +118,10 @@ module.exports = [
   ["Ça passe même plus à la télé, on l’a oublié !", null, null],
   ["Il pleuvait sur la ville, je l’ai quitté.", null, null],
   ["Ma voiture, je l’ai vendu hier.", "vendu", "vendue"],
+  // "ont" for "on" before a conjugated verb (reported by the user).
+  ["Nous les mecs ont aime bien balancer la purée.", "ont", "on"],
+  ["Ce soir ont va au cinéma.", "ont", "on"],
+  ["Les enfants ont mangé.", null, null],
   // "contant" is "conter" (to tell): after "être", it is "content" (reported by the user).
   ["Je suis trop contant.", "contant", "content"],
   ["Elle est vraiment contante de son travail.", "contante", "contente"],

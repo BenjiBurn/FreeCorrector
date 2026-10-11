@@ -449,7 +449,11 @@ function checkParagraph(paragraph) {
   }
   const urls = fcUrlRanges(paragraph);
   const overriding = custom.filter((m) => m.override);
-  const notOverridden = (m) => !overriding.some((o) => overlaps(o, m));
+  // "ce soir ont va" -> on: the participle Grammalecte wants after "ont" ("va" -> allé) goes too.
+  const ontToOn = custom.filter((m) => m.ruleId === "FC_ON" && /^ont$/i.test(m.word));
+  const afterOnt = (m) => /ppas|infi/.test(m.ruleId) &&
+    ontToOn.some((o) => m.offset > o.offset && /^ont(\s+\S+)?\s+$/i.test(paragraph.slice(o.offset, m.offset)));
+  const notOverridden = (m) => !overriding.some((o) => overlaps(o, m)) && !afterOnt(m);
   const found = [...spelling.filter(notOverridden), ...grammar.filter(notOverridden), ...custom]
     .filter((m) => !urls.some(([a, b]) => m.offset < b && a < m.offset + m.length))
     .sort((a, b) => a.offset - b.offset);
