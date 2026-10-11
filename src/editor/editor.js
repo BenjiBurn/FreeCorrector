@@ -189,6 +189,11 @@ fcLocalizePage();
     }
   }
 
+  // The "fix all" keyboard shortcut (lib/commands.js), in the tab the user is looking at.
+  fcApi.runtime.onMessage.addListener((msg) => {
+    if (msg?.type === "fixAll" && document.hasFocus() && !$("fix-all").disabled) $("fix-all").click();
+  });
+
   $("fix-all").addEventListener("click", () => {
     let text = field.text;
     if (textEl.value !== text) return;

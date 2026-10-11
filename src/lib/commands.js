@@ -9,6 +9,8 @@
 function fcSetupCommands() {
   fcApi.commands?.onCommand.addListener(async (command, tab) => {
     if (command !== "fix-all") return;
+    // The extension's own pages (the proofreader) have no content script.
+    Promise.resolve(fcApi.runtime.sendMessage({ type: "fixAll" })).catch(() => {});
     const target = tab ?? (await fcApi.tabs.query({ active: true, currentWindow: true }))[0];
     if (target?.id === undefined) return;
     Promise.resolve(fcApi.tabs.sendMessage(target.id, { type: "fixAll" })).catch(() => {});
