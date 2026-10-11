@@ -56,6 +56,14 @@
   }
   attach(deepActiveElement());
 
+  // The "fix all" keyboard shortcut (lib/commands.js), sent to every frame of
+  // the tab: only the frame where the user is typing acts.
+  fcApi.runtime.onMessage.addListener((msg) => {
+    if (msg?.type !== "fixAll" || !document.hasFocus() || !ui) return;
+    const field = [...ui.fields].find((f) => f.isFocused());
+    field?.fixAll();
+  });
+
   fcApi.storage.onChanged.addListener(async (changes, area) => {
     if (area !== "local") return;
     const wasActive = isActive();

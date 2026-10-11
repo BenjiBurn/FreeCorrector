@@ -18,11 +18,18 @@
   "content_security_policy": {
     "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'; connect-src 'self'"
   },
+  "commands": {
+    "fix-all": {
+      "suggested_key": { "default": "Alt+Shift+F" },
+      "description": "__MSG_cmdFixAll__"
+    }
+  },
   "background": {
     "scripts": [
       "lib/settings.js",
       "lib/i18n.js",
       "lib/menus.js",
+      "lib/commands.js",
       "engine/language.js",
       "engine/host.js",
       "background.js"

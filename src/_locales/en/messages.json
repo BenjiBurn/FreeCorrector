@@ -53,6 +53,11 @@
   "optRemove": { "message": "Remove" },
   "optFooter": { "message": "Made by BenjiBurn · Free software (GPL v3) · Engines: Grammalecte (French), by Olivier R., and Harper (English), by Automattic." },
   "optDonate": { "message": "Support FreeCorrector with a donation" },
+  "cmdFixAll": { "message": "Fix every mistake in the field" },
+  "optShortcut": { "message": "Keyboard shortcut to fix every mistake in the field you are typing in: $KEYS$. To change it: $WHERE$." , "placeholders": { "keys": { "content": "$1" }, "where": { "content": "$2" } } },
+  "optShortcutNone": { "message": "none" },
+  "optShortcutWhereChrome": { "message": "the chrome://extensions/shortcuts page" },
+  "optShortcutWhereFirefox": { "message": "about:addons, gear icon, “Manage Extension Shortcuts”" },
 
   "catSpelling": { "message": "Spelling" },
   "catGrammar": { "message": "Grammar" },

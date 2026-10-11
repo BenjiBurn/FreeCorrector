@@ -276,6 +276,35 @@ class FcFieldBase {
       .finally(() => setTimeout(() => this.poll(), 50));
   }
 
+  // The "fix all" shortcut: the first suggestion of every problem shown, from
+  // the end so the earlier offsets stay valid. Style hints are questions
+  // ("vouliez-vous écrire…"): left out. Returns how many were fixed.
+  async fixAll() {
+    if (this.readText() !== this.text || this.state !== "done") {
+      clearTimeout(this.timer);
+      await this.check();
+    }
+    const text = this.readText();
+    if (this.destroyed || text !== this.text) return 0;
+    let limit = Infinity;
+    const fixes = [];
+    for (const m of [...this.matches].sort((a, b) => b.offset - a.offset)) {
+      const best = m.replacements[0];
+      if (best === undefined || m.category === "style" || m.offset + m.length > limit) continue;
+      if (text.slice(m.offset, m.offset + m.length) !== m.word) continue;
+      fixes.push({ offset: m.offset, length: m.length, best });
+      limit = m.offset;
+    }
+    if (fixes.length) await this.replaceFixes(text, fixes);
+    setTimeout(() => this.poll(), 50);
+    return fixes.length;
+  }
+
+  // One edit per fix, the last one first (rich editors keep their formatting).
+  async replaceFixes(_text, fixes) {
+    for (const f of fixes) await this.replaceText(f.offset, f.length, f.best);
+  }
+
   select(match) {
     this.selectText(match.offset, match.length);
   }
@@ -453,6 +482,15 @@ class FcTextField extends FcFieldBase {
   selectText(offset, length) {
     this.el.focus();
     this.el.setSelectionRange(offset, offset + length);
+  }
+
+  // Plain text: a single edit from the first fix to the last, so one Ctrl+Z undoes them all.
+  replaceFixes(text, fixes) {
+    const start = fixes.at(-1).offset;
+    const end = fixes[0].offset + fixes[0].length;
+    let middle = text.slice(start, end);
+    for (const f of fixes) middle = middle.slice(0, f.offset - start) + f.best + middle.slice(f.offset - start + f.length);
+    this.replaceText(start, end - start, middle);
   }
 }
 

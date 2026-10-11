@@ -53,6 +53,11 @@
   "optRemove": { "message": "Retirer" },
   "optFooter": { "message": "Créé par BenjiBurn · Logiciel libre (GPL v3) · Moteurs : Grammalecte (français), d’Olivier R., et Harper (anglais), d’Automattic." },
   "optDonate": { "message": "Soutenir FreeCorrector par un don" },
+  "cmdFixAll": { "message": "Corriger toutes les fautes du champ" },
+  "optShortcut": { "message": "Raccourci clavier pour corriger toutes les fautes du champ où vous écrivez : $KEYS$. Pour le changer : $WHERE$." , "placeholders": { "keys": { "content": "$1" }, "where": { "content": "$2" } } },
+  "optShortcutNone": { "message": "aucun" },
+  "optShortcutWhereChrome": { "message": "page chrome://extensions/shortcuts" },
+  "optShortcutWhereFirefox": { "message": "page about:addons, roue dentée, « Gérer les raccourcis »" },
 
   "catSpelling": { "message": "Orthographe" },
   "catGrammar": { "message": "Grammaire" },

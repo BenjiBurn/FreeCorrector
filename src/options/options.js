@@ -62,6 +62,13 @@ fcLocalizePage();
     $("no-sites").hidden = settings.disabledSites.length > 0;
   }
 
+  // The "fix all" shortcut as the user set it in the browser.
+  Promise.resolve(fcApi.commands?.getAll?.()).then((commands) => {
+    const keys = commands?.find((c) => c.name === "fix-all")?.shortcut || fcT("optShortcutNone");
+    const firefox = fcApi.runtime.getURL("").startsWith("moz-extension:");
+    $("shortcut").textContent = fcT("optShortcut", [keys, fcT(firefox ? "optShortcutWhereFirefox" : "optShortcutWhereChrome")]);
+  }, () => {});
+
   $("enabled").addEventListener("change", (e) => fcSetSettings({ enabled: e.target.checked }));
   $("picky").addEventListener("change", (e) => fcSetSettings({ picky: e.target.checked }));
   $("language").addEventListener("change", (e) => fcSetSettings({ language: e.target.value }));
