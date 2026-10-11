@@ -1,4 +1,4 @@
-// Keyboard shortcut "fix all" (Alt+Shift+F by default, changeable in the
+// Keyboard shortcut "fix all" (Ctrl+Shift+F by default, changeable in the
 // browser's shortcut settings): asks the content script of the active tab to
 // apply the first suggestion of every problem in the field being edited.
 // Loaded by the Firefox background page and the Chromium service worker.

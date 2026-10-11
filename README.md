@@ -20,7 +20,7 @@ ligne de vos textes sur Internet : toute l’analyse tourne dans votre navigateu
   « Désactiver cette règle » (réactivable dans les options)
 - Dictionnaire personnel (import et export en fichier texte), désactivation par site, mode exigeant
 - Clic droit sur un texte sélectionné → « Corriger avec FreeCorrector »
-- Raccourci clavier **Alt+Maj+F** : corrige d’un coup toutes les fautes du champ où l’on écrit
+- Raccourci clavier **Ctrl+Maj+F** : corrige d’un coup toutes les fautes du champ où l’on écrit
   (modifiable dans les raccourcis du navigateur)
 - Interface en français et en anglais, selon la langue du navigateur
 - Langues : français et anglais, détectées automatiquement phrase par phrase

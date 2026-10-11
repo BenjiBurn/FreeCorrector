@@ -67,7 +67,7 @@ it:
   that site.
 - `contextMenus`: one entry on selected text, "Check with FreeCorrector", which opens the
   extension's editor page with that text (new in 1.2.1).
-- `commands` (manifest key, no permission): one keyboard shortcut, Alt+Shift+F by default, "Fix
+- `commands` (manifest key, no permission): one keyboard shortcut, Ctrl+Shift+F by default, "Fix
   every mistake in the field". `lib/commands.js` sends `{ type: "fixAll" }` to the active tab's
   content script, which applies the first suggestion of each problem in the focused field.
 - The content script matches `<all_urls>` because checking must work in any text field. It reads

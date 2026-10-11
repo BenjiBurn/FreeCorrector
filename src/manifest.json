@@ -20,7 +20,7 @@
   },
   "commands": {
     "fix-all": {
-      "suggested_key": { "default": "Alt+Shift+F" },
+      "suggested_key": { "default": "Ctrl+Shift+F", "mac": "MacCtrl+Shift+F" },
       "description": "__MSG_cmdFixAll__"
     }
   },
