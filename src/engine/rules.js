@@ -1623,6 +1623,15 @@ function fcRoundFourRules(tokens, i, { add, morph, apo, paragraph, spellChecker 
       tokens.slice(Math.max(s, i - 4), i - 1).some((x) => /^(ne|n’)$/.test(x.lower)) && next && nounOnly(next) && !/^(tout)$/.test(R1)) {
     add(t, /^[aeiouyéèêâîôûœh]/.test(R1) ? apo("d’") : "de", "Après une négation : « de » (je ne mange plus de gluten).", true);
   }
+  // "je suis trop contant" -> content ("contant" is "conter", to tell a story)
+  if (/^contant(e|s|es)?$/.test(t.lower)) {
+    let k = i - 1;
+    while (k > s && /^(trop|tro|très|trés|si|tellement|vraiment|super|hyper|assez|bien|pas|plus|tout|toute|aussi|vachement|grave|tous|toutes)$/.test(tokens[k].lower)) k--;
+    if (k >= s && k < i && /^(suis|sui|chui|es|est|sommes|êtes|sont|étais|était|étions|étiez|étaient|serai|seras|sera|serons|serez|seront|serais|serait|serions|seriez|seraient|sois|soit|soyons|soyez|soient|être|été|reste|restes|restent|resté|semble|sembles|semblent|semblait|paraît|parais|air)$/.test(tokens[k].lower)) {
+      const fix = t.lower.replace(/^contant/, "content");
+      add(t, fix, `« Contant » vient de « conter » (raconter) ; heureux, c’est « ${fix} ».`, true);
+    }
+  }
   // A private joke of the author's: it is LA Renault Wind, LA Wind ("le Wind" -> la).
   const FC_WIND_FEM = { le: "la", un: "une", du: "de la", au: "à la", ce: "cette", cet: "cette", mon: "ma", ton: "ta", son: "sa" };
   if (FC_WIND_FEM[t.lower] && (R1 === "wind" || R1 === "renault" && R2 === "wind")) {

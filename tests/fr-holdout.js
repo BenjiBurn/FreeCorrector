@@ -118,6 +118,10 @@ module.exports = [
   ["Ça passe même plus à la télé, on l’a oublié !", null, null],
   ["Il pleuvait sur la ville, je l’ai quitté.", null, null],
   ["Ma voiture, je l’ai vendu hier.", "vendu", "vendue"],
+  // "contant" is "conter" (to tell): after "être", it is "content" (reported by the user).
+  ["Je suis trop contant.", "contant", "content"],
+  ["Elle est vraiment contante de son travail.", "contante", "contente"],
+  ["Il passait la soirée en contant des histoires.", null, null],
   // A missing accent: "trêve", not "crève" (reported by a user).
   ["La treve de Noël a commencé.", "treve", "trêve"],
   ["C’est la trève hivernale.", "trève", "trêve"],
