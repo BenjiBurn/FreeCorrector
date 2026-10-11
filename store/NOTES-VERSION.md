@@ -1,5 +1,39 @@
 # Notes de version à coller dans les stores
 
+## 1.2.2
+
+**Français** (Firefox : « Notes de version » ; Chrome : rien à saisir ; Opera : « Changelog ») :
+
+```text
+• Nouveau : Ctrl+Maj+F corrige d’un coup toutes les fautes du champ où vous écrivez (raccourci modifiable dans les réglages du navigateur). Marche aussi dans la page Correcteur.
+• Nouveau : dans un récit au passé, FreeCorrector suggère le « eu » oublié (« il roulait vite et j’ai juste le temps de… » → « j’ai juste eu le temps »).
+• Meilleures suggestions : « t’aurai pas été invitée » → « t’aurais » ; un accent oublié ne propose plus de mots sans rapport (« treve » → « trêve », plus « crève »).
+• Moins de fausses alertes sur l’accord du participe (« ça passe plus à la télé, on l’a oublié »).
+• Un lien pour soutenir le projet par un don, en bas des options.
+```
+
+**English** (Opera "Changelog", Firefox if an English field is offered):
+
+```text
+• New: Ctrl+Shift+F fixes every mistake in the field you are typing in at once (shortcut can be changed in the browser's settings). Also works in the proofreader page.
+• New: in a French story told in the past, FreeCorrector suggests the missing "eu".
+• Better suggestions: familiar "t’" understood as "tu"; a missing accent no longer suggests unrelated words.
+• Fewer false alarms on French past participle agreement.
+• A link to support the project with a donation, at the bottom of the options.
+```
+
+**Notes aux testeurs Firefox** (en anglais) :
+
+```text
+No account or login is needed. Everything runs locally (CSP connect-src 'self'): no network requests, no data collected, no remote code. Our own code is neither minified nor bundled; the engines in vendor/ are unmodified copies of Grammalecte 2.3.0 and harper.js 2.10.0 (see NOTE_FOR_REVIEWERS.md).
+
+New in 1.2.2: a "commands" manifest entry (no new permission): one keyboard shortcut, Ctrl+Shift+F by default, that fixes every mistake in the focused field (lib/commands.js sends a message to the active tab's content script and to the extension's own proofreader page). The options page has a plain link to a PayPal donation page; the extension itself makes no request.
+
+Build: download https://github.com/BenjiBurn/FreeCorrector/archive/refs/tags/v1.2.2.zip, run "node scripts/build.js firefox" (Node.js 18+, no dependencies), output in dist/freecorrector-1.2.2-firefox.zip.
+
+To test: type "je suis aller au marché et il faut que tu vien" in any text field, then press Ctrl+Shift+F.
+```
+
 ## 1.2.1
 
 **Français** (Firefox : « Notes de version » ; Opera : « Changelog ») :
