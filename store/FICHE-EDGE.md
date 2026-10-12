@@ -22,7 +22,7 @@ Fichier à envoyer : `dist/freecorrector-1.2.3-chromium.zip`
 |---|---|
 | Category | Productivity |
 | Does your extension access, collect or transmit personal information? | No |
-| Privacy policy URL | https://github.com/BenjiBurn/FreeCorrector/blob/main/PRIVACY.md |
+| Privacy policy URL | https://lapigeonnerie.fr/freecorrector-confidentialite |
 | Website URL | https://lapigeonnerie.fr/freecorrector |
 | Support contact details | https://github.com/BenjiBurn/FreeCorrector/issues |
 | Mature content | No |

@@ -162,7 +162,7 @@ cocher les trois attestations :
 **URL des règles de confidentialité** (Privacy policy URL) :
 
 ```text
-https://github.com/BenjiBurn/FreeCorrector/blob/main/PRIVACY.md
+https://lapigeonnerie.fr/freecorrector-confidentialite
 ```
 
 ## 4. Onglet « Distribution »

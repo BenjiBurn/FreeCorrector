@@ -64,7 +64,7 @@ Créé par BenjiBurn.
 | Licence | GPL-3.0 |
 | Site | https://github.com/BenjiBurn/FreeCorrector |
 | Assistance | https://github.com/BenjiBurn/FreeCorrector/issues |
-| Règles de confidentialité | https://github.com/BenjiBurn/FreeCorrector/blob/main/PRIVACY.md |
+| Règles de confidentialité | https://lapigeonnerie.fr/freecorrector-confidentialite |
 | Code source (si demandé) | https://github.com/BenjiBurn/FreeCorrector |
 
 ## 3. Notes pour la revue (si un champ est proposé)
@@ -131,7 +131,7 @@ Created by BenjiBurn.
 | Source code URL (public) | https://github.com/BenjiBurn/FreeCorrector |
 | Source code URL (moderators) | https://github.com/BenjiBurn/FreeCorrector/tree/v1.2.3 (le tag de la version) |
 | License URL | https://github.com/BenjiBurn/FreeCorrector/blob/main/LICENSE |
-| Privacy policy URL | https://github.com/BenjiBurn/FreeCorrector/blob/main/PRIVACY.md |
+| Privacy policy URL | https://lapigeonnerie.fr/freecorrector-confidentialite |
 
 **Build instructions** :
 
