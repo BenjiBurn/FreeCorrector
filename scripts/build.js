@@ -33,7 +33,7 @@ const TARGETS = {
     manifest: (m) => m,
   },
   chromium: {
-    exclude: ["background.js", "icons/icon.svg", "demo"],
+    exclude: ["background.js", "demo"],
     manifest: (m) => {
       const out = { ...m };
       delete out.browser_specific_settings;
