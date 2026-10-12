@@ -108,6 +108,16 @@ const FC_HYPHEN_COMPOUNDS = {
   "celle là": { fix: "celle-là" }, "ceux là": { fix: "ceux-là" }, "peut être": { fix: "peut-être", needDet: /^(,|\.|$|oui|non|mais|et|ou|alors|donc|bien|est|sont|était|a|ont|avait)$/ },
   "t il": { fix: "t-il" }, "quatre vingt": { fix: "quatre-vingt" }, "quatre vingts": { fix: "quatre-vingts" }, "dix huit": { fix: "dix-huit" },
   "dix sept": { fix: "dix-sept" }, "dix neuf": { fix: "dix-neuf" }, "vingt deux": { fix: "vingt-deux" }, "trente trois": { fix: "trente-trois" },
+  // Verb + noun objects ("ces grilles pain" -> grille-pain).
+  "grille pain": { fix: "grille-pain" }, "grilles pain": { fix: "grille-pain" }, "sèche cheveux": { fix: "sèche-cheveux" },
+  "lave vaisselle": { fix: "lave-vaisselle" }, "lave linge": { fix: "lave-linge" }, "tire bouchon": { fix: "tire-bouchon" },
+  "tire bouchons": { fix: "tire-bouchons" }, "ouvre boîte": { fix: "ouvre-boîte" }, "ouvre boîtes": { fix: "ouvre-boîtes" },
+  "porte clés": { fix: "porte-clés" }, "porte clé": { fix: "porte-clé" }, "chauffe eau": { fix: "chauffe-eau" },
+  "garde robe": { fix: "garde-robe" }, "pare brise": { fix: "pare-brise" }, "pare chocs": { fix: "pare-chocs" },
+  "essuie glace": { fix: "essuie-glace" }, "essuie glaces": { fix: "essuie-glaces" }, "casse croûte": { fix: "casse-croûte" },
+  "gratte ciel": { fix: "gratte-ciel" }, "porte parole": { fix: "porte-parole" }, "presse agrumes": { fix: "presse-agrumes" },
+  "avant hier": { fix: "avant-hier" }, "après demain": { fix: "après-demain" }, "porte bagages": { fix: "porte-bagages" },
+  "sous sol": { fix: "sous-sol", needDet: /^(le|un|au|du|mon|ton|son|notre|votre|leur|ce)$/ },
 };
 
 // Texting abbreviations: offered as a style suggestion (blue), not an error.
@@ -846,7 +856,10 @@ function fcCustomRules(paragraph, spellChecker, existing) {
     // "des questions important" -> importantes (the adjective agrees with the noun)
     if (prev && /^(des|les|mes|tes|ses|nos|vos|leurs|ces|plusieurs|quelques|deux|trois)$/.test(prev2?.lower ?? "") &&
         isPluralNoun(prev) && isAdj(t) && fcHas(morph(t), /:A:[me]:s|:A:m:[si]/) && !fcHas(morph(t), /:A:.:[pi]/) &&
-        (!next || /^[.!?,;:]$/.test(next.text) || /^(mais|pour|dans|à|qui|que)$/.test(next.lower))) {
+        (!next || /^[.!?,;:]$/.test(next.text) || /^(mais|pour|dans|à|qui|que)$/.test(next.lower)) &&
+        // "les gens marchant dans la rue": a present participle with its complement, invariable.
+        // ("des questions important à régler": "à" + infinitive goes with the adjective.)
+        !(fcHas(morph(t), /:V[^/]*:P/) && next && (/^(pour|dans)$/.test(next.lower) || next.lower === "à" && !fcHas(morph(next2), /:Y/)))) {
       const form = String(suggAgree(t.lower, prev.lower) || "").split("|").filter(Boolean)[0];
       if (form && form !== t.lower) add(t, form, `L’adjectif s’accorde avec « ${prev.text} ».`);
     }
@@ -1649,6 +1662,21 @@ function fcRoundFourRules(tokens, i, { add, morph, apo, paragraph, spellChecker 
   if (/^(du|des)$/.test(t.lower) && /^(plus|pas|jamais)$/.test(L1) && prev2 && fcHas(morph(prev2), /:V/) && !fcHas(morph(prev2), /:V0e/) &&
       tokens.slice(Math.max(s, i - 4), i - 1).some((x) => /^(ne|n’)$/.test(x.lower)) && next && nounOnly(next) && !/^(tout)$/.test(R1)) {
     add(t, /^[aeiouyéèêâîôûœh]/.test(R1) ? apo("d’") : "de", "Après une négation : « de » (je ne mange plus de gluten).", true);
+  }
+  // "ces grille-pain déprimant" -> déprimants: an adjective in -ant after a plural noun
+  // ("ces films déprimant leurs fans" is the invariable participle: a complement follows).
+  if (/ant$/.test(t.lower) && prev && prev2 && fcHas(morph(t), /:A/) &&
+      /^(ces|les|des|mes|tes|ses|nos|vos|leurs|plusieurs|quelques|certains|certaines|nombreux|nombreuses)$/.test(L2) &&
+      fcHas(morph(prev), /:N[^/]*:[pi]/)) {
+    const after = next;
+    const ends = !after || /^[.!?;:,)»"…]$/.test(after.text) || /^(et|ou|mais|qui|que|qu’|comme|donc|car|aussi|non|pas)$/.test(R1) ||
+      fcHas(morph(after), /:V[^/]*:(Ip|Iq|If|K)/) && !fcHas(morph(after), /:N|:D|:A/);
+    if (ends) {
+      const nouns = morph(prev).filter((m) => /:N/.test(m));
+      const fem = nouns.length && nouns.every((m) => /:f/.test(m));
+      const fix = t.lower + (fem ? "es" : "s");
+      if (fcHas(morph({ text: fix }), /:A/)) add(t, fix, `L’adjectif s’accorde avec « ${prev.text} » : « ${fix} ».`, true);
+    }
   }
   // "je suis trop contant" -> content ("contant" is "conter", to tell a story)
   if (/^contant(e|s|es)?$/.test(t.lower)) {

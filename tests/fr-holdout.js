@@ -118,6 +118,12 @@ module.exports = [
   ["Ça passe même plus à la télé, on l’a oublié !", null, null],
   ["Il pleuvait sur la ville, je l’ai quitté.", null, null],
   ["Ma voiture, je l’ai vendu hier.", "vendu", "vendue"],
+  // Reported by users (2026-10-12).
+  ["Devant tous ces grilles pain déprimants.", "grilles pain", "grille-pain"],
+  ["Devant tous ces grille-pain déprimant.", "déprimant", "déprimants"],
+  ["T’es en forme toi !", null, null],
+  ["Les gens marchant dans la rue.", null, null],
+  ["Ces films déprimant leurs spectateurs sont nuls.", null, null],
   // "ont" for "on" before a conjugated verb (reported by the user).
   ["Nous les mecs ont aime bien balancer la purée.", "ont", "on"],
   ["Ce soir ont va au cinéma.", "ont", "on"],

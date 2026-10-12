@@ -403,6 +403,9 @@ function checkParagraph(paragraph) {
         /\b(coup\p{L}*|cheveux)\s+(\p{L}+\s+){0,2}$/u.test(paragraph.slice(Math.max(0, err.nStart - 40), err.nStart))) continue;
     // Borrowed words ("les ramen", "des tapas") keep their own plural.
     if (self.FC_INFORMAL_WORDS.has(m.word.toLowerCase())) continue;
+    // "T’es en forme toi !": after "en", "la", "ta"…, "forme" is a noun, not "forme-toi".
+    if (/imp_union/.test(m.ruleId) &&
+        /(^|[^\p{L}])(en|de|la|le|les|une|un|ta|ma|sa|ton|mon|son|cette|ce|bonne|pleine|super|grande|belle)\s+$/iu.test(paragraph.slice(Math.max(0, err.nStart - 20), err.nStart))) continue;
     // Optional commas ("passée chez toi, mais") are style, for picky mode.
     if (!picky && /virgules_manquantes/.test(m.ruleId)) continue;
     // "Elle s’est fait mal", "elle s’est fait opérer": "fait" stays invariable.
