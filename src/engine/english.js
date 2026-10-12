@@ -488,7 +488,11 @@ export async function check(text) {
           });
         }
         const overriding = own.filter((m) => m.override);
-        const kept = harper.filter((h) => !overriding.some((o) => o.offset < h.offset + h.length && h.offset < o.offset + o.length));
+        // "be there form 9 to 5": "their form" only reads as a noun phrase because of the
+        // typo we fix next to it; Harper's there/their swap goes.
+        const beforeOwnFix = (h) => /^(there|their|they're)$/i.test(h.word ?? paragraph.slice(h.offset, h.offset + h.length)) &&
+          own.some((o) => o.override && /^\s+$/.test(paragraph.slice(h.offset + h.length, o.offset)));
+        const kept = harper.filter((h) => !overriding.some((o) => o.offset < h.offset + h.length && h.offset < o.offset + o.length) && !beforeOwnFix(h));
         cached = [...kept, ...own];
         if (paragraphCache.size >= 500) paragraphCache.clear();
         paragraphCache.set(paragraph, cached);

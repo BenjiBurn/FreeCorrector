@@ -32,4 +32,9 @@ module.exports = [
   ["We'll see what happens next.", null, null],
   ["Please find attached the document.", null, null],
   ["Have a great weekend!", null, null],
+  // Found while writing the English presentation page (2026-10-12).
+  ["Their expecting us on Thursday.", "Their", "They're"],
+  ["I will be there form 9 to 5.", "form", "from"],
+  ["I liked their very first album.", null, null],
+  ["Their meeting was long.", null, null],
 ];

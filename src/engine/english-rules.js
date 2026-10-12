@@ -1358,6 +1358,16 @@ function roundFourRules(toks, i, paragraph, add, frequency) {
   const fix = (replacement, message, start = t.start, end = t.end, keepCase = false) => add(start, end, replacement, message, { override: true, keepCase });
   const lowerWord = (x) => !!x && /^\p{Ll}+$/u.test(x.text);
 
+  // "Their expecting us", "their probably late" -> they're. Only with a verb in -ing that
+  // takes an object or a place right after it ("their meeting was long" is a noun),
+  // or an adverb that cannot follow a possessive.
+  if (t.lower === "their" && next && (
+    /^(expecting|going|coming|leaving|trying|getting|looking|waiting|planning|staying|moving|heading|bringing|sending|asking|telling)$/.test(R1) &&
+      next2 && /^(to|at|for|on|in|a|an|the|us|me|him|her|them|you|it|back|home|out|up|down|over|here|there|now|soon|tomorrow|tonight|today|this|next)$/.test(R2) ||
+    /^(probably|already|definitely|totally|actually|still|always|never|gonna|not)$/.test(R1) && next2 && !/^(own|being|having|knowing|wanting|doing)$/.test(R2))) {
+    fix("they're", "Did you mean “they're” (they are)?");
+  }
+
   // "My laptop and my phone needs charging", "My sister and her husband owns" -> plural
   if (prev && toks[i - 2] && toks[i - 3] && toks[i - 4] && toks[i - 5] && /^(my|your|his|her|our|their|the)$/.test(toks[i - 5].lower) &&
       lowerWord(toks[i - 4]) && toks[i - 3].lower === "and" && /^(my|your|his|her|our|their|the)$/.test(L2) && lowerWord(prev) &&
