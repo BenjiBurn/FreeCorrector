@@ -1,5 +1,38 @@
 # Notes de version à coller dans les stores
 
+## 1.2.3
+
+**Français** (Firefox : « Notes de version » ; Chrome : rien à saisir ; Opera : « Changelog ») :
+
+```text
+• Beaucoup plus de fautes trouvées, en français comme en anglais, grâce à deux nouvelles séries de tests : homophones (« on/ont », « près/prêt », « voire/voir », « plutôt/plus tôt »), participes passés, mots composés (« grille-pain »), accords des adjectifs, apostrophes oubliées (« J ai »).
+• En anglais : faux amis des francophones (assist/attend, sensible/sensitive, « I have 25 years »), comparatifs (« more easy »), questions (« Where you are going? »), they're/their/there, verbes irréguliers.
+• Meilleures suggestions : la forme la plus probable passe en premier.
+• Moins de fausses alertes : citations en anglais dans un texte français, hashtags en fin de message, « Manges-en », « T’es en forme toi ».
+• Corrigé : le logo ne s’affichait pas sur Chrome, Edge, Brave et Opera.
+```
+
+**English** (Opera "Changelog", Firefox if an English field is offered):
+
+```text
+• Many more mistakes caught in English and French, thanks to two new rounds of tests: confused words (they're/their, accept/except, brake/break, then/than), irregular verbs, comparatives ("more easy"), questions ("Where you are going?"), the false friends French speakers use (assist/attend, sensible/sensitive, "I have 25 years").
+• Better suggestions: the most likely fix comes first.
+• Fewer false alarms: English quotes inside French text, hashtags at the end of a post, contractions such as "I'll".
+• Fixed: the logo did not show on Chrome, Edge, Brave and Opera.
+```
+
+**Notes aux testeurs Firefox** (en anglais) :
+
+```text
+No account or login is needed. Everything runs locally (CSP connect-src 'self'): no network requests, no data collected, no remote code. Our own code is neither minified nor bundled; the engines in vendor/ are unmodified copies of Grammalecte 2.3.0 and harper.js 2.10.0 (see NOTE_FOR_REVIEWERS.md).
+
+1.2.3 changes only the checking rules (src/engine/) and the build script; no new permission.
+
+Build: download https://github.com/BenjiBurn/FreeCorrector/archive/refs/tags/v1.2.3.zip, run "node scripts/build.js firefox" (Node.js 18+, no dependencies), output in dist/freecorrector-1.2.3-firefox.zip.
+
+To test: type "je suis aller au marché et il faut que tu vien" or "Their expecting us tomorow" in any text field, then press Ctrl+Shift+F.
+```
+
 ## 1.2.2
 
 **Français** (Firefox : « Notes de version » ; Chrome : rien à saisir ; Opera : « Changelog ») :
