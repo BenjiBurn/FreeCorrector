@@ -1362,8 +1362,8 @@ function fcRoundThreeRules(tokens, i, { add, morph, apo, paragraph, spellChecker
       add(t, t.text.replace(/s$/, ""), "Une action certaine dans le futur : le futur, pas le conditionnel.", true);
     }
   }
-  // "Appeles-moi" -> Appelle-moi
-  const imp = t.text.match(/^(\p{L}+)es-(moi|toi|nous|le|la|les|lui|leur|en|y)$/u);
+  // "Appeles-moi" -> Appelle-moi ("Manges-en", "penses-y" keep their -s before "en" and "y")
+  const imp = t.text.match(/^(\p{L}+)es-(moi|toi|nous|le|la|les|lui|leur)$/u);
   if (imp && fcHas(fcMorph(spellChecker, imp[1] + "es"), /:V1.*:Ip.*:2s/)) {
     const lemma = fcMorph(spellChecker, imp[1] + "es").map((m) => m.match(/^>([^/]+)/)?.[1]).find(Boolean);
     let form = null;
@@ -1632,9 +1632,12 @@ function fcRoundFourRules(tokens, i, { add, morph, apo, paragraph, spellChecker 
     add(span(t, next), R1 === "la" ? "à la" : "au", "On a mal « à » une partie du corps.", true);
   }
   // "le document que j’ai besoin" -> dont
-  if (/^(que|qu’)$/.test(t.lower) && prev && nounOnly(prev) && (() => {
+  // (A noun, or a word right after a determiner: "le livre" even if "livre" is also a verb.)
+  if (/^(que|qu’)$/.test(t.lower) && prev && (nounOnly(prev) || fcHas(morph(prev), /:N/) && /^(le|la|l’|un|une|ce|cet|cette|mon|ma|ton|ta|son|sa|les|des|ces|mes|tes|ses|nos|vos|leurs)$/.test(L2)) && (() => {
     let k = i + 1;
     if (/^(j’|je|tu|il|elle|on|nous|vous|ils|elles)$/.test(tokens[k]?.lower ?? "")) k++;
+    // ("le livre que je t’ai parlé": an object pronoun may come before the verb.)
+    if (/^(t’|m’|te|me|lui|leur|vous|nous)$/.test(tokens[k]?.lower ?? "")) k++;
     if (!/^(ai|as|a|avons|avez|ont|avais|avait)$/.test(tokens[k]?.lower ?? "")) return false;
     const what = tokens[k + 1];
     return !!what && (/^(besoin|envie|peur|honte)$/.test(what.lower) || /^(parlé|discuté|rêvé)$/.test(what.lower) && (isBoundary(tokens[k + 2]) || /^(hier|avant|ce|tout|la|l’autre)$/.test(tokens[k + 2]?.lower ?? "")));
@@ -1663,6 +1666,81 @@ function fcRoundFourRules(tokens, i, { add, morph, apo, paragraph, spellChecker 
       tokens.slice(Math.max(s, i - 4), i - 1).some((x) => /^(ne|n’)$/.test(x.lower)) && next && nounOnly(next) && !/^(tout)$/.test(R1)) {
     add(t, /^[aeiouyéèêâîôûœh]/.test(R1) ? apo("d’") : "de", "Après une négation : « de » (je ne mange plus de gluten).", true);
   }
+  // ---------- Fifth blind round (2026-10-12) ----------
+  // "J’habite tout prêt de la gare" -> près (near), not "prêt" (ready)
+  if (/^prêts?$/.test(t.lower) && R1 === "de" && /^(tout|très|juste|assez|trop|si|plus|habite|habites|habitent|habitons|habitez|vit|vis|vivent|situé|située|situés|situées)$/.test(L1)) {
+    add(t, "près", "« Près de » (à côté de) ; « prêt » veut dire « préparé ».", true);
+  }
+  // "long, voir carrément ennuyeux" -> voire (and even)
+  if (t.lower === "voir" && L1 === "," && next && (fcHas(morph(next), /:A|:W/) && !fcHas(morph(next), /:[DNVR]|:Y/) ||
+      /^(même|carrément|plus|moins|pire|jamais|impossible)$/.test(R1))) {
+    add(t, "voire", "« Voire » (et même), pas le verbe « voir ».", true);
+  }
+  // "Il ne c’est pas quoi faire" -> sait (savoir), after il/elle/on + ne
+  if (t.lower === "c’" && R1 === "est" && /^(ne|n’)$/.test(L1) && /^(il|elle|on)$/.test(L2) && next2 &&
+      /^(pas|plus|jamais|rien)$/.test(R2) && /^(quoi|si|comment|où|pourquoi|quand|combien|lire|nager|conduire|cuisiner|écrire|compter|parler|faire)$/.test(tokens[i + 3]?.lower ?? "")) {
+    add(span(t, next), "sait", "« Il ne sait pas » : le verbe savoir.", true);
+  }
+  // "Ça n’a rien avoir avec toi" -> rien à voir
+  if (t.lower === "avoir" && L1 === "rien" && R1 === "avec") add(t, "à voir", "« Rien à voir avec » (rien de commun).", true);
+  // "on boit un vert" -> verre
+  if (t.lower === "vert" && L1 === "un" && /^(boit|bois|boire|buvons|buvez|boivent|bu|prendre|prend|prends|prenons|prenez|offre|offrir|paie|paye|payer|petit|dernier|bon)$/.test(L2)) {
+    add(t, "verre", "« Un verre » (une boisson), pas la couleur « vert ».", true);
+  }
+  // "le dossier envoyer hier" -> envoyé (a participle after its noun, then when or by whom)
+  if (/er$/.test(t.lower) && fcHas(morph(t), /:Y/) && prev && nounOnly(prev) && /^(le|la|l’|les|un|une|des|ce|cet|cette|ces|mon|ma|mes|ton|ta|tes|son|sa|ses|notre|votre|vos|nos|leur|leurs)$/.test(L2) &&
+      /^(hier|avant-hier|ce|cette|par|lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche|récemment|la|le)$/.test(R1) &&
+      !(/^(la|le)$/.test(R1) && !/^(veille|semaine|mois|matin|soir)$/.test(R2)) && !(R1 === "ce" && !/^(matin|soir|midi|week-end)$/.test(R2))) {
+    const nouns = morph(prev).filter((m) => /:N/.test(m));
+    const fem = nouns.length && nouns.every((m) => /:f/.test(m));
+    const plural = nouns.length && nouns.every((m) => /:p/.test(m));
+    const base = t.lower.replace(/er$/, "é");
+    const pp = fem || plural ? fcAgreeParticiple(spellChecker, base, fem ? "f" : "m", plural ? "p" : "s") : base;
+    if (pp && fcHas(morph({ text: pp }), /:Q/)) add(t, pp, `Un participe passé, qui s’accorde avec « ${prev.text} » : « ${pp} ».`, true);
+  }
+  // "Elle s’est permise de critiquer" -> permis (se permettre de : "se" is not the object)
+  if (/^(permise|permises|permis)$/.test(t.lower) && t.lower !== "permis" && /^(est|sont|était|étaient|suis|es|sommes|êtes)$/.test(L1) &&
+      /^(s’|se|me|m’|te|t’|nous|vous)$/.test(L2) && /^(de|d’)$/.test(R1)) {
+    add(t, "permis", "« Se permettre de » : le participe reste invariable (« elle s’est permis de »).", true);
+  }
+  // "toute l’assemblé" -> assemblée: after a determiner, a word that is only a participle
+  // when its feminine form is a noun.
+  if (/é$/.test(t.lower) && prev && /^(la|l’|une|cette|ma|ta|sa|toute|notre|votre|leur)$/.test(L1) && isPpOnly(t) &&
+      // (After "l’", only with "toute" before it: "l’employé" is a noun anyway.)
+      (L1 !== "l’" || /^(toute|de|à|dans|par|pour|sur)$/.test(L2))) {
+    const fem = `${t.lower}e`;
+    if (fcHas(morph({ text: fem }), /:N:f/)) add(t, fem, `Le nom féminin s’écrit « ${fem} ».`, true);
+  }
+  // "Tu aurais dû partir plutôt" -> plus tôt (earlier), at the end of a clause
+  if (t.lower === "plutôt" && (isBoundary(next) || /^(demain|ou|et|mais)$/.test(R1)) &&
+      /^(partir|parti|partie|partis|arriver|arrivé|arrivée|arrivés|venir|venu|venue|rentrer|rentré|rentrée|commencer|commencé|finir|fini|terminer|terminé|lever|levé|levée|réveiller|réveillé|réveillée|coucher|couché|couchée|prévenir|prévenu|appeler|appelé)$/.test(L1)) {
+    add(t, "plus tôt", "« Plus tôt » (avant l’heure), pas « plutôt » (de préférence).", true);
+  }
+  // "Aussi tôt arrivé" -> Aussitôt (as soon as)
+  if (t.lower === "aussi" && R1 === "tôt" && next2 && fcHas(morph(next2), /:Q/) && R2 !== "que") {
+    add(span(t, next), "aussitôt", "« Aussitôt » (dès que), en un seul mot.", true);
+  }
+  // "J ai", "c est", "qu il" -> the apostrophe is missing
+  if (/^(j|c|n|qu|d|l|m|t|s)$/i.test(t.text) && next && paragraph.slice(t.end, next.start) === " " &&
+      /^[aeiouyéèêàâîôûœh]/i.test(next.text) &&
+      (/^(j)$/i.test(t.text) && fcHas(morph(next), /:V/) ||
+       /^c$/i.test(t.text) && /^(est|était|étais|en)$/.test(R1) ||
+       /^n$/i.test(t.text) && /^(est|ai|a|as|avons|avez|ont|était|y|en|importe)$/.test(R1) ||
+       /^qu$/i.test(t.text) && /^(il|ils|elle|elles|on|un|une|en|à)$/.test(R1) ||
+       /^d$/i.test(t.text) && /^(accord|abord|ailleurs|habitude|autres|un|une)$/.test(R1) ||
+       /^l$/i.test(t.text) && /^(ai|as|a|avons|avez|ont|avais|avait|on|autre|un|une|instant|heure|air|année|école|eau)$/.test(R1))) {
+    add(span(t, next), apo(`${t.text}’${next.text}`), "Il manque l’apostrophe.", true, true);
+  }
+  // "ta proposition fait du sens" -> a du sens (calque of "makes sense")
+  if (/^(fait|font|faisait|ferait)$/.test(t.lower) && R1 === "du" && R2 === "sens") {
+    const avoir = { fait: "a", font: "ont", faisait: "avait", ferait: "aurait" }[t.lower];
+    add(span(t, next2), `${avoir} du sens`, "Calque de l’anglais « make sense » : « avoir du sens » ou « être logique ».", true);
+  }
+  // "Votre colis sera délivré" -> livré (deliver a parcel = livrer)
+  if (/^délivré(e|s|es)?$/.test(t.lower) && tokens.slice(Math.max(s, i - 5), i).some((x) => /^(colis|commande|commandes|paquet|paquets|livraison|marchandise|marchandises|meuble|meubles|courrier)$/.test(x.lower))) {
+    add(t, t.lower.replace(/^dé/, ""), "Un colis est « livré » ; « délivrer », c’est libérer ou remettre un document.", true);
+  }
+
   // "ces grille-pain déprimant" -> déprimants: an adjective in -ant after a plural noun
   // ("ces films déprimant leurs fans" is the invariable participle: a complement follows).
   if (/ant$/.test(t.lower) && prev && prev2 && fcHas(morph(t), /:A/) &&

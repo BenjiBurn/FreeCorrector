@@ -266,6 +266,51 @@ function preferTu(text, start, replacements) {
   return [...replacements.filter(tu), ...replacements.filter((r) => !tu(r))];
 }
 
+// "les décisions qu’il a pris" -> prises, not "prît": the imperfect subjunctive is
+// almost never what was meant; it goes last.
+function demoteImperfectSubjunctive(replacements) {
+  const rare = (r) => {
+    const verbs = spellChecker.getMorph(r).filter((m) => /:V/.test(m));
+    // (Tenses come grouped: "réfléchisses" is ":Sp:Sq:2s", a present subjunctive too.)
+    return verbs.length > 0 && verbs.every((m) => /:Sq/.test(m) && !/:(Ip|Iq|Is|If|K|Sp|E|P|Q|Y)/.test(m)) &&
+      !spellChecker.getMorph(r).some((m) => /:[NAQ]/.test(m));
+  };
+  return [...replacements.filter((r) => !rare(r)), ...replacements.filter(rare)];
+}
+
+// A misspelled word keeps its ending: "convainquants" -> convaincants (not "convainquant"),
+// "fatiguante" -> fatigante. Among the first candidates, those with the same ending go first.
+function keepEnding(word, replacements) {
+  const ending = (w) => (/es$/i.test(w) ? "es" : /[sx]$/i.test(w) ? "s" : /e$/i.test(w) ? "e" : "");
+  const want = ending(word);
+  if (!want || replacements.length < 2 || ending(replacements[0]) === want) return replacements;
+  // Only when the first candidate merely drops that ending ("convainquants" -> "convainquant"):
+  // the ending typed is often the mistake itself ("responsabilitée" -> responsabilité).
+  // And only when that first candidate is a present participle ("fatiguant") standing for
+  // the adjective ("fatigante"): "responsabilitée" -> responsabilité is right as it is.
+  if (replacements[0].toLowerCase() !== word.toLowerCase().slice(0, -want.length) &&
+      replacements[0].toLowerCase() !== word.toLowerCase().slice(0, -1)) return replacements;
+  if (!spellChecker.getMorph(replacements[0].toLowerCase()).some((m) => /:V[^/]*:P/.test(m))) return replacements;
+  const head = replacements.slice(0, 4);
+  const same = head.filter((r) => ending(r) === want);
+  return same.length ? [...same, ...head.filter((r) => !same.includes(r)), ...replacements.slice(4)] : replacements;
+}
+
+// « Great job! » inside a French text: a quote in English, not French misspellings.
+const FC_EN_QUOTE_WORDS = /^(the|a|an|and|or|of|to|in|on|is|are|was|be|you|your|i|it|my|we|our|this|that|for|with|great|good|nice|job|thanks|thank|please|yes|no|not|so|very|well|done|love|happy|best|sorry|cool|wow|see|let|go|get|me|all|just|what|how)$/i;
+function insideEnglishQuote(paragraph, start) {
+  const before = paragraph.slice(0, start);
+  const open = Math.max(before.lastIndexOf("«"), before.lastIndexOf("“"), before.lastIndexOf("\""));
+  if (open < 0 || /[»”"]/.test(before.slice(open + 1))) return false;
+  const rest = paragraph.slice(open + 1);
+  const close = rest.search(/[»”"]/);
+  if (close < 0) return false;
+  const words = rest.slice(0, close).match(/\p{L}+(?:'\p{L}+)?/gu) ?? [];
+  if (!words.length || /[éèêàçùûôîœ]/i.test(rest.slice(0, close))) return false;
+  const english = words.filter((w) => FC_EN_QUOTE_WORDS.test(w) || !spellChecker.isValidToken(w)).length;
+  return english / words.length >= 0.6;
+}
+
 function overlaps(a, b) {
   return a.offset < b.offset + b.length && b.offset < a.offset + a.length;
 }
@@ -339,6 +384,15 @@ function rankParagraph(paragraph, paraStart, found) {
       m.replacements = agreeWithSubject(fixed, start + delta, m.replacements);
       m.replacements = preferIndicative(fixed, start + delta, m.replacements);
       m.replacements = preferTu(fixed, start + delta, m.replacements);
+      m.replacements = demoteImperfectSubjunctive(m.replacements);
+      if (m.category === "spelling") m.replacements = keepEnding(m.word, m.replacements);
+      // Participle agreement: the participle typed plus its ending ("commis" -> commises, not "commit").
+      if (/ppas/.test(m.ruleId)) {
+        const grown = m.replacements.filter((r) => r.toLowerCase().startsWith(m.word.toLowerCase()) && r.length > m.word.length);
+        if (grown.length) m.replacements = [...grown, ...m.replacements.filter((r) => !grown.includes(r))];
+      }
+      // "Malgré que" -> "bien que" is the usual fix; "quoique" next.
+      if (/malgré_que/.test(m.ruleId)) m.replacements = [...m.replacements].sort((x, y) => /^bien/i.test(y) - /^bien/i.test(x));
     }
     m.replacements = m.replacements.slice(0, MAX_SHOWN_SUGGESTIONS);
     const best = m.replacements[0];
@@ -361,11 +415,13 @@ function checkParagraph(paragraph) {
   let suggested = 0;
   for (const token of spellChecker.parseParagraph(paragraph)) {
     const word = token.sValue;
-    if (fcLooksLikeProperNoun(paragraph, token.nStart, word)) continue;
+    // (A known misspelling with a capital is not a name: "Parmis les candidats".)
+    if (fcLooksLikeProperNoun(paragraph, token.nStart, word) && !COMMON_MISSPELLINGS[word.toLowerCase()]) continue;
     // Only part of a word the tokenizer split on a foreign letter ("Nguy|ễn").
     if (/[\p{L}\p{M}]/u.test(paragraph[token.nEnd] ?? "") || /[\p{L}\p{M}]/u.test(paragraph[token.nStart - 1] ?? "")) continue;
     // "dispo", "resto", "mdr": informal on purpose.
     if (self.FC_INFORMAL_WORDS.has(word.toLowerCase())) continue;
+    if (insideEnglishQuote(paragraph, token.nStart)) continue;
     // "soeur", "coeur": most keyboards have no "œ"; a typographic nicety only.
     if (!picky && /oe|ae/i.test(word) && spellChecker.isValidToken(word.replace(/oe/g, "œ").replace(/OE/g, "Œ").replace(/ae/g, "æ"))) continue;
     spelling.push({
@@ -403,6 +459,7 @@ function checkParagraph(paragraph) {
         /\b(coup\p{L}*|cheveux)\s+(\p{L}+\s+){0,2}$/u.test(paragraph.slice(Math.max(0, err.nStart - 40), err.nStart))) continue;
     // Borrowed words ("les ramen", "des tapas") keep their own plural.
     if (self.FC_INFORMAL_WORDS.has(m.word.toLowerCase())) continue;
+    if (insideEnglishQuote(paragraph, err.nStart)) continue;
     // "Les bolides miniatures sortent": a plural noun or adjective after the subject, not
     // a verb ("miniaturent"), when the real verb comes right after it.
     if (/conj_/.test(m.ruleId) && /[sx]$/i.test(m.word) &&
