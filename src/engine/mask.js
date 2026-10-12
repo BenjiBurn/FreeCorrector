@@ -34,5 +34,6 @@ self.fcMaskCode = (text) => {
     // command-line options: --watch, -v, -d
     .replace(/(?<=^|\s)(--[a-z][\w-]*|-[a-zA-Z]{1,2})(?=\s|$|[.,;)])/gm, blank)
     // all-consonant lowercase commands: npm, nvm, pnpm (not "bcp", "mdr", "km")
-    .replace(/(?<![\p{L}\p{N}_])[bcdfghjklmnpqrstvwxz]{2,5}(?![\p{L}\p{N}_])/gu, (m) => (FC_KEPT_ABBREVIATIONS.test(m) ? m : blank(m)));
+    // (Not the end of a contraction: the "ll" of "I'll".)
+    .replace(/(?<![\p{L}\p{N}_'’])[bcdfghjklmnpqrstvwxz]{2,5}(?![\p{L}\p{N}_])/gu, (m) => (FC_KEPT_ABBREVIATIONS.test(m) ? m : blank(m)));
 };

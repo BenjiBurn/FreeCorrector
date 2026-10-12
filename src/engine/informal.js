@@ -53,14 +53,14 @@ self.FC_INFORMAL_WORDS = new Set([
   "endpoints", "payload", "payloads", "webhook", "webhooks", "middleware", "runtime", "debugger", "linter", "parser",
   "bundle", "bundler", "dataset", "datasets", "notebook", "notebooks", "prompt", "prompts", "chatbot", "chatbots",
   "localhost", "publickey", "stdout", "stderr", "stdin", "sudo", "async", "config", "configs",
-  "rebook", "rebooked", "rebooking", "preorder", "preorders", "preordered", "prebook", "prebooked", "unsubscribe", "unsubscribed", "onboarded", "upskilling", "reskilling",
+  "shoutout", "shoutouts", "rebook", "rebooked", "rebooking", "preorder", "preorders", "preordered", "prebook", "prebooked", "unsubscribe", "unsubscribed", "onboarded", "upskilling", "reskilling",
 ]);
 
 // Phrases English borrows whole from French, Italian or Latin ("déjà vu",
 // "café au lait", "raison d'être"): blanked in English text, their words
 // are not English typos.
 self.FC_LOAN_PHRASES = new RegExp(`(?<![\\p{L}'’-])(?:${[
-  "café au lait", "au lait", "au pair", "au revoir", "au naturel", "au gratin", "au jus", "déjà vu", "deja vu",
+  "café au lait", "pains? au chocolat", "café crème", "croque[- ]monsieur", "croque[- ]madame", "au lait", "au pair", "au revoir", "au naturel", "au gratin", "au jus", "déjà vu", "deja vu",
   "raison d['’]être", "raison d['’]etre", "crème brûlée", "creme brulee", "crème de la crème", "crème fraîche", "creme fraiche",
   "joie de vivre", "je ne sais quoi", "c['’]est la vie", "bon appétit", "bon appetit", "bon voyage", "coup de grâce",
   "coup de grace", "coup d['’]état", "coup d['’]etat", "coup de foudre", "pièce de résistance", "piece de resistance",

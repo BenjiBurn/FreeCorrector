@@ -398,6 +398,11 @@ async function lintParagraph(paragraph) {
       if (kind === "Capitalization" && forHarper.slice(0, offset).trimEnd().length !== paragraph.slice(0, offset).trimEnd().length) continue;
       // Guesses with nothing to offer ("You may be missing a preposition").
       if (kind === "Miscellaneous" && !replacements.length) continue;
+      // "Peace and quiet", "the quiet of the night": "quiet" is a noun here, not "quite".
+      if (/^quiet$/i.test(word) && /\b(and|the|some|of|for|in|a|bit of|peace and)\s+$/i.test(paragraph.slice(Math.max(0, offset - 12), offset))) continue;
+      // "does anyone want anything?": after do/does/did, the verb stays bare.
+      if (replacements.length && replacements.every((r) => r.toLowerCase() === `${word.toLowerCase()}s` || r.toLowerCase() === `${word.toLowerCase()}es`) &&
+          /\b(do|does|did|don't|doesn't|didn't|will|would|can|could|should|must|might|may)\s+\p{L}+\s+$/iu.test(paragraph.slice(Math.max(0, offset - 30), offset))) continue;
       // Never lowercase the first word of a sentence ("Who's coming?").
       const sentenceStart = /(^|[.!?…]\s+)["“‘'(]?$/.test(paragraph.slice(0, offset));
       if (kind === "Capitalization" && sentenceStart && replacements[0] === word.toLowerCase()) continue;

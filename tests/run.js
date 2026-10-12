@@ -166,7 +166,7 @@ if (require.main === module) {
     }
     if (only !== "fr") {
       const call = await loadEnglish();
-      for (const corpus of ["./en-corpus.js", "./en-holdout.js", "./en-blind2.js", "./en-blind3.js", "./en-blind4.js", "./en-dumb.js", "./en-dumb2.js", "./en-blind-agent-c.js", "./en-blind-agent-f.js", "./en-blind-agent-i.js", "./mix-blind-agent-k.js", "./en-blind-agent-m.js", "./clean-messages.js", "./clean-agent-d.js", "./clean-agent-g.js", "./clean-agent-j.js", "./clean-agent-n.js"]) {
+      for (const corpus of ["./en-corpus.js", "./en-holdout.js", "./en-blind2.js", "./en-blind3.js", "./en-blind4.js", "./en-dumb.js", "./en-dumb2.js", "./en-blind-agent-c.js", "./en-blind-agent-f.js", "./en-blind-agent-i.js", "./mix-blind-agent-k.js", "./en-blind-agent-m.js", "./en-blind-agent-r.js", "./clean-messages.js", "./clean-agent-d.js", "./clean-agent-g.js", "./clean-agent-j.js", "./clean-agent-n.js"]) {
         if (!wanted(corpus) || !fs.existsSync(path.join(__dirname, corpus))) continue;
         console.log(`\n=== ${corpus}`);
         await score(call, require(corpus).en ?? require(corpus), verbose);

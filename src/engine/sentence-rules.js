@@ -112,7 +112,10 @@ function fcSentenceRules(paragraph, existing, spellChecker, prevEnd, lang = "fr"
 
   const words = paragraph.match(/[\p{L}\p{N}]+/gu) ?? [];
   const last = FC_LAST_WORD.exec(paragraph);
-  if (last && !listItem && !signature && !continued && words.length >= FC_MIN_WORDS_FOR_PUNCT &&
+  // A post ending on hashtags or a mention ("…the login bug #teamwork"), blanked by the
+  // mask: the tags close it, no full stop wanted.
+  const endsOnTag = !!last && /\s{3,}$/.test(paragraph.slice(last.index + last[1].length));
+  if (last && !listItem && !signature && !continued && !endsOnTag && words.length >= FC_MIN_WORDS_FOR_PUNCT &&
       fcLooksLikeSentence(paragraph, spellChecker, lang)) {
     const word = last[1];
     const start = last.index;
