@@ -403,6 +403,14 @@ function checkParagraph(paragraph) {
         /\b(coup\p{L}*|cheveux)\s+(\p{L}+\s+){0,2}$/u.test(paragraph.slice(Math.max(0, err.nStart - 40), err.nStart))) continue;
     // Borrowed words ("les ramen", "des tapas") keep their own plural.
     if (self.FC_INFORMAL_WORDS.has(m.word.toLowerCase())) continue;
+    // "Les bolides miniatures sortent": a plural noun or adjective after the subject, not
+    // a verb ("miniaturent"), when the real verb comes right after it.
+    if (/conj_/.test(m.ruleId) && /[sx]$/i.test(m.word) &&
+        spellChecker.getMorph(m.word.toLowerCase()).some((x) => /:[NA][^/]*:[pi]/.test(x))) {
+      const verb = paragraph.slice(err.nEnd).match(/^\s+(\p{L}+)/u)?.[1]?.toLowerCase();
+      const ms = verb ? spellChecker.getMorph(verb) : [];
+      if (ms.some((x) => /:V[^/]*:(Ip|Iq|Is|If|K)(:\w+)*:3p/.test(x)) && !ms.some((x) => /:N/.test(x))) continue;
+    }
     // "T’es en forme toi !": after "en", "la", "ta"…, "forme" is a noun, not "forme-toi".
     if (/imp_union/.test(m.ruleId) &&
         /(^|[^\p{L}])(en|de|la|le|les|une|un|ta|ma|sa|ton|mon|son|cette|ce|bonne|pleine|super|grande|belle)\s+$/iu.test(paragraph.slice(Math.max(0, err.nStart - 20), err.nStart))) continue;

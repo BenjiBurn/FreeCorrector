@@ -122,6 +122,8 @@ module.exports = [
   ["Devant tous ces grilles pain déprimants.", "grilles pain", "grille-pain"],
   ["Devant tous ces grille-pain déprimant.", "déprimant", "déprimants"],
   ["T’es en forme toi !", null, null],
+  ["Les petits bolides miniatures sortent de leur carcan !", null, null],
+  ["Les filles chantes bien.", "chantes", "chantent"],
   ["Les gens marchant dans la rue.", null, null],
   ["Ces films déprimant leurs spectateurs sont nuls.", null, null],
   // "ont" for "on" before a conjugated verb (reported by the user).
