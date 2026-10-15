@@ -118,6 +118,11 @@ module.exports = [
   ["Ça passe même plus à la télé, on l’a oublié !", null, null],
   ["Il pleuvait sur la ville, je l’ai quitté.", null, null],
   ["Ma voiture, je l’ai vendu hier.", "vendu", "vendue"],
+  // URLs are never checked, whatever their ending (reported by a user, 2026-10-15).
+  ["Le lieu est ici : maps.app.goo.gl/ZB1DBLmEhkhE8vqM6 à bientôt.", null, null],
+  ["Va sur https://maps.app.goo.gl/ZB1DBLmEhkhE8vqM6 vite.", null, null],
+  ["Regarde youtu.be/dQw4w9WgXcQ et t.co/abc123 aussi.", null, null],
+  ["J’ai vu le film.Il était nul.", "Il", " Il"],
   // Reported by users (2026-10-12).
   ["Devant tous ces grilles pain déprimants.", "grilles pain", "grille-pain"],
   ["Devant tous ces grille-pain déprimant.", "déprimant", "déprimants"],

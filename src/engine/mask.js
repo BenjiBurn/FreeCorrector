@@ -11,10 +11,14 @@ self.fcMaskCode = (text) => {
   return text
     // `inline code`
     .replace(/`[^`\n]*`/g, blank)
+    // full URLs: https://maps.app.goo.gl/ZB1D…, www.example.org/page
+    .replace(/(?:https?:\/\/|www\.)[^\s<>"«»]+/giu, blank)
     // e-mail addresses
     .replace(/[\w.+-]+@[\w-]+(?:\.[\w-]+)+/g, blank)
-    // domain names and URLs without "http": fr.fifa.com, www.gutenberg.org/ebooks
-    .replace(/(?<![\p{L}\p{N}_@])(?:[\w-]+\.)+(?:com|fr|org|net|io|eu|be|ch|ca|uk|de|es|it|gov|edu|info|dev|app|co|ly|me|tv|ai|us)(?:\/[^\s]*)?(?![\p{L}\p{N}_])/giu, blank)
+    // any host with a path, whatever its ending: maps.app.goo.gl/ZB1D…, youtu.be/xyz, t.co/abc
+    .replace(/(?<![\p{L}\p{N}_@\/.-])(?:[\w-]+\.)+\p{L}{2,6}\/[^\s<>"«»]*/giu, blank)
+    // domain names without "http": fr.fifa.com, www.gutenberg.org/ebooks (the whole host: not "maps.app" of "maps.app.goo.gl")
+    .replace(/(?<![\p{L}\p{N}_@])(?:[\w-]+\.)+(?:com|fr|org|net|io|eu|be|ch|ca|uk|de|es|it|gov|edu|info|dev|app|co|ly|me|tv|ai|us|gl|gg|to)(?:\/[^\s]*)?(?![\p{L}\p{N}_]|\.[\p{L}\p{N}])/giu, blank)
     // file names and paths: config.json, docker-compose.yml, src/app.js, .env.example
     .replace(/(?<![\p{L}\p{N}_])((?:[\w.-]+\/)*[\w-]*\.(?:json|js|mjs|cjs|ts|tsx|jsx|yaml|yml|md|txt|env|example|html|css|scss|py|sh|toml|ini|xml|csv|lock|cfg|conf|log|sql|rs|java|kt|rb|php|cpp|vue|svelte|zip|tar|gz|exe|dll|dmg|apk)(?:\.[\w]+)*)(?![\p{L}\p{N}_])/giu, blank)
     // identifiers: camelCase ("fetchUser", "macOS"), snake_case, calls "parse()"

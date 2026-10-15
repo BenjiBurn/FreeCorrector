@@ -32,7 +32,7 @@ function fcIsTypographicOnly(word, replacements) {
 // Web addresses, e-mails and domain names ("victor-hugo.lu", "Last.fm") are
 // not prose: no error inside them.
 const FC_URL_LIKE =
-  /(https?:\/\/|www\.)\S+|[\w.+-]+@[\w-]+(\.[\w-]+)+|[\p{L}\p{N}-]+(\.[\p{L}\p{N}-]+)*\.(com|fr|org|net|io|lu|fm|be|ch|ca|eu|de|uk|info|dev|app|ai|co|me|tv|gouv|edu|html?|php|js|pdf|png|jpe?g)(?![\p{L}\p{N}])(\/\S*)?/giu;
+  /(https?:\/\/|www\.)\S+|[\w.+-]+@[\w-]+(\.[\w-]+)+|([\p{L}\p{N}-]+\.)+\p{L}{2,6}\/\S*|[\p{L}\p{N}-]+(\.[\p{L}\p{N}-]+)*\.(com|fr|org|net|io|lu|fm|be|ch|ca|eu|de|uk|info|dev|app|ai|co|me|tv|gl|gouv|edu|html?|php|js|pdf|png|jpe?g)(?![\p{L}\p{N}]|\.[\p{L}\p{N}])(\/\S*)?/giu;
 
 function fcUrlRanges(paragraph) {
   const out = [];

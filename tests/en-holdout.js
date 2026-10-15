@@ -32,6 +32,9 @@ module.exports = [
   ["We'll see what happens next.", null, null],
   ["Please find attached the document.", null, null],
   ["Have a great weekend!", null, null],
+  // URLs are never checked (2026-10-15).
+  ["The place is here: maps.app.goo.gl/ZB1DBLmEhkhE8vqM6 see you.", null, null],
+  ["Go to https://maps.app.goo.gl/ZB1DBLmEhkhE8vqM6 now.", null, null],
   // Found while writing the English presentation page (2026-10-12).
   ["Their expecting us on Thursday.", "Their", "They're"],
   ["I will be there form 9 to 5.", "form", "from"],

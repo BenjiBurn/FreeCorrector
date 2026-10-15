@@ -515,5 +515,12 @@ export async function check(text) {
     paraStart += paragraph.length + 1;
   }
   // Nothing about the blanks themselves ("multiple spaces").
-  return matches.filter((m) => original.slice(m.offset, m.offset + m.length) === m.word);
+  // A grammar match right before a blanked URL or code ("Go to https://… now" read as
+  // "Go to now"): the context it judged was not there.
+  const beforeMask = (m) => {
+    let j = m.offset + m.length;
+    while (j < original.length && /[ \t]/.test(original[j])) j++;
+    return j < original.length && text[j] === " " && original[j] !== " ";
+  };
+  return matches.filter((m) => original.slice(m.offset, m.offset + m.length) === m.word && !(m.category !== "spelling" && beforeMask(m)));
 }
