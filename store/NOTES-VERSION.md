@@ -1,5 +1,35 @@
 # Notes de version à coller dans les stores
 
+## 1.2.4
+
+**Français** (Firefox : « Notes de version » ; Chrome : rien à saisir ; Opera : « Changelog ») :
+
+```text
+• Les adresses web ne sont plus jamais corrigées, quelle que soit leur extension (liens courts comme goo.gl, youtu.be, t.co…).
+• Moins de fausses alertes, en français comme en anglais, sur des textes soignés (vérifiés sur des articles Wikipédia) : titres d’œuvres, noms de lieux, sujets inversés, citations, tournures passives.
+• Meilleures suggestions : « une cocote » → « cocotte », « cocotte-minute ».
+```
+
+**English** (Opera "Changelog", Firefox if an English field is offered):
+
+```text
+• Web addresses are never checked anymore, whatever their ending (short links such as goo.gl, youtu.be, t.co…).
+• Fewer false alarms in English and French on carefully written text (checked against Wikipedia articles): passive voice, "so many", titles, place names, quotations.
+• Better suggestions for misspelled French nouns.
+```
+
+**Notes aux testeurs Firefox** (en anglais) :
+
+```text
+No account or login is needed. Everything runs locally (CSP connect-src 'self'): no network requests, no data collected, no remote code. Our own code is neither minified nor bundled; the engines in vendor/ are unmodified copies of Grammalecte 2.3.0 and harper.js 2.10.0 (see NOTE_FOR_REVIEWERS.md).
+
+1.2.4 changes only the checking rules (src/engine/); no new permission.
+
+Build: download https://github.com/BenjiBurn/FreeCorrector/archive/refs/tags/v1.2.4.zip, run "node scripts/build.js firefox" (Node.js 18+, no dependencies), output in dist/freecorrector-1.2.4-firefox.zip.
+
+To test: type "je suis aller au marché et il faut que tu vien" or "Their expecting us tomorow" in any text field, then press Ctrl+Shift+F.
+```
+
 ## 1.2.3
 
 **Français** (Firefox : « Notes de version » ; Chrome : rien à saisir ; Opera : « Changelog ») :
