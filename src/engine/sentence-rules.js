@@ -15,6 +15,8 @@ const FC_MIN_WORDS_FOR_PUNCT = 3;
 
 const FC_FIRST_WORD = /^\s*(\p{Ll}[\p{L}\p{M}'’-]*)/u;
 const FC_LAST_WORD = /(\p{L}[\p{L}\p{M}\p{N}'’-]*)\s*$/u;
+// Words only chat messages use, in English and French.
+const FC_CHAT_ANYWHERE = /(?<![\p{L}'’])(ok|okay|lowkey|highkey|lol|lmao|lmfao|rofl|omg|omw|idk|idc|lmk|btw|tbh|imo|imho|ngl|rn|smh|thx|pls|plz|ty|np|wyd|hbu|ikr|ttyl|brb|gonna|wanna|gotta|kinda|sorta|y['’]all|ugh|ha(ha)+|he(he)+|xd|mdr|ptdr|jpp|tkt|stp|svp|bcp|dsl|slt|wsh|bisous|bises)(?![\p{L}'’])/iu;
 const FC_LIST_MARKER = /^\s*([-*•–—>]|\d+[.)]|[a-z][.)])\s/u;
 const FC_FINITE_VERB = /:(Ip|Iq|Is|If|K|Sp|Sq|E)/;
 const FC_CHAT_START = /^\s*(lol|mdr|ptdr|omg|lmao|haha+|hihi|wow|yeah|yep|nope|ouais|bah|bof|ah|oh|oups|oops|ok|okay|ok\b|btw|jpp|tkt|wsh)(?![\p{L}])/u;
@@ -115,7 +117,12 @@ function fcSentenceRules(paragraph, existing, spellChecker, prevEnd, lang = "fr"
   // A post ending on hashtags or a mention ("…the login bug #teamwork"), blanked by the
   // mask: the tags close it, no full stop wanted.
   const endsOnTag = !!last && /\s{3,}$/.test(paragraph.slice(last.index + last[1].length));
-  if (last && !listItem && !signature && !continued && !endsOnTag && words.length >= FC_MIN_WORDS_FOR_PUNCT &&
+  // A chat message ("Lol I can't believe you did that", "Omw! Traffic's not too bad"):
+  // nobody ends a text with a full stop.
+  const chat = FC_CHAT_ANYWHERE.test(paragraph) || /\p{Extended_Pictographic}/u.test(paragraph) ||
+    // A last sentence with no subject, the way texts are written ("Should be here in 30 min").
+    lang === "en" && /(^|[.!?]\s+)(just|should|watching|heading|getting|going|coming|leaving|running|can't|cant|gotta|need|needs|omw|be|been|got|love|loving|missing|miss|so|sooo+)\b[^.!?]*$/i.test(paragraph.trim());
+  if (last && !listItem && !signature && !continued && !endsOnTag && !chat && words.length >= FC_MIN_WORDS_FOR_PUNCT &&
       fcLooksLikeSentence(paragraph, spellChecker, lang)) {
     const word = last[1];
     const start = last.index;

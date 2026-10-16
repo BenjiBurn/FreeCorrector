@@ -298,6 +298,8 @@ function looksLikeName(text, start, word, replacements = []) {
   // A first name the frequency list knows well (it comes from film subtitles;
   // typos such as "alot" or "untill" are far less frequent than names).
   if (frequency(word) >= 3) return true;
+  // "Priyanka says it's…": an unknown capitalized word acting as a subject.
+  if (/^\s+(says|said|is|was|has|had|told|thinks|wants|just|will|can|and|loves|likes|got|gets|went|made)\b/.test(text.slice(start + word.length))) return true;
   return /^\s*(,|and\b|&)\s*\p{Lu}/u.test(text.slice(start + word.length));
 }
 
@@ -398,6 +400,13 @@ async function lintParagraph(paragraph) {
       if (kind === "Capitalization" && forHarper.slice(0, offset).trimEnd().length !== paragraph.slice(0, offset).trimEnd().length) continue;
       // Guesses with nothing to offer ("You may be missing a preposition").
       if (kind === "Miscellaneous" && !replacements.length) continue;
+      // "the deploy's been pushed": a known word + 's (is, has, possessive), not a typo.
+      if ((kind === "Spelling" || kind === "Typo") && /^\p{L}+['’]s$/u.test(word) && frequency(word.slice(0, -2).toLowerCase()) >= 2) continue;
+      // "reduce the heat to low": a setting, not "too low".
+      if (/^to$/i.test(word) && replacements.some((r) => /^too$/i.test(r)) &&
+          /\b(reduce|reduced|turn|turned|set|lower|lowered|raise|raised|increase|increased|bring|adjust|change|changed|switch|drop|dropped|cut|move|moved|slide)\b[^.!?]{0,25}$/i.test(paragraph.slice(Math.max(0, offset - 40), offset))) continue;
+      // "the camera is fire": slang for great, not "fired".
+      if (/^fire$/i.test(word) && /\b(is|was|so|'s|’s|straight|lowkey|kinda)\s+$/i.test(paragraph.slice(Math.max(0, offset - 12), offset))) continue;
       // "Peace and quiet", "the quiet of the night": "quiet" is a noun here, not "quite".
       if (/^quiet$/i.test(word) && /\b(and|the|some|of|for|in|a|bit of|peace and)\s+$/i.test(paragraph.slice(Math.max(0, offset - 12), offset))) continue;
       // "does anyone want anything?": after do/does/did, the verb stays bare.

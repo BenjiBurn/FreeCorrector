@@ -4,7 +4,7 @@
 // Loaded by both workers (classic script and ES module): exposes a global.
 
 // Short consonant-only words that are real abbreviations, not commands.
-const FC_KEPT_ABBREVIATIONS = /^(st|nd|rd|th|mr|mrs|ms|dr|pp|cf|pm|km|cm|mm|kg|mg|ml|bcp|pk|pq|mdr|ptdr|stp|svp|tkt|jsp|rdv|slt|bjr|bsr|dsl|mtn|cqfd|tv|pc|cv|sms|mms|hlm|bd|cd|dvd|sncf|rh|pdg|ps|nb|ttc|ht|tva|qqn|qqch|pcq|tjs|tjr|tjrs|mrc|pr|nvx|ds|ns|vs|ss|lb|lbs|hr|hrs|wk|xx|xxx|ty|thx|pls|plz|brb|btw|fyi|idk|dm|dms|ppl|msg|mph|gps)$/i;
+const FC_KEPT_ABBREVIATIONS = /^(st|nd|rd|th|mr|mrs|ms|dr|pp|cf|pm|km|cm|mm|kg|mg|ml|bcp|pk|pq|mdr|ptdr|stp|svp|tkt|jsp|rdv|slt|bjr|bsr|dsl|mtn|cqfd|tv|pc|cv|sms|mms|hlm|bd|cd|dvd|sncf|rh|pdg|ps|nb|ttc|ht|tva|qqn|qqch|pcq|tjs|tjr|tjrs|mrc|pr|nvx|ds|ns|vs|ss|lb|lbs|hr|hrs|wk|xx|xxx|ty|thx|pls|plz|brb|btw|fyi|idk|dm|dms|ppl|msg|mph|gps|rn|smh|ngl|lmk|ttyl|wyd|hbu|tbh|thx)$/i;
 
 self.fcMaskCode = (text) => {
   const blank = (s) => s.replace(/[^\n]/g, " ");
