@@ -117,6 +117,7 @@ const FC_HYPHEN_COMPOUNDS = {
   "essuie glace": { fix: "essuie-glace" }, "essuie glaces": { fix: "essuie-glaces" }, "casse croûte": { fix: "casse-croûte" },
   "gratte ciel": { fix: "gratte-ciel" }, "porte parole": { fix: "porte-parole" }, "presse agrumes": { fix: "presse-agrumes" },
   "avant hier": { fix: "avant-hier" }, "après demain": { fix: "après-demain" }, "porte bagages": { fix: "porte-bagages" },
+  "cocotte minute": { fix: "cocotte-minute" }, "cocote minute": { fix: "cocotte-minute" }, "cocottes minute": { fix: "cocottes-minute" },
   "sous sol": { fix: "sous-sol", needDet: /^(le|un|au|du|mon|ton|son|notre|votre|leur|ce)$/ },
 };
 

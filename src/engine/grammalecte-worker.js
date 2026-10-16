@@ -460,6 +460,26 @@ function checkParagraph(paragraph) {
     // Borrowed words ("les ramen", "des tapas") keep their own plural.
     if (self.FC_INFORMAL_WORDS.has(m.word.toLowerCase())) continue;
     if (insideEnglishQuote(paragraph, err.nStart)) continue;
+    // "une cocote minute": a verb form after a determiner is mostly a misspelled noun
+    // ("cocotte"), not a verb to put in the plural ("cocotes"): close nouns go first.
+    if (/det_verbe_nom/.test(m.ruleId) && !/\s/.test(m.word)) {
+      const lower = m.word.toLowerCase();
+      // The word is valid, so the speller offers nothing: try a consonant doubled or
+      // undoubled ("cocote" -> cocotte), then the speller's own neighbours.
+      const variants = [];
+      for (let k = 1; k < lower.length; k++) {
+        if (!/[bcdfglmnprst]/.test(lower[k])) continue;
+        variants.push(lower.slice(0, k + 1) + lower.slice(k));
+        if (lower[k] === lower[k - 1]) variants.push(lower.slice(0, k) + lower.slice(k + 1));
+      }
+      const nouns = [...variants, ...fcSpellSuggestions(spellChecker, lower, 8)]
+        .filter((s, n, all) => all.indexOf(s) === n && s !== lower && !s.includes(" ") && spellChecker.isValid(s) &&
+          spellChecker.getMorph(s).some((x) => /:N/.test(x)));
+      if (nouns.length) {
+        m.replacements = nouns.slice(0, 2);
+        m.replacements.only = [...m.replacements]; // the context ranking only orders these
+      }
+    }
     // "Les bolides miniatures sortent": a plural noun or adjective after the subject, not
     // a verb ("miniaturent"), when the real verb comes right after it.
     if (/conj_/.test(m.ruleId) && /[sx]$/i.test(m.word) &&
