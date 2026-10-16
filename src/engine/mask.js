@@ -35,6 +35,8 @@ self.fcMaskCode = (text) => {
     .replace(/(?<![\p{L}\p{N}_.])(?:\p{L}\.){2,}/gu, (m) => " ".repeat(m.length))
     // #hashtags and #channels
     .replace(/(?<![\p{L}\p{N}_&])#[\p{L}\p{N}_-]+/gu, blank)
+    // package-manager commands: "npm install", "npm run build", "git commit", "docker compose up"
+    .replace(/(?<![\p{L}\p{N}_])(?:npm|pnpm|yarn|npx|pip3?|apt(?:-get)?|brew|git|docker|cargo|gem|composer|winget|choco|kubectl)\s+(?:install|i|add|remove|rm|uninstall|run|build|test|start|init|update|upgrade|ci|exec|publish|clone|pull|push|commit|checkout|merge|rebase|status|log|diff|compose|ps|up|down|get|fetch|stash|branch|switch|reset|restore)(?:\s+(?:build|dev|start|test|lint|serve|up|down|watch|prod|deploy))?(?![\p{L}\p{N}_])/giu, blank)
     // command-line options: --watch, -v, -d
     .replace(/(?<=^|\s)(--[a-z][\w-]*|-[a-zA-Z]{1,2})(?=\s|$|[.,;)])/gm, blank)
     // all-consonant lowercase commands: npm, nvm, pnpm (not "bcp", "mdr", "km")

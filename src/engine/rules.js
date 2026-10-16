@@ -76,7 +76,9 @@ function fcLooksLikeProperNoun(paragraph, start, word) {
     } catch {
       // No dictionary at hand.
     }
-    return !near.some((s) => key(s) === key(word));
+    // (Another name only an accent away is no hint: "Kévin" and "Kevin".)
+    const common = (s) => /['’\s]/.test(s) || spellChecker.isValidToken(s.toLowerCase());
+    return !near.some((s) => key(s) === key(word) && common(s));
   }
   // Followed by "et" + another capitalized word: "Ahmed et Leïla".
   return /^\s+(et|ou|&)\s+\p{Lu}/u.test(paragraph.slice(start + word.length));
@@ -262,7 +264,9 @@ function fcCustomRules(paragraph, spellChecker, existing) {
         (/^(pas|plus|bien|jamais|vraiment)$/.test(prevLower) && FC_KNOW_VERBS.test(prev2?.lower ?? ""));
       const nounBefore = FC_TIME_PLACE_NOUNS.test(prevLower);
       const subjectAfter = FC_SUBJECTS.has(next.lower) || /^(c’|j’|s’|n’|est|sont|se|en|y)$/.test(next.lower);
-      if ((verbBefore || nounBefore) && subjectAfter) {
+      // "Quelqu’un sait ou acheter des joints ?": an infinitive after a verb of knowing.
+      const infinitiveAfter = verbBefore && fcHas(morph(next), /:Y/) && !fcHas(morph(next), /:[NA]/);
+      if ((verbBefore || nounBefore) && subjectAfter || infinitiveAfter) {
         add(t, "où", "Confusion probable : « où » (lieu, moment) plutôt que « ou » (choix).");
       }
     }
@@ -453,13 +457,21 @@ function fcCustomRules(paragraph, spellChecker, existing) {
     let subj = i - 1;
     while (subj > 0 && /^(se|s’|me|m’|te|t’|le|la|l’|les|lui|leur|en|y|ne|n’|nous|vous)$/.test(tokens[subj].lower) && subj > i - 4) subj--;
     if (subj !== i - 1 && /^(nous|vous)$/.test(tokens[subj + 1]?.lower) && !FC_SUBJECTS.has(tokens[subj].lower)) subj++;
-    const subject = tokens[subj];
-    if (subject && FC_SUBJECTS.has(subject.lower) && subject.lower !== "qui" && /^(que|qu’)$/.test(tokens[subj - 1]?.lower ?? "")) {
+    let subject = tokens[subj];
+    // A noun subject: "Bien que le vendeur est sympa" -> soit
+    let nounPerson = "";
+    if (subj === i - 1 && tokens[i - 2] && /^(le|la|l’|les|mon|ma|mes|ton|ta|tes|son|sa|ses|notre|votre|nos|vos|leur|leurs|ce|cet|cette|ces)$/.test(tokens[i - 2].lower) &&
+        fcHas(morph(subject), /:N/) && !fcHas(morph(subject), /:V/) && /^(que|qu’)$/.test(tokens[i - 3]?.lower ?? "")) {
+      nounPerson = fcHas(morph(subject), /:N:.:p/) && !fcHas(morph(subject), /:N:.:s/) ? "3p" : "3s";
+      subject = tokens[i - 2];
+      subj = i - 2;
+    }
+    if (subject && (nounPerson || FC_SUBJECTS.has(subject.lower)) && subject.lower !== "qui" && /^(que|qu’)$/.test(tokens[subj - 1]?.lower ?? "")) {
       const prevLower = subject.lower;
       const trigger = tokens[subj - 2]?.lower ?? "";
       if (/^(faut|faudrait|faudra|fallait|veux|veut|voulez|voudrais|voudrait|souhaite|souhaites|aimerais|aimerait|pour|avant|afin|sans|bien|attends|attend|préfère|préfères|préférerais|exige|demande|important|nécessaire|essentiel|normal|dommage|possible|peur)$/.test(trigger)) {
         const ind = morph(t).find((m) => /:V.*:Ip/.test(m) && !/:Sp/.test(m));
-        const person = { je: "1s", "j’": "1s", tu: "2s", il: "3s", elle: "3s", on: "3s", nous: "1p", vous: "2p", ils: "3p", elles: "3p", ça: "3s", cela: "3s" }[prevLower];
+        const person = nounPerson || { je: "1s", "j’": "1s", tu: "2s", il: "3s", elle: "3s", on: "3s", nous: "1p", vous: "2p", ils: "3p", elles: "3p", ça: "3s", cela: "3s" }[prevLower];
         if (ind && person && !fcHas(morph(t), new RegExp(`:Sp.*:${person}|:${person}.*:Sp`))) {
           const lemma = ind.slice(1, ind.indexOf("/"));
           let form = "";
@@ -475,9 +487,25 @@ function fcCustomRules(paragraph, spellChecker, existing) {
 
     // "Je les ai vu" -> vus (direct object "les" before avoir: the participle agrees)
     if (prevLower.match(/^(ai|as|a|avons|avez|ont|avais|avait|avions|aviez|avaient|aurais|aurait)$/) && prev2?.lower === "les" &&
-        fcHas(morph(t), /:Q(:A)?:m:s/) && !fcHas(morph(t), /:Q(:A)?:.:[pi]/) && !(next && /^(les|la|le|l’|un|une|des|du|de|ces|mes|tes|ses)$/.test(next.lower))) {
-      const plural = String(suggVerbPpas(t.lower, ":m:p") || "").split("|").filter(Boolean)[0];
-      if (plural && plural !== t.lower) add(t, plural, "Le participe passé s’accorde avec « les », placé avant l’auxiliaire avoir.");
+        fcHas(morph(t), /:Q(:A)?:m:s/) && !fcHas(morph(t), /:Q(:A)?:.:[pi]/) && !(next && /^(les|la|le|l’|un|une|des|du|de|ces|mes|tes|ses)$/.test(next.lower)) &&
+        // "je les ai fait changer": before an infinitive, no agreement.
+        !(next && fcHas(morph(next), /:Y/) && !fcHas(morph(next), /:[NA]/))) {
+      // "Les clés, je les ai laissé" -> laissées: the plural noun named earlier gives the gender.
+      let feminine = false;
+      for (let k = i - 3; k >= Math.max(0, i - 12); k--) {
+        if (/^[.!?;]$/.test(tokens[k].text)) break;
+        const noun = morph(tokens[k]).find((m) => /:N:[mfe]:[pi]/.test(m));
+        if (noun && /^(les|des|ces|mes|tes|ses|nos|vos|leurs)$/.test(tokens[k - 1]?.lower ?? "")) {
+          feminine = /:N:f/.test(noun);
+          break;
+        }
+      }
+      const plural = String(suggVerbPpas(t.lower, feminine ? ":f:p" : ":m:p") || "").split("|").filter(Boolean)[0];
+      const masculine = String(suggVerbPpas(t.lower, ":m:p") || "").split("|").filter(Boolean)[0];
+      if (plural && plural !== t.lower) {
+        if (feminine && masculine) add(t, [plural, masculine], "Le participe passé s’accorde avec « les », placé avant l’auxiliaire avoir.", true);
+        else add(t, plural, "Le participe passé s’accorde avec « les », placé avant l’auxiliaire avoir.");
+      }
     }
 
     // "Je pense quel est partie" -> qu’elle
@@ -517,6 +545,14 @@ function fcCustomRules(paragraph, spellChecker, existing) {
         (adverbFirst || (tokens[i + 3] && !/^[,.;:!?)]$/.test(tokens[i + 3].text)))) {
       add({ start: t.start, end: next.end, text: t.text + next.text }, "s’est", "Verbe pronominal : « s’est » (se + être), pas « c’est ».", true);
     }
+    // "Ma fille c’est fait mal" -> s’est, after a noun subject, with verbs that are mostly
+    // pronominal ("Le ménage c’est fait" is "done": left alone).
+    if (t.lower === "c’" && next?.lower === "est" && next2 && prev && fcHas(morph(prev), /:N/) && !fcHas(morph(prev), /:V/) &&
+        /^(mon|ma|ton|ta|son|sa|notre|votre|leur|le|la|l’)$/.test(prev2?.lower ?? "") && (!tokens[i - 3] || /^[.!?;:]$/.test(tokens[i - 3].text)) &&
+        (next2.lower === "fait" && tokens[i + 3]?.lower === "mal" ||
+         /^(blessée?|cassée?|endormie?|réveillée?|levée?|couchée?|trompée?|perdue?|mariée?|inscrite?|plainte?|disputée?|enfuie?|évanouie?|noyée?|cognée?|brûlée?|coupée?|tordue?|foulée?|énervée?|fâchée?|excusée?|souvenue?|rendu compte)$/.test(next2.lower))) {
+      add({ start: t.start, end: next.end, text: t.text + next.text }, "s’est", "Verbe pronominal : « s’est » (se + être), pas « c’est ».", true);
+    }
 
     // "Il a eu sont permis" -> son (after a past participle of avoir)
     if (t.lower === "sont" && prev && fcHas(morph(prev), /:Q/) && prev2 && /^(ai|as|a|avons|avez|ont|avait|avais|avaient|aura)$/.test(prev2.lower) &&
@@ -528,14 +564,27 @@ function fcCustomRules(paragraph, spellChecker, existing) {
     // (the object "que" comes before avoir; an indirect pronoun may sit in between)
     let s = i - 2; // the subject, before avoir and any "m’", "lui"…
     const subjectAfterQue = (k) => tokens[k] && FC_SUBJECTS.has(tokens[k].lower) && /^(que|qu’)$/.test(tokens[k - 1]?.lower ?? "");
-    if (!subjectAfterQue(s) && /^(m’|t’|me|te|lui|leur|nous|vous)$/.test(tokens[s]?.lower ?? "")) s--;
-    if (prev && /^(ai|as|a|avons|avez|ont|avais|avait|avions|aviez|avaient)$/.test(prevLower) && tokens[s] && FC_SUBJECTS.has(tokens[s].lower) &&
-        /^(que|qu’)$/.test(tokens[s - 1]?.lower ?? "") && tokens[s - 2] && fcHas(morph(t), /:Q(:A)?:m:[si]/) &&
-        (!next || /^[,.;:!?)]$/.test(next.text) || /^(sont|est|était|étaient|sera|seront|hier|ce|cette|la|le|l’|à|en|sur|pour|avant)$/.test(next.lower))) {
-      const antecedent = tokens[s - 2];
+    if (!subjectAfterQue(s) && /^(m’|t’|me|te|lui|leur|nous|vous)$/.test(tokens[s]?.lower ?? "") &&
+        // ("Quelle belle soirée nous avons passé": there "nous" is the subject.)
+        (!/^(nous|vous)$/.test(tokens[s].lower) || FC_SUBJECTS.has(tokens[s - 1]?.lower ?? "") || /^(que|qu’)$/.test(tokens[s - 3]?.lower ?? ""))) s--;
+    // A noun subject: "les factures que la mutuelle m’a remboursé"
+    if (tokens[s] && !FC_SUBJECTS.has(tokens[s].lower) && fcHas(morph(tokens[s]), /:N/) && !fcHas(morph(tokens[s]), /:V/) &&
+        /^(le|la|l’|les|mon|ma|mes|ton|ta|tes|son|sa|ses|notre|votre|nos|vos|leur|leurs|ce|cet|cette|ces)$/.test(tokens[s - 1]?.lower ?? "") &&
+        /^(que|qu’)$/.test(tokens[s - 2]?.lower ?? "")) s--;
+    // "Quelle belle soirée nous avons passé !": the noun after "quel" is the object.
+    const exclamative = tokens[s] && FC_SUBJECTS.has(tokens[s].lower) && tokens[s - 1] && fcHas(morph(tokens[s - 1]), /:N/) &&
+      [tokens[s - 2], tokens[s - 3]].some((x) => /^(quel|quelle|quels|quelles)$/.test(x?.lower ?? ""));
+    if (prev && /^(ai|as|a|avons|avez|ont|avais|avait|avions|aviez|avaient)$/.test(prevLower) && tokens[s] &&
+        (FC_SUBJECTS.has(tokens[s].lower) || /^(que|qu’)$/.test(tokens[s - 1]?.lower ?? "") && s < i - 2) &&
+        (exclamative || /^(que|qu’)$/.test(tokens[s - 1]?.lower ?? "") && tokens[s - 2]) && fcHas(morph(t), /:Q(:A)?:m:[si]/) &&
+        (!next || /^[,.;:!?)]$/.test(next.text) || /^(sont|est|était|étaient|sera|seront|hier|ce|cette|la|le|l’|à|en|sur|pour|avant|ne|n’|ensemble|depuis|dans|chez)$/.test(next.lower) ||
+         // "Les factures que tu m’as remboursé datent de janvier": a conjugated verb follows.
+         (fcHas(morph(next), /:V[^/]*:(Ip|Iq|If|K)/) && !fcHas(morph(next), /:(Y|N|A|D|R|W)/)))) {
+      const antecedent = exclamative ? tokens[s - 1] : tokens[s - 2];
       const noun = morph(antecedent).find((m) => /:N:[mfe]:[spi]/.test(m));
       const gender = noun?.match(/:N:([mfe]):([spi])/);
-      if (gender && (gender[1] === "f" || gender[2] === "p")) {
+      // ("la première fois que le prof a parlé": "fois" is never the object.)
+      if (gender && (gender[1] === "f" || gender[2] === "p") && !/^fois$/i.test(antecedent.text)) {
         const want = `:${gender[1] === "f" ? "f" : "m"}:${gender[2] === "p" ? "p" : "s"}`;
         const form = String(suggVerbPpas(t.lower, want) || "").split("|").filter(Boolean)[0];
         if (form && form !== t.lower) add(t, form, `Le participe passé s’accorde avec « ${antecedent.text} », complément placé avant avoir.`);
@@ -685,10 +734,13 @@ function fcCustomRules(paragraph, spellChecker, existing) {
     // "Mon frère et malade" -> est (a noun cannot be coordinated with an adjective)
     if (t.lower === "et" && prev && next && fcHas(morph(prev), /:N/) && !fcHas(morph(prev), /:A/) && !isPluralNoun(prev) &&
         (isAdjOnly(next) || (isPpas(next) && !fcHas(morph(next), /:N/)) ||
-         (isAdj(next) && (!next2 || /^[.!?,;:]$/.test(next2.text) || /^(depuis|aujourd’hui|hier|ce|cette|maintenant|en|très|trop|comme)$/.test(next2.lower)))) &&
-        prev2 && fcHas(morph(prev2), /:D/) && !fcHas(morph(next), /:(R|G)/) &&
-        // The noun phrase is the subject: it opens the sentence ("Mon frère et malade").
-        (!tokens[i - 3] || /^[.!?;:]$/.test(tokens[i - 3].text))) {
+         (isAdj(next) && (!next2 || /^[.!?,;:]$/.test(next2.text) || /^(depuis|aujourd’hui|hier|ce|cette|maintenant|en|très|trop|comme)$/.test(next2.lower))) ||
+         // "l’embrayage et un peu dur", "le moteur et très bruyant"
+         (/^(très|trop|vraiment|assez|plutôt|toujours|encore|déjà|hyper|tellement|super)$/.test(next.lower) && isAdj(next2) && !fcHas(morph(next2), /:V/)) ||
+         (next.lower === "un" && next2?.lower === "peu" && isAdj(tokens[i + 3]) && !fcHas(morph(tokens[i + 3]), /:V/))) &&
+        prev2 && fcHas(morph(prev2), /:D/) && (!fcHas(morph(next), /:(R|G)/) || next.lower === "un") &&
+        // The noun phrase is the subject: it opens the sentence or a clause ("Mon frère et malade").
+        (!tokens[i - 3] || /^[.!?;:]$/.test(tokens[i - 3].text) || /^(mais|car|donc|puis|alors)$/.test(tokens[i - 3].lower))) {
       add(t, "est", "Confusion probable : « est » (verbe être) plutôt que « et ».", true);
     }
 
@@ -714,7 +766,9 @@ function fcCustomRules(paragraph, spellChecker, existing) {
     // "Ses parents son très gentils", "Ce son mes amis" -> sont
     if (t.lower === "son" && prev && next &&
         (isPluralNoun(prev) || /^(ce|ces|qui|ils|elles|eux)$/.test(prevLower)) &&
-        (/^(très|trop|bien|vraiment|pas|tous|toutes|toujours|jamais|déjà|encore|si|tellement|mes|tes|ses|nos|vos|leurs|des|les|ces|là|ici|partis|venus|allés|arrivés)$/.test(next.lower) || isAdjOnly(next) || (isPpas(next) && !fcHas(morph(next), /:N/)))) {
+        (/^(très|trop|bien|vraiment|pas|tous|toutes|toujours|jamais|déjà|encore|si|tellement|mes|tes|ses|nos|vos|leurs|des|les|ces|là|ici|partis|venus|allés|arrivés)$/.test(next.lower) || isAdjOnly(next) || (isPpas(next) && !fcHas(morph(next), /:N/)) ||
+         // "Mes tomates son couvertes": a plural participle never follows the possessive "son".
+         (isPpas(next) && fcHas(morph(next), /:Q[^/]*:p/) && isPluralNoun(prev)))) {
       add(t, "sont", "Confusion probable : « sont » (verbe être) plutôt que « son ».", true);
     }
 
@@ -1512,7 +1566,10 @@ function fcRoundFourRules(tokens, i, { add, morph, apo, paragraph, spellChecker 
   const words = sentence.map((x) => x.lower).join(" ");
 
   // "Mon voisin ce plaint" -> se (a conjugated verb, not a noun, after "ce")
-  if (t.lower === "ce" && next && fcHas(morph(next), /:V[^/]*:(Ip|Iq|If|K|Sp):3[sp]/) && !fcHas(morph(next), /:N|:A|:D/) &&
+  // ("Le chat de ma voisine ce cache toujours": a noun-verb, then an adverb, after a noun.)
+  if (t.lower === "ce" && next && (fcHas(morph(next), /:V[^/]*:(Ip|Iq|If|K|Sp):3[sp]/) && !fcHas(morph(next), /:N|:A|:D/) ||
+       prev && fcHas(morph(prev), /:N/) && prev2 && fcHas(morph(prev2), /:D/) && fcHas(morph(next), /:V\d_[^:/]*q[^/]*:Ip[^/]*:3s/) && !fcHas(morph(next), /:A|:D/) &&
+       /^(toujours|souvent|jamais|parfois|encore|régulièrement|sous|derrière|chez|dès|tout|vite|bien|mal)$/.test(R2)) &&
       !/^(sont|est|fut|furent|sera|seront|serait|seraient|était|étaient|doit|doivent|devait|devrait|peut|peuvent|pouvait|pourrait|semble|semblait|sembla)$/.test(R1) &&
       !/^(de|à|par|pour|sur|dans|avec|sans|que|qu’)$/.test(L1)) {
     add(t, "se", "Devant un verbe pronominal : « se » (il se plaint).", true);
@@ -1522,8 +1579,10 @@ function fcRoundFourRules(tokens, i, { add, morph, apo, paragraph, spellChecker 
     add(t, apo("s’est"), "« S’est » (se + est) : « il s’est bien passé ».", true);
   }
   // "Les voisins on refait" -> ont (a plural noun is the subject)
-  if (t.lower === "on" && prev && prev2 && /^(les|des|mes|tes|ses|nos|vos|leurs|ces|plusieurs)$/.test(L2) && fcHas(morph(prev), /:N[^/]*:[pi]/) &&
-      next && (isPpOnly(next) || fcHas(morph(next), /:Q/) && fcHas(morph(next), /:V/))) {
+  // ("Les voisins du dessus on refait": a complement may follow the noun.)
+  const pluralHead = (k) => tokens[k] && /^(les|des|mes|tes|ses|nos|vos|leurs|ces|plusieurs)$/.test(tokens[k - 1]?.lower ?? "") && fcHas(morph(tokens[k]), /:N[^/]*:[pi]/);
+  if (t.lower === "on" && prev && prev2 && (pluralHead(i - 1) || /^(du|de|d’|des)$/.test(L2) && fcHas(morph(prev), /:N/) && pluralHead(i - 3)) &&
+      next &&(isPpOnly(next) || fcHas(morph(next), /:Q/) && fcHas(morph(next), /:V/))) {
     add(t, "ont", "Le verbe « avoir » au pluriel : « ils ont ».", true);
   }
   // "elle sans est bien sortie" -> s’en
@@ -1838,5 +1897,40 @@ function fcRoundFourRules(tokens, i, { add, morph, apo, paragraph, spellChecker 
   // "chez la boulangerie" -> à la boulangerie (chez + a person, à + a place)
   if (t.lower === "chez" && /^(la|le)$/.test(R1) && (R1 === "la" ? FC_SHOPS_FEM : FC_SHOPS_MASC).test(R2)) {
     add(span(t, next), R1 === "la" ? "à la" : "au", "« Chez » s’emploie avec une personne ; pour un lieu : « à la boulangerie ».", true);
+  }
+  // ---------- Sixth blind round (2026-10-16) ----------
+  // "il faut si prendre tôt" -> s’y ("si" never comes before an infinitive)
+  if (t.lower === "si" && next && fcHas(morph(next), /:Y/) && !fcHas(morph(next), /:[NA]/) &&
+      /^(faut|faudra|faudrait|fallait|va|vont|peut|peuvent|doit|doivent|pourra|pourrait|devra|devrait)$/.test(L1)) {
+    add(t, apo("s’y"), "Devant un infinitif : « s’y » (il faut s’y prendre tôt).", true);
+  }
+  // "tenir les rennes" -> rênes (the reins; "les rennes" are reindeer)
+  const reinVerb = /^(tenir|tiens|tient|tienne|tiennes|tiennent|tenait|tenu|tenez|prendre|prend|prends|prenne|prenez|pris|reprendre|reprend|repris|lâcher|lâche|lâché|confier|confie|confié|passer|passe|passé|serrer|tirer|tire)$/;
+  if (/^rennes$/.test(t.lower) && /^(les|ses|des|mes|tes|leurs)$/.test(L1) &&
+      (reinVerb.test(L2) || /^(mieux|bien|fermement|toujours|encore|déjà|enfin|vite|solidement)$/.test(L2) && reinVerb.test(L3))) {
+    add(t, "rênes", "Les « rênes » (lanières pour diriger un cheval) ; les « rennes » sont des animaux.", true);
+  }
+  // "un repère de brigands" -> repaire (a den)
+  if (t.lower === "repère" && /^(de|d’)$/.test(R1) &&
+      /^(brigands|voleurs|bandits|pirates|malfrats|dealers|trafiquants|supporters|fans|geeks|ivrognes|hipsters|motards|gamers|loups|rats|fauves|truands|escrocs|pickpockets|touristes|étudiants|artistes|bobos)$/.test(R2)) {
+    add(t, "repaire", "Un « repaire » (lieu où se retrouvent des gens, un abri) ; un « repère » sert à s’orienter.", true);
+  }
+  // "La faîte des voisins" -> fête ("le faîte" is the top of a roof)
+  if (t.lower === "faîte" && /^(la|une|cette|ma|ta|sa|notre|votre|leur|belle|grande|petite|bonne)$/.test(L1)) {
+    add(t, "fête", "« Le faîte » est le sommet d’un toit ; ici : « la fête ».", true);
+  }
+  // "mon conte épargne" -> compte (a bank account)
+  if (/^contes?$/.test(t.lower) && (/^(épargne|bancaire|bancaires|courant|courants|joint|pro|professionnel|client|perso|personnel|utilisateur|rendu|rendus|titres|chèque|chèques|à|en)$/.test(R1) && !(R1 === "à" && R2 !== "rebours") && !(R1 === "en" && R2 !== "banque") ||
+      /^(rendre|rend|rends|rendu|rendue|rendez|rendait|tenir|tient|tiens|tenu|tenez|bon|fin)$/.test(L1) && !/^(de|un|une|le|la|les|des)$/.test(L2) && L1 !== "fin" || L1 === "fin" && L2 === "de")) {
+    add(t, t.lower.replace("conte", "compte"), "« Compte » (en banque, rendre compte) ; un « conte » est une histoire.", true);
+  }
+  // "Les voisins fond du bruit" -> font (faire, after a plural subject)
+  if (t.lower === "fond" && prev && (/^(ils|elles)$/.test(L1) || prev2 && fcHas(morph(prev), /:N(:A)?:[mfe]:p/) && !fcHas(morph(prev), /:N(:A)?:[mfe]:[si]|:V/) && fcHas(morph(prev2), /:D/)) &&
+      /^(du|de|des|la|le|les|un|une|pas|rien|tout|ça|ce|leur|leurs|attention|confiance|exprès|semblant|partie|peur|mal|plaisir|toujours|souvent|encore|n’importe)$/.test(R1)) {
+    add(t, "font", "Le verbe « faire » : « ils font » ; « le fond » est un nom.", true);
+  }
+  // "prendre contacte avec" -> contact (the noun)
+  if (/^contactes?$/.test(t.lower) && /^(prendre|prends|prend|prenez|prenons|prennent|pris|prise|repris|reprendre|garder|gardé|garde|en|le|du|bon|premier)$/.test(L1)) {
+    add(t, "contact", "Le nom « contact » (prendre contact) ; « contacte » est le verbe.", true);
   }
 }

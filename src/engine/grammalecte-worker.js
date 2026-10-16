@@ -451,6 +451,8 @@ function checkParagraph(paragraph) {
       url: err.URL || "",
     };
     if (!picky && fcIsTypographicOnly(m.word, m.replacements)) continue;
+    // "Oh là là", "ah là là là": an interjection, not a doubled word.
+    if (/doublon/.test(m.ruleId) && /^là(\s+là)+$/i.test(m.word)) continue;
     // Holidays ("le 14 Juillet", "le 8 Mai") and titles ("Germinal") keep their capital.
     if (/maj_mois/.test(m.ruleId) && (/^(vendémiaire|brumaire|frimaire|nivôse|pluviôse|ventôse|germinal|floréal|prairial|messidor|thermidor|fructidor)$/i.test(m.word) ||
         /(^|\s)(14|1er|8|11|15)\s+$/.test(paragraph.slice(0, err.nStart)))) continue;

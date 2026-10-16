@@ -53,6 +53,9 @@ self.FC_INFORMAL_WORDS = new Set([
   "endpoints", "payload", "payloads", "webhook", "webhooks", "middleware", "runtime", "debugger", "linter", "parser",
   "bundle", "bundler", "dataset", "datasets", "notebook", "notebooks", "prompt", "prompts", "chatbot", "chatbots",
   "localhost", "publickey", "stdout", "stderr", "stdin", "sudo", "async", "config", "configs",
+  // DIY and gaming words French uses every day ("du placo", "farmer de l’or")
+  "placo", "placos", "farmer", "farme", "farmes", "farment", "farmé", "farmée", "farmez", "farmait", "farming",
+  "loot", "looter", "nerf", "nerfé", "buff", "buffé", "stuff", "stuffé", "rush", "rusher", "spawn", "respawn", "skin", "skins", "lag", "laguer",
   // American chat words and slang, and brands people type every day.
   "omw", "lmk", "idk", "idc", "tbh", "imo", "imho", "ngl", "smh", "wyd", "hbu", "ikr", "ttyl", "rn", "thx", "pls", "plz", "lol", "lmao", "lmfao",
   "lowkey", "highkey", "fam", "bougie", "rizz", "sus", "yeet", "adulting", "hangry", "bestie", "besties", "selfie", "selfies", "vibe", "vibes", "vibing", "ghosted", "ghosting",

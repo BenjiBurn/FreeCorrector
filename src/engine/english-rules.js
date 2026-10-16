@@ -27,6 +27,8 @@ const VERB_FOR_NOUN = { discus: "discuss", breath: "breathe", advice: "advise", 
 const EN_MISSPELLINGS = {
   febuary: "february", wensday: "wednesday", wendsday: "wednesday", wednsday: "wednesday", tuesay: "tuesday", thrusday: "thursday",
   neice: "niece", yatch: "yacht", colleage: "colleague", colleages: "colleagues", sence: "sense", consequenses: "consequences", wich: "which", whitch: "which", collegue: "colleague", collegues: "colleagues",
+  worstest: "worst", bestest: "best", comfortabler: "more comfortable", beautifuller: "more beautiful", expensiver: "more expensive",
+  nobodys: "nobody's", everybodys: "everybody's", somebodys: "somebody's", anybodys: "anybody's", everyones: "everyone's", someones: "someone's", anyones: "anyone's",
   mispell: "misspell", mispelled: "misspelled", supercede: "supersede", tounge: "tongue", definately: "definitely",
   definatly: "definitely", definitly: "definitely", seperate: "separate", seperately: "separately", occured: "occurred",
   occurence: "occurrence", accomodate: "accommodate", accomodation: "accommodation", untill: "until", beleive: "believe",
@@ -713,6 +715,7 @@ export function englishRules(paragraph, existing, frequency = () => 0) {
 
     roundThreeRules(toks, i, paragraph, add, frequency);
     roundFourRules(toks, i, paragraph, add, frequency);
+    roundSevenRules(toks, i, paragraph, add, frequency);
   }
 
   // ---------- Phrases borrowed from other languages ----------
@@ -852,7 +855,9 @@ function enSubject(toks, vi, frequency) {
     if (isDet && opens(s, false)) {
       const words = toks.slice(s + 1, e + 1);
       // Lowercase words only: no names or titles ("The New York office").
-      if (words.some((x) => !/^[\p{Ll}-]+$/u.test(x.text) || EN_SUBJ_STOP.test(x.lower))) return null;
+      // (After a preposition, names are fine: "the price of the new GPUs".)
+      const prepAt = words.findIndex((x) => EN_PREP.test(x.lower));
+      if (words.some((x, k) => (prepAt < 0 || k < prepAt) && !/^[\p{Ll}-]+$/u.test(x.text) || EN_SUBJ_STOP.test(x.lower))) return null;
       if (EN_INDEF.test(w.lower)) return !words.length || EN_PREP.test(words[0].lower) ? { num: "sg" } : null;
       const firstPrep = words.findIndex((x) => EN_PREP.test(x.lower));
       const nounPart = firstPrep < 0 ? words : words.slice(0, firstPrep);
@@ -868,7 +873,7 @@ function enSubject(toks, vi, frequency) {
       if (EN_PREP.test(words.at(-1).lower) || EN_DET_ANY.test(words.at(-1).lower) || EN_DET_SG.test(words.at(-1).lower)) return null;
       // "Ten dollars is too much": an amount is singular.
       if (/^(dollars|euros|pounds|cents|years|hours|minutes|seconds|miles|kilometers|kilometres|percent|days|weeks|months|meters|metres|feet|inches|grams|kilos|liters|litres|gallons)$/.test(head.lower)) return null;
-      let num = enNounNumber(head, frequency);
+      let num = enNounNumber(head, frequency) ?? (enLooksPlural(head, frequency) ? "pl" : null);
       // "A lot of people", "the majority of students": the noun after "of" decides.
       if (/^(lot|lots|majority|bunch|plenty|half|rest|none|most|some|all|any)$/.test(head.lower) && words[firstPrep]?.lower === "of") {
         const after = words.slice(firstPrep + 1);
@@ -917,7 +922,7 @@ function roundThreeRules(toks, i, paragraph, add, frequency) {
   const clauseStart = isBoundary(prev) || /^(and|but|so|because|if|when|then)$/.test(L1);
 
   // ---------- Agreement ----------
-  if (/^[\p{Ll}']+$/u.test(t.text)) {
+  if (/^[\p{Ll}'’]+$/u.test(t.text)) {
     const subject = (/^(is|was|are|were|has|have|do|does|don't|doesn't|isn't|aren't|wasn't|weren't|hasn't|haven't)$/.test(t.lower) ||
       EN_VERBS.has(t.lower) || enBaseOfThird(t.lower)) ? enSubject(toks, i, frequency) : null;
     if (subject) {
@@ -932,7 +937,7 @@ function roundThreeRules(toks, i, paragraph, add, frequency) {
         fix(toPl[t.lower], "The subject is plural: use a plural verb.");
       } else if (subject.num === "i" && /^(is|are)$/.test(t.lower) && !(t.lower === "are" && toks[i - 2]?.lower === "and")) {
         fix("am", "With “I”, use “am”.");
-      } else if (subject.num === "sg" && EN_VERBS.has(t.lower) && !/^(got|get|gets|getting|let|lets)$/.test(L1) && !/^(be|do|have)$/.test(t.lower) && !EN_SAME_PAST.test(t.lower) && verbLike && R1 !== "to" &&
+      } else if (subject.num === "sg" && EN_VERBS.has(t.lower) && !/^(got|get|gets|getting|let|lets)$/.test(L1) && !/^(be|do|have)$/.test(t.lower) && !EN_SAME_PAST.test(t.lower) && verbLike && (R1 !== "to" || /^(need|want|forget|try|plan|hope|love|hate|decide|agree|refuse|seem|tend|expect|remember|start|begin|prefer|learn|manage|promise|wish|deserve|choose|offer|intend|pretend|threaten)$/.test(t.lower)) &&
           !(t.lower === "like" && !/^(it|this|that|him|her|them|me|you|us|to|my|your|his|our|their)$/.test(R1)) || subject.num === "sg" && t.lower === "use" && R1 !== "to" && verbLike) {
         const third = enThirdPerson(t.lower);
         if (frequency(third) >= 2.5) fix(third, `The subject is singular: “${third}”.`);
@@ -1877,6 +1882,156 @@ function roundFourRules(toks, i, paragraph, add, frequency) {
   }
   if (t.lower === "to" && /^(capable)$/.test(L1) && lowerWord(next) && frequency(ingForm(R1)) >= 2.5) fix(`of ${ingForm(R1)}`, "“Capable of doing”.", t.start, next.end);
   if (t.lower === "to" && /^(thank|thanks)$/.test(L2) && L1 === "you" && lowerWord(next) && EN_VERBS.has(R1)) fix(`for ${ingForm(R1)}`, "“Thank you for doing”.", t.start, next.end);
+}
+
+// ---------- Seventh blind round: reviews, forums, school and work (2026-10-16) ----------
+const EN_PAST_VERB = (w, frequency) => /^\p{Ll}+ed$/u.test(w) && frequency(w) >= 2.5 || !!EN_PAST_TO_BASE[w] ||
+  /^(is|was|has|had|keeps|kept|needs|looks|seems|broke|ate|ran|got|left|fell|bit|hit|cut|split|stopped|died|won|lost)$/.test(w);
+const EN_ED_ADJECTIVES = /^(tired|scared|excited|bored|worried|interested|done|married|invited|allowed|supposed|needed|wanted|loved|missed|welcomed|qualified|located|based|prepared|dressed|stressed|blessed|obsessed|surprised|annoyed|confused|exhausted|organized|engaged|related|used|covered|stuck)$/;
+const EN_OBJECT_VERBS = /^(told|tell|tells|gave|give|gives|sent|send|sends|asked|ask|asks|invited|invite|helped|help|thanked|thank|called|call|showed|show|let|made|make|took|take|drove|drive|joined|join|emailed|email|texted|text|paid|pay|warned|warn|taught|teach|met|meet|saw|see|hired|hire|picked|pick|contacted|contact|reminded|remind|congratulated|blamed|treated|kept|left|brought|bring|offered|offer)$/;
+const EN_UNCOUNT_FOOD = /^(sugar|salt|water|milk|butter|flour|oil|time|money|traffic|noise|space|stress|sleep|caffeine|fat|meat|cheese|food|work|effort|energy|light|heat|rice|bread|pasta|coffee|tea|juice|sauce|garlic|pepper|cream|soup|gas|fuel|power|data|storage|memory|ram|homework|stuff)$/;
+
+function enPluralOf(word) {
+  return /[^aeiou]y$/i.test(word) ? `${word.slice(0, -1)}ies` : /(s|sh|ch|x|z)$/i.test(word) ? `${word}es` : `${word}s`;
+}
+
+function enLooksPlural(tok, frequency) {
+  if (!tok || !/^\p{Ll}+s$/u.test(tok.text) || NOT_PLURAL.test(tok.lower) || /(ss|us|is|ics|news)$/.test(tok.lower) || EN_EITHER_NUMBER.test(tok.lower)) return false;
+  const w = tok.lower;
+  return [w.slice(0, -1), /ies$/.test(w) ? `${w.slice(0, -3)}y` : "", /es$/.test(w) ? w.slice(0, -2) : ""].some((x) => x && frequency(x) >= 2.5);
+}
+
+function roundSevenRules(toks, i, paragraph, add, frequency) {
+  const t = toks[i];
+  const prev = toks[i - 1], next = toks[i + 1], next2 = toks[i + 2];
+  const L1 = prev?.lower ?? "", L2 = toks[i - 2]?.lower ?? "", R1 = next?.lower ?? "", R2 = next2?.lower ?? "", R3 = toks[i + 3]?.lower ?? "";
+  const atStart = i === 0 || isBoundary(prev);
+  const fix = (replacement, message, start = t.start, end = t.end, keepCase = false) => add(start, end, replacement, message, { override: true, keepCase });
+  const lowerNoun = (x) => !!x && /^\p{Ll}+$/u.test(x.text) && frequency(x.lower) >= 3 && !/(ing|ly|ful|ous|ive|able|ible)$/.test(x.lower) && !YOURE_FOLLOWERS.test(x.lower) && !EN_DET_ANY.test(x.lower) && !EN_PREP.test(x.lower);
+  let s = i;
+  while (s > 0 && !/^[.!?;]$/.test(toks[s - 1].text)) s--;
+  const before = toks.slice(s, i);
+  const sentenceHas = (re) => toks.slice(s, Math.min(toks.length, i + 15)).some((x) => re.test(x.lower));
+
+  // "I think you’re cat knocked over our planter" -> your ; "it’s lid cracked" -> its
+  // (a noun, then its verb: "you're dog tired" is an adjective)
+  if (/^(you're|it's)$/.test(t.lower) && lowerNoun(next) && next2 && /^\p{Ll}+$/u.test(next2.text) &&
+      EN_PAST_VERB(R2, frequency) && !EN_ED_ADJECTIVES.test(R2) && !/^(been|got|gotten|getting|time|okay|ok)$/.test(R1) && !enBaseOfThird(R1) && !EN_PAST_TO_BASE[R1] && !/ed$/.test(R1)) {
+    if (t.lower === "you're") fix("your", "Did you mean “your” (belonging to you)?");
+    else fix("its", "Possessive: “its” (no apostrophe); “it's” means it is.");
+  }
+  // "Everyone made the trip accept our goalie" -> except (a verb already came after "everyone")
+  if (t.lower === "accept" && next && /^(our|my|his|her|their|the|for|one|two|me|him|them|us)$/.test(R1) && !/^(to|will|would|can|could|should|must|might|may|did|didn't|not|never|always|i|you|we|they|he|she|please)$/.test(L1)) {
+    const k = before.findIndex((x) => /^(everyone|everybody|all|every|nobody|everything)$/.test(x.lower));
+    if (k >= 0 && before.slice(k + 1).some((x) => /^\p{Ll}+ed$/u.test(x.text) && frequency(x.lower) >= 2.5 || EN_PAST_TO_BASE[x.lower])) {
+      fix("except", "Did you mean “except” (apart from)?");
+    }
+  }
+  // "The dishwasher is quiet loud" -> quite (before an adjective)
+  if (t.lower === "quiet" && /^(is|was|are|were|be|been|seems|seemed|looks|looked|sounds|sounded|it's|that's|feels|felt|got|gets)$/.test(L1) &&
+      /^(loud|noisy|large|tasty|impressive|popular|common|rare|bright|heavy|sweet|spicy|salty|pricey|pricy|slow|quick|useful|helpful|annoying|sure|right|good|nice|bad|big|small|cheap|expensive|hard|easy|fast|different|similar|interesting|boring|funny|tired|busy|happy|sad|strong|weak|long|short|old|new|clear|good-looking|comfortable|uncomfortable|tight|loose|hot|cold|warm|dark|light|simple|complicated|confusing|difficult|frankly|honestly|possibly|literally|a)$/.test(R1)) {
+    fix("quite", "Did you mean “quite” (fairly, very)?");
+  }
+  // "I could barely breath" -> breathe (an adverb between the modal and the verb)
+  if (VERB_FOR_NOUN[t.lower] && /^(barely|hardly|just|even|not|never|still|really|finally|actually|only|always|also)$/.test(L1) &&
+      /^(to|will|can|could|would|should|must|might|may|can't|couldn't|won't|wouldn't|didn't|don't|doesn't|cannot)$/.test(L2)) {
+    fix(VERB_FOR_NOUN[t.lower], `Use the verb “${VERB_FOR_NOUN[t.lower]}”.`);
+  }
+  // "Our principle sent home a letter" -> principal (a person who acts)
+  if (t.lower === "principle" && /^(our|my|your|his|her|their|the|school|new|vice|assistant)$/.test(L1) &&
+      /^(sent|said|says|called|calls|told|tells|announced|emailed|wrote|asked|wants|wanted|is|was|has|had|gave|met|came|decided|approved|suspended)$/.test(R1) && !/^(of|behind)$/.test(R2)) {
+    fix("principal", "The head of a school is the “principal”.");
+  }
+  // "slam on the break" -> brake
+  if (/^(break|breaks)$/.test(t.lower) && L1 === "the" &&
+      toks.slice(Math.max(0, i - 4), i - 1).some((x) => /^(slam|slammed|slamming|slams|hit|hitting|hits|press|pressed|pressing|pump|pumped|tap|tapped|apply|applied|stomp|stomped|step|stepped|jam|jammed|squeeze|squeezed)$/.test(x.lower))) {
+    fix(t.lower === "breaks" ? "brakes" : "brake", "The pedal that stops a car is the “brake”.");
+  }
+  // "Last Saturday the coach lead the team" -> led (a past marker in the sentence)
+  if (t.lower === "lead" && prev && lowerNoun(prev) && /^(the|us|them|a|an|our|his|her|their|me|him|everyone|everybody|my|your)$/.test(R1) &&
+      before.some((x, k) => /^(yesterday|ago)$/.test(x.lower) || x.lower === "last" && /^(night|week|year|month|time|season|saturday|sunday|monday|tuesday|wednesday|thursday|friday|summer|winter|spring|fall)$/.test(before[k + 1]?.lower ?? ""))) {
+    fix("led", "Past tense of “lead”: “led”.");
+  }
+  // "I have no idea wear I put the key" -> where
+  if (t.lower === "wear" && /^(i|you|he|she|we|they|it|the|my|your|our|his|her|their)$/.test(R1) &&
+      /^(idea|know|knows|knew|sure|remember|remembered|wonder|wondering|ask|asked|tell|forgot|forget|figure|out|see|guess|clue)$/.test(L1)) {
+    fix("where", "Did you mean “where” (which place)?");
+  }
+  // "Our team had less injuries" -> fewer (plurals in -ies)
+  if (t.lower === "less" && /^\p{Ll}+ies$/u.test(next?.text ?? "") && frequency(`${R1.slice(0, -3)}y`) >= 3) {
+    fix("fewer", "With countable plurals, use “fewer”.");
+  }
+  // "Use fewer sugar" -> less (an uncountable noun)
+  if (t.lower === "fewer" && (EN_UNCOUNT_STRICT.test(R1) || EN_UNCOUNT_FOOD.test(R1))) fix("less", "With uncountable nouns, use “less”.");
+  // "The amount of people" -> number (countable)
+  if (t.lower === "amount" && R1 === "of" && next2 && (EN_IRREG_PL.test(R2) || /^\p{Ll}+s$/u.test(next2.text) && enNounNumber(next2, frequency) === "pl" && !EN_EITHER_NUMBER.test(R2))) {
+    fix("number", "With countable plurals, use “number of”.");
+  }
+  // "I don't have much friends", "How much calories" -> many
+  if (t.lower === "much" && next && (EN_IRREG_PL.test(R1) || enLooksPlural(next, frequency)) &&
+      !/^(too|so|very|as|thank|thanks|that|this)$/.test(R1) && !/^(very|thank|thanks|so|too|how)$/.test(L1 === "how" ? "" : L1)) {
+    fix("many", "With countable plurals, use “many”.");
+  }
+  // "Jake and me went" -> I (the subject)
+  if (t.lower === "me" && L1 === "and" && toks[i - 2] && (/^\p{Lu}\p{Ll}+$/u.test(toks[i - 2].text) && (i - 2 === s) || /^(my|his|her|our|their)$/.test(toks[i - 3]?.lower ?? "") && i - 3 === s) &&
+      next && (EN_PAST_VERB(R1, frequency) || /^(are|were|have|will|would|can|could|should|went|go|love|like|want|need|both|always|never|just|used)$/.test(R1))) {
+    fix("I", "As a subject, use “I”.");
+  }
+  // "contact Maria or myself" -> me ; "My wife and myself have lived" -> I
+  if (t.lower === "myself" && /^(and|or)$/.test(L1)) {
+    if (next && /^(have|had|are|were|will|would|can|could|went|go|live|lived|love|loved|both|always|never|just|decided|agreed|plan|planned)$/.test(R1) && !before.some((x) => x.text === "I" || x.lower === "me")) {
+      fix("I", "As a subject, use “I”.");
+    } else if ((!next || isPunct(next) || /^(if|with|for|about|by|at|on|before|after|anytime)$/.test(R1)) && !before.some((x) => x.text === "I" || /^(me|my)$/.test(x.lower)) &&
+        before.some((x) => /^(contact|email|call|ask|tell|text|reach|to|with|for|from|between|cc|message|ping|see|join)$/.test(x.lower))) {
+      fix("me", "“Myself” only refers back to “I”: “contact Maria or me”.");
+    }
+  }
+  // "send them shoes back", "Them shoes are" -> those
+  if (t.lower === "them" && next && /^\p{Ll}+s$/u.test(next.text) && enNounNumber(next, frequency) === "pl" &&
+      (/^(back|are|were|is|over|here|there|look|looks|fit|fits|cost|costs)$/.test(R2) && !EN_OBJECT_VERBS.test(L1) || atStart && /^(are|were|look|cost|fit|is)$/.test(R2) || /^(send|sent|return|returned|take|took)$/.test(L1) && R2 === "back")) {
+    fix("those", "Did you mean “those”?");
+  }
+  // "gave the jerseys to Tyler and I", "told my roommate and I that" -> me (an object)
+  if (t.text === "I" && L1 === "and" && (!next || isPunct(next) || /^(that|after|before|about|for|a|an|the|some|how|what|if|when|back|up|out|at|on|in|with|yesterday|today|tomorrow|last|this|and|over|together)$/.test(R1))) {
+    const k = i - 2;
+    const opener = toks.slice(Math.max(s, k - 3), k).reverse().find((x) => EN_PREP.test(x.lower) || EN_OBJECT_VERBS.test(x.lower));
+    const name = toks[k] && (/^\p{Lu}\p{Ll}+$/u.test(toks[k].text) || lowerNoun(toks[k]) || /^(you|him|her|them|us)$/.test(toks[k].lower));
+    if (opener && name && opener.lower !== "between" && !/^(like|than|as)$/.test(opener.lower)) fix("me", "As an object, use “me”: “to Tyler and me”.", t.start, t.end, true);
+  }
+  // "Her and her sister run a bakery", "Him and his brother fixed it" -> She, He
+  // (Not a short answer: "Him and me? No way.")
+  if (/^(her|him)$/.test(t.lower) && atStart && R1 === "and" && next2 && toks[i + 3] && !isPunct(toks[i + 3]) && !/^[?!]$/.test(toks[i + 3].text)) {
+    fix(t.lower === "her" ? "She" : "He", "As a subject, use “she” or “he”.", t.start, t.end, true);
+  }
+  // "Us gamers just want" -> We
+  if (t.lower === "us" && atStart && enLooksPlural(next, frequency) &&
+      (EN_ADV.test(R2) || /^(are|were|have|had|want|need|know|love|can|will|should|deserve|always|never)$/.test(R2))) {
+    fix("We", "As a subject, use “we”.", t.start, t.end, true);
+  }
+  // "Whom is bringing the snacks?" -> Who (the subject)
+  if (t.lower === "whom" && atStart && /^(is|was|has|will|wants|needs|knows|keeps|did|does|can|could|would|should)$/.test(R1) &&
+      next2 && (/^\p{Ll}+ing$/u.test(next2.text) || /^(the|a|an|this|that|it|my|your|our|their|his|her)$/.test(R2) && !/^(did|does|can|could|would|should|will|is|was|has)$/.test(R1))) {
+    fix("Who", "As a subject, use “who”.", t.start, t.end, true);
+  }
+  // "tow the line" -> toe ; "a doggy-dog world" -> dog-eat-dog
+  if (/^(tow|towed|towing|tows)$/.test(t.lower) && R1 === "the" && R2 === "line") fix(t.lower.replace("tow", "toe"), "The phrase is “toe the line”.");
+  if (t.lower === "doggy" && next?.text === "-" && R2 === "dog") fix("dog-eat-dog", "The phrase is “dog-eat-dog”.", t.start, next2.end);
+  // "its'" -> its
+  if (t.lower === "its" && next && /^['’]$/.test(next.text) && next.start === t.end) fix("its", "Possessive: “its”, no apostrophe.", t.start, next.end);
+  // Plurals written with an apostrophe: "The Johnson's are hosting", "banana's are",
+  // "three plumber's out", "All the player's need to", "two puppy’s are" -> puppies
+  const plain = t.text.replace(/’/g, "'");
+  if (/^\p{L}+'s$/u.test(plain) && !/^(that|it|what|there|here|he|she|who|let|one|where|how|when|why|everyone|someone|nobody|everybody|somebody|anyone|anybody|everything|nothing|something|else|today|now|today|other|another)'s$/.test(t.lower)) {
+    const stem = plain.slice(0, -2);
+    const plural = enPluralOf(stem);
+    const lowerStem = /^\p{Ll}/u.test(stem);
+    const counted = toks.slice(Math.max(s, i - 3), i).some((x) => /^(\d+|two|three|four|five|six|seven|eight|nine|ten|many|several|few|both|multiple|dozens|all)$/.test(x.lower));
+    if (lowerStem && /^(are|were)$/.test(R1) && L1 !== "else" ||
+        lowerStem && counted && (/^(out|over|here|there|left|ago|are|were|have)$/.test(R1) || R1 === "need" && R2 === "to") ||
+        !lowerStem && L1 === "the" && i - 1 === s && /^(are|were|have|had)$/.test(R1)) {
+      fix(plural, "A plural takes no apostrophe.", t.start, t.end, true);
+    }
+  }
 }
 
 // The apostrophe form of a contraction typed without it, or null.

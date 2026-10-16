@@ -17,7 +17,9 @@ const FC_FIRST_WORD = /^\s*(\p{Ll}[\p{L}\p{M}'’-]*)/u;
 const FC_LAST_WORD = /(\p{L}[\p{L}\p{M}\p{N}'’-]*)\s*$/u;
 // Words only chat messages use, in English and French.
 const FC_CHAT_ANYWHERE = /(?<![\p{L}'’])(ok|okay|lowkey|highkey|lol|lmao|lmfao|rofl|omg|omw|idk|idc|lmk|btw|tbh|imo|imho|ngl|rn|smh|thx|pls|plz|ty|np|wyd|hbu|ikr|ttyl|brb|gonna|wanna|gotta|kinda|sorta|y['’]all|ugh|ha(ha)+|he(he)+|xd|mdr|ptdr|jpp|tkt|stp|svp|bcp|dsl|slt|wsh|bisous|bises)(?![\p{L}'’])/iu;
-const FC_LIST_MARKER = /^\s*([-*•–—>]|\d+[.)]|[a-z][.)])\s/u;
+const FC_CHAT_FR = /(?<![\p{L}'’])(ouais|du coup|carrément|t['’]inquiète|t['’]inquiètes|à la bourre|chui|jsuis|j['’]suis|t['’]es|t['’]as|y['’]a|bisous|bises)(?![\p{L}'’])/iu;
+const FC_TU = /(?<![\p{L}'’])(tu|t['’]|te|toi|ton|ta|tes)(?![\p{L}])/iu;
+const FC_LIST_MARKER =/^\s*([-*•–—>]|\d+[.)]|[a-z][.)])\s/u;
 const FC_FINITE_VERB = /:(Ip|Iq|Is|If|K|Sp|Sq|E)/;
 const FC_CHAT_START = /^\s*(lol|mdr|ptdr|omg|lmao|haha+|hihi|wow|yeah|yep|nope|ouais|bah|bof|ah|oh|oups|oops|ok|okay|ok\b|btw|jpp|tkt|wsh)(?![\p{L}])/u;
 
@@ -121,7 +123,12 @@ function fcSentenceRules(paragraph, existing, spellChecker, prevEnd, lang = "fr"
   // nobody ends a text with a full stop.
   const chat = FC_CHAT_ANYWHERE.test(paragraph) || /\p{Extended_Pictographic}/u.test(paragraph) ||
     // A last sentence with no subject, the way texts are written ("Should be here in 30 min").
-    lang === "en" && /(^|[.!?]\s+)(just|should|watching|heading|getting|going|coming|leaving|running|can't|cant|gotta|need|needs|omw|be|been|got|love|loving|missing|miss|so|sooo+)\b[^.!?]*$/i.test(paragraph.trim());
+    lang === "en" && /(^|[.!?]\s+)(just|should|watching|heading|getting|going|coming|leaving|running|can't|cant|gotta|need|needs|omw|be|been|got|love|loving|missing|miss|so|sooo+)\b[^.!?]*$/i.test(paragraph.trim()) ||
+    // A short message to "tu" ("tu peux appeler si tu veux", "j’ai pas vu ton message"),
+    // or with spoken words ("du coup", "carrément"): a text message.
+    lang === "fr" && (FC_CHAT_FR.test(paragraph) || words.length <= 20 && FC_TU.test(paragraph)) ||
+    // A short afterthought after "!" or "?": "N’oublie pas le pain ! Et du beurre aussi".
+    /[!?]\s+[^.!?]+$/.test(paragraph) && (paragraph.split(/[!?]\s+/).pop().match(/[\p{L}\p{N}]+/gu) ?? []).length <= 4;
   if (last && !listItem && !signature && !continued && !endsOnTag && !chat && words.length >= FC_MIN_WORDS_FOR_PUNCT &&
       fcLooksLikeSentence(paragraph, spellChecker, lang)) {
     const word = last[1];

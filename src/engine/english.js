@@ -319,6 +319,9 @@ function dialectForm(word) {
     .replace(/mme(s)?$/, "m$1");
 }
 
+// British words the rules above do not turn into American ones ("practise", "cheque", "tyre").
+const EN_BRITISH = /^(practis(e|es|ed|ing)|cheques?|tyres?|kerbs?|aluminium|ploughs?|pyjamas|mums?|storeys|whilst|amongst|learnt|spelt|dreamt|burnt|aeroplanes?|manoeuvres?|jewellery|cosy|sceptical|enquir(y|ies|e|ed|ing)|fulfil|enrol|instalments?|ageing|judgements?|moustaches?|draughts?|offences?|licences?|defences?|programmes?|catalogues?|dialogues?|grey)$/i;
+
 function isDialectVariant(word, suggestion) {
   return word.toLowerCase() !== suggestion.toLowerCase() && dialectForm(word) === dialectForm(suggestion);
 }
@@ -375,7 +378,8 @@ async function lintParagraph(paragraph) {
       if (self.FC_INFORMAL_WORDS.has(word.toLowerCase())) continue;
       // "cancelled", "colour", "organise" are right in British English (and
       // "canceled" in American): only picky mode asks for the chosen dialect.
-      if (!picky && (kind === "Spelling" || kind === "Typo") && replacements.some((r) => isDialectVariant(word, r))) continue;
+      if (!picky && (kind === "Spelling" || kind === "Typo") && (replacements.some((r) => isDialectVariant(word, r)) ||
+          EN_BRITISH.test(word) || dialectForm(word) !== word.toLowerCase() && frequency(dialectForm(word)) >= 3)) continue;
       // "she hid", "they ran": a past form has no third-person -s.
       if (kind === "Agreement" && EN_IRREGULAR_PAST.test(word) && replacements.every((r) => /s$/i.test(r))) continue;
       // "1. a valid passport": a list item, not a sentence.
@@ -398,6 +402,8 @@ async function lintParagraph(paragraph) {
       if ((kind === "Spelling" || kind === "Typo") && /[^\x00-\x7F’]/.test(word)) continue;
       // Right after a blanked word ("Siobhán and"): not the start of a sentence.
       if (kind === "Capitalization" && forHarper.slice(0, offset).trimEnd().length !== paragraph.slice(0, offset).trimEnd().length) continue;
+      // "one serving", "one building": a count noun in -ing, not a mass noun.
+      if (kind === "Agreement" && replacements.length && replacements.every((r) => / piece of /.test(r)) && /ing$/i.test(word)) continue;
       // Guesses with nothing to offer ("You may be missing a preposition").
       if (kind === "Miscellaneous" && !replacements.length) continue;
       // "the deploy's been pushed": a known word + 's (is, has, possessive), not a typo.
@@ -414,7 +420,10 @@ async function lintParagraph(paragraph) {
           /\b(do|does|did|don't|doesn't|didn't|will|would|can|could|should|must|might|may)\s+\p{L}+\s+$/iu.test(paragraph.slice(Math.max(0, offset - 30), offset))) continue;
       // Never lowercase the first word of a sentence ("Who's coming?").
       const sentenceStart = /(^|[.!?…]\s+)["“‘'(]?$/.test(paragraph.slice(0, offset));
-      if (kind === "Capitalization" && sentenceStart && replacements[0] === word.toLowerCase()) continue;
+      const plainQuote = (w) => w.replace(/’/g, "'");
+      if (kind === "Capitalization" && sentenceStart && replacements[0] && plainQuote(replacements[0]) === plainQuote(word).toLowerCase()) continue;
+      // "Their being late cost us the set": a gerund after a possessive, not "they're".
+      if (!picky && /^their$/i.test(word) && /^\s+being\b/i.test(paragraph.slice(end))) continue;
       out.push({
         offset,
         length: end - offset,
