@@ -80,7 +80,7 @@ const FC_COLLOCATIONS = {
     "meilleur joueur du", "meilleur joueur de", "la meilleure saison", "meilleure saison du", "quel temps de",
     "prends une chaise", "voir le film", "à votre équipe", "pour ma mère", "pour mon père", "avec mon frère",
     "avec ma sœur", "une petite fête", "le ballon de", "perdu le ballon", "le match de", "du salon", "le tapis du salon",
-    "étal* la pâte", "la pâte sur", "coup de génie", "coup de théâtre", "fin du mois", "début du mois", "fin de la semaine",
+    "étal* la pâte", "coup de génie", "coup de théâtre", "fin du mois", "début du mois", "fin de la semaine",
     "ces derniers temps", "ces derniers jours", "par la fenêtre", "un cadeau pour", "rendez-vous chez", "en retard de",
     "au bout du fil", "de la pluie", "sous la neige", "le ciel est",
   ],

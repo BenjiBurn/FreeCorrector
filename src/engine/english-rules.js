@@ -380,7 +380,9 @@ export function englishRules(paragraph, existing, frequency = () => 0) {
     // "The documents was sent" -> were (determiner + regular plural noun + singular verb)
     if (prev && toks[i - 2] && /^(the|these|those|my|our|your|his|her|their|all|some|many|both|several)$/.test(toks[i - 2].lower) && (!toks[i - 3] || isPunct(toks[i - 3]) || /^(and|but|so|because|if|when|that)$/.test(toks[i - 3].lower)) &&
         /^(was|is|has)$/.test(t.lower) && /^\p{Ll}+s$/u.test(prev.text) && !/(ss|us|is|ics|ews|ies|ws)$/.test(prev.lower) &&
-        !NOT_PLURAL.test(prev.lower) && frequency(prev.lower.slice(0, -1)) >= 3 && frequency(prev.lower) >= 2) {
+        !NOT_PLURAL.test(prev.lower) && frequency(prev.lower.slice(0, -1)) >= 3 && frequency(prev.lower) >= 2 &&
+        // ("in so many applications was": "so many", not the conjunction "so".)
+        !(/^(many|few)$/.test(toks[i - 2].lower) && /^(so|too|how|as)$/.test(toks[i - 3]?.lower ?? ""))) {
       const fix = { was: "were", is: "are", has: "have" }[t.lower];
       add(t.start, t.end, fix, `“${prev.lower}” is plural: use “${fix}”.`);
     }
@@ -833,6 +835,8 @@ function enSubject(toks, vi, frequency) {
   const opens = (s, allowAnd) => {
     const p = toks[s - 1];
     if (toks.slice(Math.max(0, s - 4), s).some((x) => EN_SUBJUNCTIVE.test(x.lower))) return false;
+    // "in so many applications": "so many", not the conjunction "so".
+    if (/^(so|too|how|as)$/.test(p?.lower ?? "") && /^(many|few|much)$/.test(toks[s].lower)) return false;
     return isBoundary(p) || (EN_CLAUSE_OPENER.test(p.lower) && (allowAnd || !/^(and|that)$/.test(p.lower)));
   };
   const p = toks[e];
@@ -1025,7 +1029,9 @@ function roundThreeRules(toks, i, paragraph, add, frequency) {
 
   // ---------- Verb forms ----------
   // "I enjoy to swim" -> swimming
-  if (t.lower === "to" && EN_GERUND_VERBS.test(L1) && !/^(the|a|an|my|your|his|her|its|our|their|of|this|that)$/.test(L2) && next && /^\p{Ll}+$/u.test(next.text) && EN_VERBS.has(R1) && !/^(the|a|my|your|it|him|her|them|me|us)$/.test(R1)) {
+  // (Not the passive: "is widely considered to have been".)
+  if (t.lower === "to" && EN_GERUND_VERBS.test(L1) && !/^(the|a|an|my|your|his|her|its|our|their|of|this|that)$/.test(L2) && next && /^\p{Ll}+$/u.test(next.text) && EN_VERBS.has(R1) && !/^(the|a|my|your|it|him|her|them|me|us)$/.test(R1) &&
+      !toks.slice(Math.max(0, i - 4), i - 1).some((x) => /^(is|are|was|were|be|been|being|'s|'re)$/.test(x.lower))) {
     fix(ingForm(R1), `After “${L1}”, use the -ing form: “${ingForm(R1)}”.`, t.start, next.end);
   }
   // "We decided going" -> to go
@@ -1213,7 +1219,9 @@ function roundThreeRules(toks, i, paragraph, add, frequency) {
     fix("when", "Did you mean “when”?");
   }
   // "a nice women" -> woman ; "Three woman" -> women
-  if (t.lower === "women" && /^(a|an|one|this|that|every|each|another)$/.test(L1) || t.lower === "women" && /^(a|an|one|this|that|every|each|another)$/.test(L2) && /^\p{Ll}+$/u.test(prev?.text ?? "") && frequency(L1) >= 3 && !/^(of|men|young)$/.test(L1)) {
+  if (t.lower === "women" && /^(a|an|one|this|that|every|each|another)$/.test(L1) || t.lower === "women" && /^(a|an|one|this|that|every|each|another)$/.test(L2) && /^\p{Ll}+$/u.test(prev?.text ?? "") && frequency(L1) >= 3 && !/^(of|men|young)$/.test(L1) &&
+      // ("the ban that prohibited women": a verb between, not an adjective.)
+      !/ed$/.test(L1) && !EN_VERBS.has(L1)) {
     if (!/^'?s$/.test(R1)) fix("woman", "One person: “woman”.");
   }
   if (t.lower === "woman" && /^(two|three|four|five|six|seven|eight|nine|ten|many|several|few|these|those|some|other|both|\d+)$/.test(L1) && !/^('s|s)$/.test(R1)) {
@@ -1600,7 +1608,9 @@ function roundFourRules(toks, i, paragraph, add, frequency) {
     fix(next.text, `After “${L1}”, no “to”.`, t.start, next.end, true);
   }
   // "He suggested to postpone" (any verb)
+  // (Not the passive: "is widely considered to have been".)
   if (t.lower === "to" && EN_GERUND_VERBS.test(L1) && !/^(the|a|an|my|your|his|her|its|our|their|of|this|that)$/.test(L2) && lowerWord(next) &&
+      !toks.slice(Math.max(0, i - 4), i - 1).some((x) => /^(is|are|was|were|be|been|being|'s|'re)$/.test(x.lower)) &&
       frequency(ingForm(R1)) >= 2.5 && !/^(the|a|an|my|your|it|him|her|them|me|us|be)$/.test(R1)) {
     fix(ingForm(R1), `After “${L1}”, use the -ing form: “${ingForm(R1)}”.`, t.start, next.end);
   }

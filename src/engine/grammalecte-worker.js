@@ -460,6 +460,10 @@ function checkParagraph(paragraph) {
     // Borrowed words ("les ramen", "des tapas") keep their own plural.
     if (self.FC_INFORMAL_WORDS.has(m.word.toLowerCase())) continue;
     if (insideEnglishQuote(paragraph, err.nStart)) continue;
+    // "ils en font partie": before a verb, "en" is the pronoun, not the preposition.
+    if (/det_verbe_nom/.test(m.ruleId) && /(^|[^\p{L}])en\s+$/iu.test(paragraph.slice(Math.max(0, err.nStart - 4), err.nStart))) continue;
+    // "Les volcans Somma en font partie": a capitalized name is not a verb to conjugate.
+    if (/conj_/.test(m.ruleId) && /^\p{Lu}\p{Ll}/u.test(m.word) && !/(^|[.!?]\s*)$/.test(paragraph.slice(0, err.nStart).trimEnd())) continue;
     // "une cocote minute": a verb form after a determiner is mostly a misspelled noun
     // ("cocotte"), not a verb to put in the plural ("cocotes"): close nouns go first.
     if (/det_verbe_nom/.test(m.ruleId) && !/\s/.test(m.word)) {

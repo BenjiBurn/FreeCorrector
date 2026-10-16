@@ -1,6 +1,6 @@
 // False-alarm check on real, edited prose: a few Wikipedia articles in French and
 // English. Every alert there is suspect; new rules must not add any.
-// node tests/wiki.js [fr|en] [--show RULE_ID]
+// node tests/wiki.js [fr|en] [--show RULE_ID or prefixes, comma-separated: FC_,gv1__conf]
 // The articles are downloaded once into tests/.wiki/ (git-ignored, CC BY-SA texts).
 const fs = require("fs");
 const path = require("path");
@@ -62,7 +62,7 @@ async function article(lang, title) {
         for (const m of await call("check", { text: paragraph })) {
           const id = m.ruleId.replace(/__b\d.*$/, "");
           counts.set(id, (counts.get(id) ?? 0) + 1);
-          if (show && id === show) console.log(`   [${m.word} -> ${m.replacements[0]}] …${paragraph.slice(Math.max(0, m.offset - 40), m.offset + m.length + 40)}…`);
+          if (show && show.split(",").some((p) => id.startsWith(p))) console.log(`   [${m.word} -> ${m.replacements[0]}] …${paragraph.slice(Math.max(0, m.offset - 40), m.offset + m.length + 40)}…`);
         }
       }
     }

@@ -665,7 +665,7 @@ function fcCustomRules(paragraph, spellChecker, existing) {
     // ("du pain … du fromage"), not "Le chat est un mâle".
     // ("le football est le sport": only partitives, "du … est du …", for "est".)
     const sameArticle = prev2 && next && (/^(du|des)$/.test(prev2.lower) && /^(du|des)$/.test(next.lower) ||
-      (t.lower === "où" && prev2.lower === next.lower));
+      (t.lower === "où" && prev2.lower === next.lower && (!tokens[i + 3] || /^[.!?,;:)]$/.test(tokens[i + 3].text) || /^(et|ou)$/.test(tokens[i + 3].lower))));
     if (/^(est|où)$/.test(t.lower) && prev && next && fcHas(morph(prev), /:N/) && !fcHas(morph(prev), /:V/) && sameArticle &&
         next2 && fcHas(morph(next2), /:N/) &&
         (t.lower === "où" || !tokens.slice(Math.max(0, i - 4), i).some((x) => FC_SUBJECTS.has(x.lower) && x.lower !== "qui"))) {
@@ -683,7 +683,7 @@ function fcCustomRules(paragraph, spellChecker, existing) {
     const isAdj = (x) => x && fcHas(morph(x), /:A/) && !isFinite(x) && !fcHas(morph(x), /:(R|G|D)/);
 
     // "Mon frère et malade" -> est (a noun cannot be coordinated with an adjective)
-    if (t.lower === "et" && prev && next && fcHas(morph(prev), /:N/) && !fcHas(morph(prev), /:A/) &&
+    if (t.lower === "et" && prev && next && fcHas(morph(prev), /:N/) && !fcHas(morph(prev), /:A/) && !isPluralNoun(prev) &&
         (isAdjOnly(next) || (isPpas(next) && !fcHas(morph(next), /:N/)) ||
          (isAdj(next) && (!next2 || /^[.!?,;:]$/.test(next2.text) || /^(depuis|aujourd’hui|hier|ce|cette|maintenant|en|très|trop|comme)$/.test(next2.lower)))) &&
         prev2 && fcHas(morph(prev2), /:D/) && !fcHas(morph(next), /:(R|G)/) &&
@@ -856,7 +856,7 @@ function fcCustomRules(paragraph, spellChecker, existing) {
 
     // "des questions important" -> importantes (the adjective agrees with the noun)
     if (prev && /^(des|les|mes|tes|ses|nos|vos|leurs|ces|plusieurs|quelques|deux|trois)$/.test(prev2?.lower ?? "") &&
-        isPluralNoun(prev) && isAdj(t) && fcHas(morph(t), /:A:[me]:s|:A:m:[si]/) && !fcHas(morph(t), /:A:.:[pi]/) &&
+        isPluralNoun(prev) && /^\p{Ll}/u.test(prev.text) && isAdj(t) && fcHas(morph(t), /:A:[me]:s|:A:m:[si]/) && !fcHas(morph(t), /:A:.:[pi]/) &&
         (!next || /^[.!?,;:]$/.test(next.text) || /^(mais|pour|dans|à|qui|que)$/.test(next.lower)) &&
         // "les gens marchant dans la rue": a present participle with its complement, invariable.
         // ("des questions important à régler": "à" + infinitive goes with the adjective.)
@@ -878,7 +878,8 @@ function fcCustomRules(paragraph, spellChecker, existing) {
         isPpas(t) && !fcHas(morph(t), /:Q(:A)?:m:[si]/)) {
       const lemma = morph(t).find((m) => /:Q/.test(m))?.match(/^>([^/]+)\//)?.[1] ?? "";
       const indirect = /^(parler|téléphoner|sourire|succéder|plaire|déplaire|complaire|ressembler|mentir|nuire|suffire|écrire|dire|demander|répondre|parler|rire|convenir|survivre)$/.test(lemma);
-      const objectAfter = next && /^(les|la|le|l’|un|une|des|ses|sa|son|leurs|leur)$/.test(next.lower) && next2 && fcHas(morph(next2), /:N/);
+      const objectAfter = next && /^(les|la|le|l’|un|une|des|ses|sa|son|leurs|leur)$/.test(next.lower) && next2 && fcHas(morph(next2), /:N/) &&
+        !/^(que|qu’|où|dont|ainsi|alors)$/.test(tokens[i - 3]?.lower ?? "");
       if (indirect || objectAfter) {
         const form = String(suggVerbPpas(t.lower, ":m:s") || "").split("|").filter(Boolean)[0];
         if (form && form !== t.lower) add(t, form, indirect ? `« Se ${lemma} » : on parle à quelqu’un, le participe reste invariable.` : "Le complément d’objet vient après : le participe reste invariable.", true);
@@ -1033,7 +1034,8 @@ function fcCustomRules(paragraph, spellChecker, existing) {
     }
 
     // "Il parle Français" -> français (languages take no capital)
-    if (FC_LANGUAGE_NAMES.test(t.lower) && /^\p{Lu}/u.test(t.text) && prev &&
+    // ("En Corse": the island, not the language.)
+    if (FC_LANGUAGE_NAMES.test(t.lower) && /^\p{Lu}/u.test(t.text) && prev && !(t.lower === "corse" && prevLower === "en") &&
         /^(parle|parles|parlons|parlez|parlent|parler|apprends|apprend|apprenons|apprenez|apprennent|apprendre|étudie|étudies|étudier|comprends|comprend|comprendre|en|traduit|traduire|enseigne|cours)$/.test(prevLower)) {
       add(t, t.lower, "Les noms de langues s’écrivent en minuscule.", true, true);
     }
@@ -1200,7 +1202,9 @@ function fcCustomRules(paragraph, spellChecker, existing) {
       while (k >= 0 && !/^[.!?]$/.test(tokens[k].text)) k--;
       const clause = tokens.slice(k + 1, i);
       const si = clause.findIndex((x) => /^(si|s’)$/.test(x.lower));
-      const imperfect = si >= 0 && clause.slice(si + 1, si + 4).some((x) => fcHas(morph(x), /:V[^/]*:Iq/));
+      // (« il ne sera plus demain »: a quotation starts a new clause after the "si".)
+      const imperfect = si >= 0 && clause.slice(si + 1, si + 4).some((x) => fcHas(morph(x), /:V[^/]*:Iq/)) &&
+        !clause.slice(si).some((x) => /^[«"“:]$/.test(x.text));
       const person = morph(t).find((m) => /:If/.test(m))?.match(/:If:([123][sp])/)?.[1];
       if (imperfect && person) {
         const lemma = morph(t).find((m) => /:If/.test(m)).match(/^>([^/]+)\//)[1];
@@ -1342,7 +1346,9 @@ function fcRoundThreeRules(tokens, i, { add, morph, apo, paragraph, spellChecker
       const before = tokens[qi - 1];
       // "Les tartes que ma grand-mère a…": a determiner + noun right before "que", only a subject between.
       if (qi > 1 && before && fcHas(morph(before), /:N/) && !fcHas(morph(before), /:V/) && /^(les|la|le|l’|des|ces|mes|tes|ses|nos|vos|leurs|cette|ma|ta|sa|une|un|mon|ton|son)$/.test(tokens[qi - 2].lower) &&
-          !tokens.slice(qi + 1, i - 1).some((x) => /^[,;:]$/.test(x.text) || fcHas(morph(x), /:V/) && !/^(nous|vous)$/.test(x.lower))) {
+          !tokens.slice(qi + 1, i - 1).some((x) => /^[,;:]$/.test(x.text) || fcHas(morph(x), /:V/) && !/^(nous|vous)$/.test(x.lower)) &&
+          // ("que le roi a accepté les changements": the object follows, "que" is a conjunction.)
+          !/^(les|le|la|l’|un|une|des|du|ses|son|sa|leur|leurs|ce|cet|cette|ces|mon|ma|mes|ton|ta|tes|notre|votre|nos|vos)$/.test(R1)) {
         agree = fcNearestNoun(tokens, qi, morph, null);
       }
     }
@@ -1451,7 +1457,8 @@ function fcRoundThreeRules(tokens, i, { add, morph, apo, paragraph, spellChecker
   // "de les enfants" -> des ; "à le marché" -> au ; "de un pull" -> d’un
   if (/^(de|à)$/.test(t.lower) && /^(le|les|un|une)$/.test(R1) && next2 && fcHas(morph(next2), /:N/) && !fcHas(morph(next2), /:V/) && !/^[aeiouyéèêâîôûœh]/.test(R2) || /^(de|à)$/.test(t.lower) && /^(un|une)$/.test(R1) && next2 && fcHas(morph(next2), /:N/)) {
     const fix = { "de le": "du", "de les": "des", "à le": "au", "à les": "aux", "de un": apo("d’un"), "de une": apo("d’une") }[`${t.lower} ${R1}`];
-    if (fix && !(fix.startsWith("d’") && /^(\d|à)/.test(R2))) add(span(t, next), fix, `« ${t.lower} ${R1} » se contracte : « ${fix} ».`, true);
+    // ("sous le nom de Le Confiturier": a title, not an article to contract.)
+    if (fix && !(fix.startsWith("d’") && /^(\d|à)/.test(R2)) && !(/^\p{Lu}/u.test(next.text) && /^\p{Lu}/u.test(next2.text) && t.text === t.lower)) add(span(t, next), fix, `« ${t.lower} ${R1} » se contracte : « ${fix} ».`, true);
   }
   // "avec tu" -> toi
   if (t.lower === "tu" && /^(avec|pour|chez|sans|comme|que|et|de|contre|derrière|devant|après|avant)$/.test(L1) && endOfClause && L1 !== "que") add(t, "toi", "Après une préposition : « toi ».", true);
