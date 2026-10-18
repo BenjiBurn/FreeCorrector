@@ -78,6 +78,7 @@
   "noSuggestion": { "message": "No suggestion." },
   "otherSuggestions": { "message": "Other suggestions" },
   "ignore": { "message": "Ignore" },
+  "ignoreAll": { "message": "Ignore all ($1)" },
   "addToDictionary": { "message": "Add to dictionary" },
   "turnOffRule": { "message": "Turn off this rule" },
   "turnOffRuleTitle": { "message": "Never flag this kind of mistake again (can be turned back on in the options)" },

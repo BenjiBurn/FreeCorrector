@@ -78,6 +78,7 @@
   "noSuggestion": { "message": "Aucune suggestion." },
   "otherSuggestions": { "message": "Autres suggestions" },
   "ignore": { "message": "Ignorer" },
+  "ignoreAll": { "message": "Ignorer partout ($1)" },
   "addToDictionary": { "message": "Ajouter au dictionnaire" },
   "turnOffRule": { "message": "Désactiver cette règle" },
   "turnOffRuleTitle": { "message": "Ne plus jamais signaler ce type de faute (réactivable dans les options)" },

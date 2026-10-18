@@ -185,7 +185,7 @@ class FcFieldBase {
       return;
     }
     this.text = text;
-    this.setMatches(res.matches.filter((m) => !this.ui.isIgnored(m)));
+    this.setMatches(res.matches.filter((m) => !this.ui.isIgnored(m, text)));
   }
 
   setMatches(matches) {

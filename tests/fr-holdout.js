@@ -153,4 +153,11 @@ module.exports = [
   ["C'est triste quand même!", "!", " !"],
   ["C'est triste quand même !", null, null],
   ["Elle chantait « Wow! » en boucle.", null, null],
+  // "tu" in a message that says "vous".
+  ["Bonjour Madame,\nMerci pour votre réponse. Est-ce que tu peux me rappeler demain ?\nCordialement", "tu peux", "vous pouvez"],
+  ["Bonjour Monsieur, je te remercie pour votre aide.", "te", "vous"],
+  ["Madame, je vous transmets ton dossier complet. Veuillez agréer mes salutations distinguées.", "ton", "votre"],
+  ["Bonjour Monsieur, mon fils m’a dit « tu es nul » et je vous écris pour cela.", null, null],
+  ["Madame, je vous prie de ne pas élever le ton. Il s’est tu ensuite.", null, null],
+  ["Salut Paul, tu viens ce soir ? Vous êtes combien ?", null, null],
 ];

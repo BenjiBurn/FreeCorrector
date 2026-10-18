@@ -107,9 +107,19 @@ fcLocalizePage();
       ignore.type = "button";
       ignore.addEventListener("click", (e) => {
         e.stopPropagation();
-        ui.ignore(m);
+        ui.ignore(m, field);
       });
       actions.append(ignore);
+      const same = ui.sameCount(field, m);
+      if (same > 1) {
+        const all = el("button", "", fcT("ignoreAll", same));
+        all.type = "button";
+        all.addEventListener("click", (e) => {
+          e.stopPropagation();
+          ui.ignoreAll(m);
+        });
+        actions.append(all);
+      }
       if (m.category === "spelling") {
         const add = el("button", "", fcT("addToDictionary"));
         add.type = "button";

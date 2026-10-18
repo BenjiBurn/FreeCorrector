@@ -3,6 +3,11 @@ body {
   padding: 14px;
 }
 
+/* Firefox for Android shows the popup as a full page. */
+@media (pointer: coarse) {
+  body { width: auto; }
+}
+
 header {
   display: flex;
   align-items: center;

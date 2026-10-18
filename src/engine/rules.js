@@ -746,7 +746,7 @@ function fcCustomRules(paragraph, spellChecker, existing) {
 
     // "Il fait froid est il pleut" -> et (a new clause with its subject starts)
     if (t.lower === "est" && prev && next && /^(il|elle|on|je|j’|tu|nous|vous|ils|elles)$/.test(next.lower) && isFinite(next2) &&
-        !/^(où|quand|comment|pourquoi|que|qu’|qui|quel|quelle|ce|c’|n’|ne|[,.;:!?])$/.test(prevLower) && !FC_SUBJECTS.has(prevLower)) {
+        !/^(où|quand|comment|pourquoi|que|qu’|qui|quel|quelle|ce|c’|n’|ne|s’|m’|t’|[,.;:!?])$/.test(prevLower) && !FC_SUBJECTS.has(prevLower)) {
       add(t, "et", "Confusion probable : « et » (conjonction) plutôt que « est ».", true);
     }
 
@@ -1491,7 +1491,7 @@ function fcRoundThreeRules(tokens, i, { add, morph, apo, paragraph, spellChecker
   }
   if (t.lower === "sans" && /^(de|du|le|bon|ce|aucun)$/.test(L1) && endOfClause) add(t, "sens", "Le nom : « sens » (signification).", true);
   // "nuit, est je suis" -> et
-  if (t.lower === "est" && /^(je|j’|tu|nous|vous)$/.test(R1) && !/^(c’|qu’|n’|ce|où|comment|que|il|elle|on|quel|quelle|qui)$/.test(L1) && !/-/.test(t.text)) {
+  if (t.lower === "est" && /^(je|j’|tu|nous|vous)$/.test(R1) && !/^(c’|qu’|n’|ce|où|comment|que|il|elle|on|quel|quelle|qui|s’|m’|t’)$/.test(L1) && !/-/.test(t.text)) {
     add(t, "et", "Pour relier : « et ».", true);
   }
   // "prés de mon travail" -> près
@@ -1933,4 +1933,74 @@ function fcRoundFourRules(tokens, i, { add, morph, apo, paragraph, spellChecker 
   if (/^contactes?$/.test(t.lower) && /^(prendre|prends|prend|prenez|prenons|prennent|pris|prise|repris|reprendre|garder|gardé|garde|en|le|du|bon|premier)$/.test(L1)) {
     add(t, "contact", "Le nom « contact » (prendre contact) ; « contacte » est le verbe.", true);
   }
+}
+
+// ---------- "tu" in a message that says "vous" ----------
+// "Bonjour Madame, … tu peux me rappeler ?": the writer addresses someone formally
+// ("Madame", "Veuillez agréer", "vous") and slips into "tu". Reported speech in
+// quotes is left alone. The whole text is needed: the greeting is often in
+// another paragraph than the slip.
+
+const FC_FORMAL_GREETING = /(^|\n)\s*((bonjour|bonsoir|cher|chère|chers|chères)\s+)?(madame|monsieur|mesdames|messieurs|maître|docteur|professeur)\b/iu;
+const FC_FORMAL_CLOSING = /je vous prie d|veuillez (agréer|recevoir|accepter|trouver)|salutations distinguées|sentiments (les )?(meilleurs|distingués|respectueux)|bien à vous|je reste à votre (entière )?disposition/iu;
+const FC_TU_FORM = /(?<![\p{L}'’-])(t['’](?=\p{L})|(?:tu|te|toi|ton|ta|tes)(?![\p{L}'’-]))/giu;
+const FC_OBJECT_PRONOUN = /^(ne|n['’]|me|m['’]|le|la|l['’]|les|lui|leur|en|y|nous)$/iu;
+
+/* exported fcTuVousMatches */
+function fcTuVousMatches(text, spellChecker, existing) {
+  // Quoted speech: « … », "…", “…”.
+  const quoted = [];
+  for (const m of text.matchAll(/«[^»]*»|"[^"\n]*"|“[^”]*”/g)) quoted.push([m.index, m.index + m[0].length]);
+  const outside = (i) => !quoted.some(([a, b]) => a <= i && i < b);
+  const plain = text.replace(/«[^»]*»|"[^"\n]*"|“[^”]*”/g, (s) => " ".repeat(s.length));
+  if (!(FC_FORMAL_GREETING.test(plain) || FC_FORMAL_CLOSING.test(plain))) return [];
+  if (!/(?<![\p{L}])(vous|votre|vos)(?![\p{L}])/iu.test(plain)) return [];
+
+  const out = [];
+  const message = "Ce message vouvoie son destinataire : « vous » plutôt que « tu » ?";
+  const words = [...text.matchAll(/[\p{L}\p{M}]+(?:['’](?=\p{L}))?|['’]/gu)];
+  for (const m of text.matchAll(FC_TU_FORM)) {
+    const start = m.index;
+    if (!outside(start)) continue;
+    const form = m[1].toLowerCase().replace("’", "'");
+    const before = text.slice(Math.max(0, start - 12), start);
+    // "le ton", "sur un ton sec": the noun; "il s'est tu": the verb "taire".
+    if (form === "ton" && /(^|[^\p{L}])(le|un|du|au|ce|même|quel|de|d['’])\s+$/iu.test(before)) continue;
+    if (form === "tu" && /(est|s['’]est|a|avait|s['’]était)\s+$/iu.test(before)) continue;
+    let end = start + m[0].length;
+    let fix = { ton: "votre", ta: "votre", tes: "vos", toi: "vous", te: "vous" }[form];
+    if (form === "t'" || form === "tu") {
+      // The verb after "tu" (or the subject "t'" of "t'as"), past "ne" and object pronouns.
+      const k = words.findIndex((w) => w.index >= end);
+      let j = k;
+      while (j >= 0 && words[j] && FC_OBJECT_PRONOUN.test(words[j][0]) && j < k + 3) j++;
+      const verb = j >= 0 ? words[j] : null;
+      const asSubject = form === "tu" || verb && j === k && /^(as|es|étais|avais|auras|seras|aurais|serais)$/i.test(verb[0]);
+      if (asSubject && verb) {
+        const vous = fcConjugateAs(spellChecker, verb[0].toLowerCase(), "2p");
+        if (!vous) continue;
+        end = verb.index + verb[0].length;
+        const middle = text.slice(start + m[0].length, verb.index);
+        fix = `${form === "t'" ? "vous " : "vous"}${middle}${vous}`;
+      } else if (form === "t'") {
+        fix = "vous ";
+      } else {
+        continue;
+      }
+    }
+    if (!fix || existing.some((e) => e.offset < end && start < e.offset + e.length) || out.some((e) => e.offset < end && start < e.offset + e.length)) continue;
+    const word = text.slice(start, end);
+    if (/^\p{Lu}/u.test(word)) fix = fix[0].toUpperCase() + fix.slice(1);
+    out.push({
+      offset: start,
+      length: end - start,
+      word,
+      message,
+      replacements: [fix],
+      ruleId: "FC_TU_VOUS",
+      category: "style",
+      label: "Style",
+    });
+  }
+  return out;
 }

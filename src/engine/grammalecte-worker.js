@@ -588,6 +588,12 @@ function check(text) {
     }
     paraStart += paragraph.length + 1;
   }
+  // "Bonjour Madame, … tu peux": the greeting and the slip may be paragraphs apart.
+  const tuVous = fcTuVousMatches(text, spellChecker, matches);
+  if (tuVous.length) {
+    matches.push(...tuVous);
+    matches.sort((a, b) => a.offset - b.offset);
+  }
   // Nothing about the blanks themselves ("multiple spaces").
   return matches.filter((m) => original.slice(m.offset, m.offset + m.length) === m.word);
 }

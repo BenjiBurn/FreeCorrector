@@ -17,7 +17,8 @@ function fcMatchLabel(match) {
 class FcUi {
   constructor() {
     this.fields = new Set();
-    this.ignored = new Set();
+    this.ignored = new Set(); // ruleId|word, everywhere
+    this.ignoredOnce = new Set(); // one occurrence, by its surroundings
     this.card = null; // { field, index, el }
     this.panel = null; // { field, el }
     this.frame = 0;
@@ -125,14 +126,33 @@ class FcUi {
     return `${m.ruleId}|${m.word}`;
   }
 
-  isIgnored(m) {
-    return this.ignored.has(this.ignoreKey(m));
+  // One occurrence: the same error with the same words around it, which edits
+  // elsewhere in the text do not change.
+  onceKey(m, text) {
+    return `${this.ignoreKey(m)}|${text.slice(Math.max(0, m.offset - 20), m.offset)}|${text.slice(m.offset + m.length, m.offset + m.length + 20)}`;
   }
 
-  ignore(match) {
+  isIgnored(m, text) {
+    return this.ignored.has(this.ignoreKey(m)) || this.ignoredOnce.has(this.onceKey(m, text));
+  }
+
+  // "Ignore": this occurrence only.
+  ignore(match, field) {
+    this.ignoredOnce.add(this.onceKey(match, field.text));
+    field.removeMatches((m) => m === match);
+  }
+
+  // "Ignore all": the same word with the same error, in every field of the page.
+  ignoreAll(match) {
     const key = this.ignoreKey(match);
     this.ignored.add(key);
     for (const field of this.fields) field.removeMatches((m) => this.ignoreKey(m) === key);
+  }
+
+  // How many times this error shows in the field.
+  sameCount(field, match) {
+    const key = this.ignoreKey(match);
+    return field.allMatches.filter((m) => this.ignoreKey(m) === key).length;
   }
 
   // "Turn off this rule": never flagged again, until turned back on in the options.
@@ -299,9 +319,18 @@ class FcUi {
     const ignore = fcEl("button", "fc-action", fcT("ignore"));
     ignore.addEventListener("click", () => {
       onDone?.();
-      this.ignore(match);
+      this.ignore(match, field);
     });
     actions.append(ignore);
+    const same = this.sameCount(field, match);
+    if (same > 1) {
+      const all = fcEl("button", "fc-action", fcT("ignoreAll", same));
+      all.addEventListener("click", () => {
+        onDone?.();
+        this.ignoreAll(match);
+      });
+      actions.append(all);
+    }
     if (match.category === "spelling") {
       const add = fcEl("button", "fc-action", fcT("addToDictionary"));
       add.addEventListener("click", () => {

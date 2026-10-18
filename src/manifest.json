@@ -72,6 +72,9 @@
           "none"
         ]
       }
+    },
+    "gecko_android": {
+      "strict_min_version": "140.0"
     }
   }
 }
