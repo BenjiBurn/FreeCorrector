@@ -451,6 +451,13 @@ function checkParagraph(paragraph) {
       url: err.URL || "",
     };
     if (!picky && fcIsTypographicOnly(m.word, m.replacements)) continue;
+    // A space before "!", "?", ":", ";" is French typography: not after an English
+    // title or a name ("Goal!", "Fair game in the 90's?", "Hello!").
+    if (/^nbsp_/.test(m.ruleId)) {
+      const before = paragraph.slice(0, err.nStart).match(/([\p{L}\p{M}'’-]+)[\s)\]]*$/u)?.[1];
+      if (before && !spellChecker.isValidToken(before)) continue;
+      if (/(^|[^\p{L}])(the|of|and)\s[^.!?«»]*$/iu.test(paragraph.slice(Math.max(0, err.nStart - 50), err.nStart))) continue;
+    }
     // "Oh là là", "ah là là là": an interjection, not a doubled word.
     if (/doublon/.test(m.ruleId) && /^là(\s+là)+$/i.test(m.word)) continue;
     // Holidays ("le 14 Juillet", "le 8 Mai") and titles ("Germinal") keep their capital.

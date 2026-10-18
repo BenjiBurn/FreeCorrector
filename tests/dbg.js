@@ -9,7 +9,7 @@ const run = require("./run.js");
   let call;
   if (lang === "fr") {
     call = run.loadWorker("engine/grammalecte-worker.js");
-    call("init", { options: picky ? { fcPicky: true, neg: true } : { apos: false, num: false } });
+    call("init", { options: picky ? { fcPicky: true, neg: true, nbsp: true } : { apos: false, num: false, nbsp: true } });
   } else {
     run.patchFsForWindowsUrls();
     globalThis.self = globalThis;

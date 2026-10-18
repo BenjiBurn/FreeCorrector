@@ -45,7 +45,7 @@ async function article(lang, title) {
     let call;
     if (lang === "fr") {
       call = run.loadWorker("engine/grammalecte-worker.js");
-      call("init", { options: { apos: false, num: false } });
+      call("init", { options: { apos: false, num: false, nbsp: true } });
     } else {
       run.patchFsForWindowsUrls();
       globalThis.self = globalThis;

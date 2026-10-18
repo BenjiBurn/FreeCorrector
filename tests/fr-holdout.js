@@ -149,4 +149,8 @@ module.exports = [
   ["Le Wind Festival commence demain.", null, null],
   // A past story: "eu" is missing (reported by the user).
   ["Il roulait sacrément plus vite que moi, mais j’ai juste le temps de voir une énorme masse.", "ai juste", "ai juste eu"],
+  // No space before "!" (reported by the user); a normal space is fine outside picky mode.
+  ["C'est triste quand même!", "!", " !"],
+  ["C'est triste quand même !", null, null],
+  ["Elle chantait « Wow! » en boucle.", null, null],
 ];

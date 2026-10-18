@@ -16,7 +16,7 @@ const FC_MAX_TEXT_LENGTH = 50000;
 const FC_RESULT_CACHE_SIZE = 50;
 
 // Extra Grammalecte rules turned on by the "picky" setting.
-const FC_PICKY_OPTIONS = ["apos", "num", "esp", "nbsp", "unit", "poncfin", "neg", "redon1", "redon2"];
+const FC_PICKY_OPTIONS = ["apos", "num", "esp", "unit", "poncfin", "neg", "redon1", "redon2"];
 
 // A worker answering { id, type, ... } requests with { id, result | error }.
 class FcWorkerClient {
@@ -92,7 +92,9 @@ const fcResultCache = new Map();
 function fcEngineOptions(lang, settings) {
   if (lang === "en") return { dialect: settings.englishDialect ?? "us", picky: !!settings.picky };
   const picky = !!settings.picky;
-  const options = { fcPicky: picky };
+  // The missing space before "!", "?", ":", ";" is always reported; the non-breaking
+  // one in its place only in picky mode (the worker hides that difference).
+  const options = { fcPicky: picky, nbsp: true };
   for (const name of FC_PICKY_OPTIONS) options[name] = picky;
   return options;
 }
