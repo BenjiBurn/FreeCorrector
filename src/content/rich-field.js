@@ -151,7 +151,7 @@ class FcRichField extends FcFieldBase {
 
   layout(hostRect) {
     const r = this.el.getBoundingClientRect();
-    const visible = r.width > 0 && r.height > 0;
+    const visible = this.isShown(r);
     this.root.hidden = !visible;
     if (!visible) return;
 

@@ -116,6 +116,9 @@ class FcUi {
     if (!this.fields.size) return;
     const hostRect = this.host.getBoundingClientRect();
     for (const field of this.fields) field.layout(hostRect);
+    // The field went out of sight (a header hidden on scroll): its card goes too.
+    if (this.card?.field.root.hidden) this.closeCard();
+    if (this.panel?.field.root.hidden) this.closePanel();
     if (this.card) this.positionCard(hostRect);
     if (this.panel) this.positionPanel(hostRect);
   }

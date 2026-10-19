@@ -102,6 +102,29 @@ class FcFieldBase {
   hasSelection() { return false; }
   isFocused() { return document.activeElement === this.el; }
   onResize() {}
+  // Whether the page shows the field at `r` (its viewport rectangle): not made
+  // invisible (X hides its header with opacity when the page scrolls) nor covered
+  // by other content. A label laid over the field does not count.
+  isShown(r) {
+    if (r.width <= 0 || r.height <= 0) return false;
+    const el = this.el;
+    if (el.checkVisibility && !el.checkVisibility({ opacityProperty: true, visibilityProperty: true })) return false;
+    // Off screen: nothing to see anyway, the layout places the marks there.
+    if (r.bottom <= 0 || r.top >= window.innerHeight || r.right <= 0 || r.left >= window.innerWidth) return true;
+    const isAncestor = (a) => {
+      for (let n = el; n; n = n.parentNode ?? n.host) if (n === a) return true;
+      return false;
+    };
+    const y = Math.min(Math.max(r.top + Math.min(r.height / 2, 16), 0), window.innerHeight - 1);
+    for (const x of [r.left + 8, r.left + r.width / 2, r.right - 8]) {
+      if (x < 0 || x >= window.innerWidth) continue;
+      const top = document.elementsFromPoint(x, y).find((e) => e !== this.ui.host);
+      if (!top || top === el || el.contains(top) || isAncestor(top) || top.control === el ||
+          top.closest?.("label")?.control === el) return true;
+    }
+    return false;
+  }
+
   layout(_hostRect) {}
   renderMarks() {}
   matchAt(_x, _y) { return -1; }
@@ -398,7 +421,7 @@ class FcTextField extends FcFieldBase {
   layout(hostRect) {
     const el = this.el;
     const r = el.getBoundingClientRect();
-    const visible = r.width > 0 && r.height > 0;
+    const visible = this.isShown(r);
     this.root.hidden = !visible;
     if (!visible) return;
 
