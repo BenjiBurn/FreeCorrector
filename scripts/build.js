@@ -2,6 +2,7 @@
 //
 //   node scripts/build.js            -> dist/firefox, dist/chromium + zips
 //   node scripts/build.js firefox    -> only Firefox
+//   node scripts/build.js web        -> dist/web, the proofreader as a web page
 //
 // firefox:  Firefox (desktop), uses the background page (background.js).
 // chromium: Chrome, Edge, Opera, Brave, Vivaldi; service worker + offscreen
@@ -29,11 +30,11 @@ const PNG_ICONS = {
 const TARGETS = {
   firefox: {
     // The test page (demo/) is for development only: never published.
-    exclude: ["chromium", "demo"],
+    exclude: ["chromium", "demo", "web"],
     manifest: (m) => m,
   },
   chromium: {
-    exclude: ["background.js", "demo"],
+    exclude: ["background.js", "demo", "web"],
     manifest: (m) => {
       const out = { ...m };
       delete out.browser_specific_settings;
@@ -145,8 +146,48 @@ function build(name) {
   console.log(`${name.padEnd(9)} dist/${name}/  ->  ${path.relative(ROOT, zip)} (${size} Mo)`);
 }
 
+// The proofreader as a web page (lapigeonnerie.fr/freecorrector/correcteur):
+// the editor page, its engines, and web/fc-web.js standing in for the extension
+// APIs. dist/web/index.html is a standalone copy to try it locally; the site
+// serves the same files with its own page around them.
+const WEB_FILES = [
+  "lib/settings.js", "lib/i18n.js", "lib/common.css",
+  "content/styles.js", "content/field.js", "content/ui.js",
+  "editor/editor.css", "editor/editor.js",
+  "icons/icon.svg", "web/fc-web.js",
+];
+const WEB_DIRS = ["engine", "vendor", "data"];
+
+function buildWeb() {
+  const out = path.join(DIST, "web");
+  fs.rmSync(out, { recursive: true, force: true });
+  for (const rel of WEB_FILES) {
+    fs.mkdirSync(path.dirname(path.join(out, rel)), { recursive: true });
+    fs.copyFileSync(path.join(SRC, rel), path.join(out, rel));
+  }
+  for (const dir of WEB_DIRS) copyTree(path.join(SRC, dir), path.join(out, dir), []);
+  // READMEs stay in the repository.
+  for (const rel of listFiles(out)) if (/(^|\/)README\.(md|txt)$/.test(rel)) fs.rmSync(path.join(out, rel));
+  const messages = {};
+  for (const lang of ["fr", "en"]) messages[lang] = JSON.parse(fs.readFileSync(path.join(SRC, "_locales", lang, "messages.json"), "utf8"));
+  fs.writeFileSync(path.join(out, "web/messages.js"), `self.FC_MESSAGES = ${JSON.stringify(messages)};\n`);
+  // The standalone page: editor.html with paths from the root and the web scripts.
+  const html = fs.readFileSync(path.join(SRC, "editor/editor.html"), "utf8")
+    .replace(/(href|src)="\.\.\//g, '$1="')
+    .replace('href="editor.css"', 'href="editor/editor.css"')
+    .replace('src="editor.js"', 'src="editor/editor.js"')
+    .replace('<script src="lib/settings.js"></script>', '<script src="web/messages.js"></script>\n  <script src="web/fc-web.js"></script>\n  <script src="lib/settings.js"></script>')
+    .replace('<script src="engine/language.js"></script>', '<script src="engine/language.js"></script>\n  <script src="engine/host.js"></script>');
+  fs.writeFileSync(path.join(out, "index.html"), html);
+  console.log(`web       dist/web/  (${listFiles(out).length} fichiers)`);
+}
+
 const wanted = process.argv.slice(2);
 for (const name of wanted.length ? wanted : Object.keys(TARGETS)) {
+  if (name === "web") {
+    buildWeb();
+    continue;
+  }
   if (!TARGETS[name]) {
     console.error(`Cible inconnue : ${name} (choix : ${Object.keys(TARGETS).join(", ")})`);
     process.exit(1);
