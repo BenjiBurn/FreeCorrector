@@ -153,6 +153,8 @@ module.exports = [
   ["C'est triste quand même!", "!", " !"],
   ["C'est triste quand même !", null, null],
   ["Elle chantait « Wow! » en boucle.", null, null],
+  // "toute" as an adverb after "ta" (reported by the user).
+  ["Ta première mission : programmer ta toute première semaine. Ça se fait en quelques minutes, et ça lance tout le reste.", null, null],
   // "tu" in a message that says "vous".
   ["Bonjour Madame,\nMerci pour votre réponse. Est-ce que tu peux me rappeler demain ?\nCordialement", "tu peux", "vous pouvez"],
   ["Bonjour Monsieur, je te remercie pour votre aide.", "te", "vous"],

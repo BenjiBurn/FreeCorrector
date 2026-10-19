@@ -458,6 +458,9 @@ function checkParagraph(paragraph) {
       if (before && !spellChecker.isValidToken(before)) continue;
       if (/(^|[^\p{L}])(the|of|and)\s[^.!?«»]*$/iu.test(paragraph.slice(Math.max(0, err.nStart - 50), err.nStart))) continue;
     }
+    // "ta toute première semaine": "toute" is the adverb before an adjective, not
+    // "t'as toute la journée" (a determiner follows there).
+    if (/conf_t_as_ta/.test(m.ruleId) && /^\s+toutes?\s+(?!(la|l['’]|les|une|ma|ta|sa|mes|tes|ses|nos|vos|leurs?|cette|ces|ce)\b)\p{L}/iu.test(paragraph.slice(err.nEnd))) continue;
     // "Oh là là", "ah là là là": an interjection, not a doubled word.
     if (/doublon/.test(m.ruleId) && /^là(\s+là)+$/i.test(m.word)) continue;
     // Holidays ("le 14 Juillet", "le 8 Mai") and titles ("Germinal") keep their capital.
