@@ -3,6 +3,7 @@
 //   node scripts/build.js            -> dist/firefox, dist/chromium + zips
 //   node scripts/build.js firefox    -> only Firefox
 //   node scripts/build.js web        -> dist/web, the proofreader as a web page
+//                                       (scripts/deploy-web.js puts it on a website)
 //
 // firefox:  Firefox (desktop), uses the background page (background.js).
 // chromium: Chrome, Edge, Opera, Brave, Vivaldi; service worker + offscreen
