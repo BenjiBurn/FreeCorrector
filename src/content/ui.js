@@ -1,4 +1,4 @@
-/* exported FcUi */
+/* exported FcUi, FC_COMPOSE_WINDOW */
 /* global FC_CSS, fcApi, fcGetSettings, fcSetSettings, fcRuleKey, fcT, fcPlural, fcUiLang */
 
 // Owns FreeCorrector's single shadow root on the page: the per-field layers,
@@ -6,6 +6,7 @@
 
 const FC_MAX_CARD_SUGGESTIONS = 5;
 const FC_CATEGORY_KEY = { spelling: "catSpelling", grammar: "catGrammar", style: "catStyle", typo: "catTypo" };
+const FC_COMPOSE_WINDOW = location.href.startsWith("about:blank?compose");
 
 // "Orthographe", or "Grammaire · anglais" when the text is not in the interface language.
 function fcMatchLabel(match) {
@@ -58,7 +59,24 @@ class FcUi {
   }
 
   ensureMounted() {
-    if (!this.host.isConnected) document.documentElement.append(this.host);
+    if (this.host.isConnected) return;
+    // Thunderbird's compose window: the whole document is the message, and
+    // all of it is sent, even what follows <body>. Shadow trees are left out:
+    // there the layer goes in a shadow root of <body>, whose <slot> shows the
+    // message itself.
+    if (FC_COMPOSE_WINDOW && document.body) {
+      try {
+        if (this.bodyShadow?.host !== document.body) {
+          this.bodyShadow = document.body.attachShadow({ mode: "open" });
+          this.bodyShadow.append(document.createElement("slot"));
+        }
+        this.bodyShadow.append(this.host);
+        return;
+      } catch {
+        // <body> already has a shadow root: mount as on a web page.
+      }
+    }
+    document.documentElement.append(this.host);
   }
 
   // ---------- Fields ----------

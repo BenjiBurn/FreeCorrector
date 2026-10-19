@@ -41,17 +41,24 @@ suggestions.
 | Firefox 140+ | `dist/freecorrector-<version>-firefox.zip` | [addons.mozilla.org](https://addons.mozilla.org/fr/firefox/addon/freecorrector/) ✅ publié |
 | Chrome, Edge, Brave, Vivaldi (116+) | `dist/freecorrector-<version>-chromium.zip` | [Chrome Web Store](https://chromewebstore.google.com/detail/pbojifdopikeihflcjikofbpfgebahdi) ✅ publié |
 | Opera | `dist/freecorrector-<version>-chromium.zip` | Opera add-ons (en cours de validation) |
+| Thunderbird 140+ (fenêtre de rédaction) | `dist/freecorrector-<version>-thunderbird.zip` | addons.thunderbird.net (pas encore publié) |
 | Safari | à convertir sur macOS avec Xcode (`xcrun safari-web-extension-converter dist/chromium`) | App Store |
 
 Les paquets se construisent avec Node.js (aucune dépendance) :
 
 ```sh
-npm run build        # ou : node scripts/build.js [firefox|chromium]
+npm run build        # ou : node scripts/build.js [firefox|thunderbird|chromium]
 ```
 
 Sous Chromium, l’arrière-plan d’une extension MV3 est un service worker, qui ne peut pas lancer
 de Web Worker : le moteur y tourne dans un document hors écran (`src/chromium/`). Sous Firefox, il
 tourne directement dans la page d’arrière-plan. Le reste du code est commun.
+
+Thunderbird reprend l’arrière-plan de Firefox. Il n’y a pas de pages web à corriger : les scripts
+de contenu sont enregistrés dans la fenêtre de rédaction des messages (`src/thunderbird/`). Là,
+le calque des soulignements vit dans une shadow root du `<body>` : Thunderbird envoie tout le
+document, y compris ce qui suit `<body>`, mais jamais le contenu d’une shadow root. La citation
+d’une réponse, la ligne « X a écrit : » et la signature ne sont pas corrigées.
 
 ## Installer (développement)
 
@@ -70,6 +77,13 @@ sur **Recharger** dans `about:debugging`.
 2. Ouvrir `chrome://extensions` (ou `edge://extensions`, `brave://extensions`…)
 3. Activer le **mode développeur**
 4. Cliquer sur **Charger l’extension non empaquetée** et choisir le dossier `dist/chromium`
+
+**Thunderbird** (140 ou plus récent) :
+
+1. Lancer `node scripts/build.js thunderbird`
+2. Menu **Outils > Modules et thèmes**, roue dentée, **Déboguer des modules**
+3. **Charger un module temporaire…** et choisir `dist/thunderbird/manifest.json`
+4. Écrire un nouveau message
 
 Ensuite, cliquer sur l’icône FreeCorrector puis **Page de test**, ou aller sur n’importe quel
 site et cliquer dans un champ de texte. Les fichiers locaux (`file://`) ne sont pas corrigés :
@@ -91,6 +105,7 @@ src/
   manifest.json            Manifest V3 (base Firefox ; adapté pour Chromium au build)
   background.js            Arrière-plan Firefox
   chromium/                Arrière-plan Chromium : service worker + document hors écran
+  thunderbird/compose.js   Thunderbird : scripts de contenu dans la fenêtre de rédaction
   engine/
     host.js                Pilote les moteurs (workers), répartit les paragraphes par langue
     language.js            Détection français / anglais par paragraphe
@@ -116,7 +131,7 @@ src/
                            paquets publiés, le bouton du menu n’apparaît qu’en développement)
   vendor/grammalecte/      Moteur Grammalecte 2.3.0 (sous-ensemble non modifié)
   vendor/harper/           Moteur Harper 2.10.0 (harper.js, binaire WebAssembly)
-scripts/build.js           Construit dist/firefox et dist/chromium (+ zips pour les stores)
+scripts/build.js           Construit dist/firefox, dist/thunderbird et dist/chromium (+ zips pour les stores)
 tests/
   run.js                   Fait tourner le moteur sous Node et le note sur les corpus
   fr-corpus.js             Corpus de fautes courantes (homophones, accords, accents…)
@@ -179,6 +194,8 @@ qu'aucun ne plante, ne place mal un soulignement ou ne dépasse son budget de te
 - [x] Publication sur [addons.mozilla.org](https://addons.mozilla.org/fr/firefox/addon/freecorrector/) (octobre 2026)
 - [x] Publication sur le [Chrome Web Store](https://chromewebstore.google.com/detail/pbojifdopikeihflcjikofbpfgebahdi) (octobre 2026)
 - [ ] Publication sur Opera add-ons
+- [x] Thunderbird (fenêtre de rédaction des messages)
+- [ ] Publication sur addons.thunderbird.net
 - [x] Site web de présentation : [lapigeonnerie.fr/freecorrector](https://lapigeonnerie.fr/freecorrector)
 
 ## Auteur

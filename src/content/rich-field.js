@@ -16,6 +16,10 @@ const FC_BLOCK_TAGS = new Set([
   "THEAD", "TR", "UL",
 ]);
 const FC_SKIPPED_TAGS = new Set(["SCRIPT", "STYLE", "TEMPLATE", "NOSCRIPT", "SVG", "IMG", "VIDEO", "AUDIO", "CANVAS"]);
+// Not the user's own writing in a reply: the quoted message, its "X wrote:"
+// line, a forwarded message, the signature (Thunderbird, Gmail).
+const FC_QUOTE_SELECTOR =
+  'blockquote[type="cite"], .moz-cite-prefix, .moz-forward-container, .moz-signature, .gmail_quote, .gmail_signature';
 
 class FcRichField extends FcFieldBase {
   constructor(el, ui) {
@@ -67,6 +71,10 @@ class FcRichField extends FcFieldBase {
             continue;
           }
           if (FC_SKIPPED_TAGS.has(tag)) continue;
+          if (child.matches(FC_QUOTE_SELECTOR)) {
+            newline();
+            continue;
+          }
           // Mentions, chips, embedded widgets: one opaque word.
           if (child.getAttribute("contenteditable") === "false") {
             text += " ";

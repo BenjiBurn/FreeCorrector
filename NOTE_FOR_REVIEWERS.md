@@ -10,14 +10,17 @@ Source repository: https://github.com/BenjiBurn/FreeCorrector
 ## How the package is built
 
 There is no transpiling, minifying or bundling of our own code. `scripts/build.js` only copies
-`src/` into `dist/firefox/` (leaving out the Chromium-only folder `src/chromium/` and the
-development test page `src/demo/`) and zips it.
+`src/` into `dist/firefox/` (leaving out the Chromium-only folder `src/chromium/`, the
+Thunderbird-only folder `src/thunderbird/` and the development test page `src/demo/`) and zips it.
+For Thunderbird, see the "Thunderbird" section below.
 
 To rebuild from the source archive (Node.js 18 or later, no dependencies to install):
 
 ```sh
 node scripts/build.js firefox
 # -> dist/firefox/ and dist/freecorrector-1.2.5-firefox.zip
+node scripts/build.js thunderbird
+# -> dist/thunderbird/ and dist/freecorrector-1.2.5-thunderbird.zip
 ```
 
 ## Third-party code (unmodified copies)
@@ -80,9 +83,31 @@ New in 1.2.5: the manifest declares `gecko_android`. Context menus and keyboard 
 exist there; `lib/menus.js` and `lib/commands.js` check for those APIs and do nothing without
 them. Everything else (underlines, popup, options, editor page) works the same.
 
+## Thunderbird
+
+The Thunderbird package (`node scripts/build.js thunderbird`) is the Firefox one with a
+different manifest, written by `scripts/build.js`:
+
+- No `content_scripts` and no host permissions: Thunderbird has no web pages to check. The same
+  content scripts run only in the message compose window, as compose scripts:
+  `thunderbird/compose.js` registers them with `messenger.scripting.compose.registerScripts`.
+  When the add-on is installed or updated, it also injects them into the compose windows that are
+  already open. `thunderbird/scripts.js` (written by the build from `src/manifest.json`) lists the
+  files.
+- Permissions: `compose` and `scripting` for the compose scripts, `menus` instead of
+  `contextMenus`, no `activeTab`. `compose_action` repeats the toolbar button in the compose
+  window.
+- In the compose window, the whole document is the message: Thunderbird sends everything in it,
+  even what comes after `<body>`. Our layer therefore goes in a shadow root attached to `<body>`
+  (with a `<slot>` that shows the message itself). Shadow trees are never serialized, so the sent
+  message and the drafts contain only what the user wrote. The quoted message of a reply, its
+  "X wrote:" line and the signature are not checked.
+
 ## Testing
 
 Open any page with a text field, or the extension's own editor page (toolbar button → "Ouvrir le
 correcteur"), and type for example `je suis aller au marché` or `Their going tomorow`: the mistakes get underlined
 and a counter shows at the bottom right of the field. Clicking an underlined word opens the
 suggestions.
+
+In Thunderbird, write a new message (or reply to one) and type the same sentences in its body.

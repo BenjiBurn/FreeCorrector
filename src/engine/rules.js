@@ -556,9 +556,15 @@ function fcCustomRules(paragraph, spellChecker, existing) {
       add({ start: t.start, end: next.end, text: t.text + next.text }, "s’est", "Verbe pronominal : « s’est » (se + être), pas « c’est ».", true);
     }
 
-    // "Il a eu sont permis" -> son (after a past participle of avoir)
+    // "Il a eu sont permis" -> son (after a past participle of avoir). Not after a
+    // relative clause, where "sont" is the main verb ("Les documents que tu m’as
+    // envoyés sont parfaits"), nor before a plural word.
+    const relative = () => {
+      for (let k = i - 3; k >= 0 && !/^[.!?;:,]$/.test(tokens[k].text); k--) if (/^(que|qu’)$/.test(tokens[k].lower)) return true;
+      return false;
+    };
     if (t.lower === "sont" && prev && fcHas(morph(prev), /:Q/) && prev2 && /^(ai|as|a|avons|avez|ont|avait|avais|avaient|aura)$/.test(prev2.lower) &&
-        next && fcHas(morph(next), /:N:m/)) {
+        next && fcHas(morph(next), /:N:[me]:[si]/) && !relative()) {
       add(t, "son", "Confusion probable : « son » (possessif) plutôt que « sont » (verbe être).");
     }
 

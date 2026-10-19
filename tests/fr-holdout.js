@@ -165,4 +165,7 @@ module.exports = [
   ["Bonjour Monsieur, mon fils m’a dit « tu es nul » et je vous écris pour cela.", null, null],
   ["Madame, je vous prie de ne pas élever le ton. Il s’est tu ensuite.", null, null],
   ["Salut Paul, tu viens ce soir ? Vous êtes combien ?", null, null],
+  // "sont" is the main verb after a relative clause.
+  ["Les documents que tu m’as envoyés sont parfaits, merci !", null, null],
+  ["Elle a pris sont sac.", "sont", "son"],
 ];

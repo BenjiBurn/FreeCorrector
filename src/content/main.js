@@ -1,4 +1,4 @@
-/* global fcApi, fcGetSettings, FcTextField, FcRichField, FcUi */
+/* global fcApi, fcGetSettings, FcTextField, FcRichField, FcUi, FC_COMPOSE_WINDOW */
 
 // Entry point: attach a checker to each text field the user focuses.
 
@@ -28,7 +28,12 @@
     if (!el.isContentEditable) return null;
     let host = el;
     while (host.parentElement?.isContentEditable) host = host.parentElement;
-    if (host.getAttribute("spellcheck") === "false" || host.closest(CODE_EDITORS)) return null;
+    // A whole editable document (designMode, Thunderbird's compose window): its text is in <body>.
+    if (host === document.documentElement) host = document.body;
+    if (!host) return null;
+    // spellcheck="false": not prose. Except in Thunderbird's compose window,
+    // where it only says that Thunderbird's own spelling checker is off.
+    if ((host.getAttribute("spellcheck") === "false" && !FC_COMPOSE_WINDOW) || host.closest(CODE_EDITORS)) return null;
     return host;
   }
 

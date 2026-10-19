@@ -1,11 +1,12 @@
 // Builds one package per browser family from src/:
 //
-//   node scripts/build.js            -> dist/firefox, dist/chromium + zips
+//   node scripts/build.js            -> dist/firefox, dist/thunderbird, dist/chromium + zips
 //   node scripts/build.js firefox    -> only Firefox
 //   node scripts/build.js web        -> dist/web, the proofreader as a web page
 //                                       (scripts/deploy-web.js puts it on a website)
 //
-// firefox:  Firefox (desktop), uses the background page (background.js).
+// firefox:  Firefox (desktop and Android), uses the background page (background.js).
+// thunderbird: Thunderbird, the same background page; checks the compose window.
 // chromium: Chrome, Edge, Opera, Brave, Vivaldi; service worker + offscreen
 //           document (src/chromium/), PNG icons.
 //
@@ -31,11 +32,37 @@ const PNG_ICONS = {
 const TARGETS = {
   firefox: {
     // The test page (demo/) is for development only: never published.
-    exclude: ["chromium", "demo", "web"],
+    exclude: ["chromium", "demo", "thunderbird", "web"],
     manifest: (m) => m,
   },
+  // Thunderbird: no web pages, the checker runs in the message compose window.
+  // The content scripts become compose scripts, registered by
+  // thunderbird/compose.js; thunderbird/scripts.js (written below) lists them.
+  thunderbird: {
+    exclude: ["chromium", "demo", "web"],
+    manifest: (m) => {
+      const out = { ...m };
+      delete out.content_scripts;
+      out.permissions = [
+        ...m.permissions.filter((p) => p !== "activeTab" && p !== "contextMenus"),
+        "menus", "compose", "scripting",
+      ];
+      const scripts = m.background.scripts;
+      out.background = {
+        scripts: [...scripts.slice(0, -1), "thunderbird/scripts.js", "thunderbird/compose.js", scripts.at(-1)],
+      };
+      out.compose_action = { ...m.action };
+      out.browser_specific_settings = { gecko: m.browser_specific_settings.gecko };
+      return out;
+    },
+    files: (m) => ({
+      "thunderbird/scripts.js":
+        "// Written by scripts/build.js: the content scripts of src/manifest.json.\n" +
+        `self.FC_COMPOSE_SCRIPTS = ${JSON.stringify(m.content_scripts[0].js.map((f) => `/${f}`))};\n`,
+    }),
+  },
   chromium: {
-    exclude: ["background.js", "demo", "web"],
+    exclude: ["background.js", "demo", "thunderbird", "web"],
     manifest: (m) => {
       const out = { ...m };
       delete out.browser_specific_settings;
@@ -141,6 +168,10 @@ function build(name) {
   const manifest = JSON.parse(fs.readFileSync(path.join(SRC, "manifest.json"), "utf8"));
   const final = target.manifest(manifest);
   fs.writeFileSync(path.join(out, "manifest.json"), JSON.stringify(final, null, 2) + "\n");
+  for (const [rel, content] of Object.entries(target.files?.(manifest) ?? {})) {
+    fs.mkdirSync(path.dirname(path.join(out, rel)), { recursive: true });
+    fs.writeFileSync(path.join(out, rel), content);
+  }
   const zip = path.join(DIST, `freecorrector-${final.version}-${name}.zip`);
   writeZip(out, zip);
   const size = (fs.statSync(zip).size / 1024 / 1024).toFixed(1);
