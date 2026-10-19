@@ -1,4 +1,4 @@
-# Fiche addons.thunderbird.net — FreeCorrector pour Thunderbird
+# Fiche addons.thunderbird.net — FreeCorrector 1.3.0 pour Thunderbird
 
 Textes prêts à copier-coller dans le formulaire de soumission (https://addons.thunderbird.net,
 « Developer Hub », « Submit a New Add-on »). Français en langue par défaut, anglais en traduction.
@@ -12,9 +12,9 @@ Firefox.
 | Champ | Valeur |
 |---|---|
 | Distribution | Sur ce site (listée sur addons.thunderbird.net) |
-| Fichier | `dist/freecorrector-<version>-thunderbird.zip` |
+| Fichier | `dist/freecorrector-1.3.0-thunderbird.zip` |
 | Application | Thunderbird 140 ou plus récent (lu dans le manifest) |
-| Code source demandé ? | **Oui**, envoyer `dist/freecorrector-<version>-source.zip` (binaire WebAssembly de Harper) |
+| Code source demandé ? | **Oui**, envoyer `dist/freecorrector-1.3.0-source.zip` (binaire WebAssembly de Harper) |
 | Notes pour les relecteurs | Contenu de `NOTE_FOR_REVIEWERS.md` (section « Thunderbird » en particulier) |
 | Catégories | Rédaction des messages ; Langue (selon les catégories proposées) |
 | Licence | GNU General Public License v3.0 |

@@ -1,5 +1,47 @@
 # Notes de version à coller dans les stores
 
+## 1.3.0
+
+**Français** (Firefox : « Notes de version » ; Chrome : rien à saisir ; Opera : « Changelog ») :
+
+```text
+• Nouveau : FreeCorrector existe pour Thunderbird. Vos e-mails sont corrigés pendant que vous les écrivez.
+• Dans la réponse à un e-mail (Gmail, Thunderbird), le message cité et la signature ne sont plus corrigés : seul votre texte l’est.
+• Moins de fausses alertes : « Les documents que tu m’as envoyés sont parfaits » ne propose plus « son ».
+```
+
+**English** (Opera "Changelog", Firefox if an English field is offered):
+
+```text
+• New: FreeCorrector is now available for Thunderbird. Your emails are checked as you write them.
+• When you reply to an email (Gmail, Thunderbird), the quoted message and the signature are no longer checked: only your own text is.
+• Fewer false alarms in French (« sont » / « son »).
+```
+
+**Notes aux testeurs Firefox** (en anglais) :
+
+```text
+No account or login is needed. Everything runs locally (CSP connect-src 'self'): no network requests, no data collected, no remote code. Our own code is neither minified nor bundled; the engines in vendor/ are unmodified copies of Grammalecte 2.3.0 and harper.js 2.10.0 (see NOTE_FOR_REVIEWERS.md).
+
+1.3.0 changes the in-page UI (src/content/: the quoted message of a reply is not checked) and one checking rule (src/engine/rules.js); no new permission. The repository now also builds a Thunderbird package (src/thunderbird/), which is not part of the Firefox package.
+
+Build: download https://github.com/BenjiBurn/FreeCorrector/archive/refs/tags/v1.3.0.zip, run "node scripts/build.js firefox" (Node.js 18+, no dependencies), output in dist/freecorrector-1.3.0-firefox.zip.
+
+To test: type "je suis aller au marché" or "Your going to love it, it's lid is great." in any text field.
+```
+
+**Notes aux relecteurs Thunderbird** (en anglais, première soumission sur addons.thunderbird.net) :
+
+```text
+No account or login is needed. Everything runs locally (CSP connect-src 'self'): no network requests, no data collected, no remote code. Our own code is neither minified nor bundled; the engines in vendor/ are unmodified copies of Grammalecte 2.3.0 and harper.js 2.10.0, and the source archive is attached because harper_wasm_slim_bg.wasm is a WebAssembly build (see NOTE_FOR_REVIEWERS.md, sections "Third-party code" and "Thunderbird").
+
+The same add-on is published for Firefox on addons.mozilla.org under the same ID. In Thunderbird it only runs in the message compose window, as compose scripts (permissions "compose" and "scripting"); it has no host permissions.
+
+Build: download https://github.com/BenjiBurn/FreeCorrector/archive/refs/tags/v1.3.0.zip, run "node scripts/build.js thunderbird" (Node.js 18+, no dependencies), output in dist/freecorrector-1.3.0-thunderbird.zip.
+
+To test: write a new message and type "je suis aller au marché" or "Your going to love it, it's lid is great." in its body; click an underlined word to see the suggestions.
+```
+
 ## 1.2.5
 
 **Français** (Firefox : « Notes de version » ; Chrome : rien à saisir ; Opera : « Changelog ») :
