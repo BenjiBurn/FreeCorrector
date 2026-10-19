@@ -1,5 +1,42 @@
 # Notes de version à coller dans les stores
 
+## 1.2.5
+
+**Français** (Firefox : « Notes de version » ; Chrome : rien à saisir ; Opera : « Changelog ») :
+
+```text
+• Disponible sur Firefox pour Android.
+• Nouveau : dans un message qui vouvoie (« Bonjour Madame… »), un « tu » échappé est signalé avec sa forme en « vous ».
+• « Ignorer » ne masque plus que la faute choisie ; « Ignorer partout » masque toutes les fautes identiques du texte.
+• L’espace manquante avant « ! ? : ; » est signalée (« quand même! »).
+• Beaucoup plus de fautes trouvées en français (subjonctif après « bien que », accord du participe, homophones) et en anglais américain (your/you’re, its/it’s, except, fewer/less, pronoms).
+• Moins de fausses alertes : SMS et messages de chat sans point final, orthographe britannique, « au fur et à mesure », « il y a la carte », jargon (placo, npm install).
+• Corrigé : sur X (Twitter), les soulignements restaient affichés quand la barre de recherche se cachait au défilement.
+```
+
+**English** (Opera "Changelog", Firefox if an English field is offered):
+
+```text
+• Now available on Firefox for Android.
+• New: in a French message that says "vous" ("Bonjour Madame…"), a stray "tu" is flagged with its "vous" form.
+• "Ignore" now hides only the chosen mistake; "Ignore all" hides every identical one in the text.
+• Many more mistakes found in American English (your/you're, its/it's, except/accept, fewer/less, pronouns, plurals written with an apostrophe) and in French.
+• Fewer false alarms: text messages and chats without a final period, British spellings (colour, practise, cheque).
+• Fixed: on X (Twitter), underlines stayed on screen when the search bar hid on scroll.
+```
+
+**Notes aux testeurs Firefox** (en anglais) :
+
+```text
+No account or login is needed. Everything runs locally (CSP connect-src 'self'): no network requests, no data collected, no remote code. Our own code is neither minified nor bundled; the engines in vendor/ are unmodified copies of Grammalecte 2.3.0 and harper.js 2.10.0 (see NOTE_FOR_REVIEWERS.md).
+
+1.2.5 changes the checking rules (src/engine/) and the in-page UI (src/content/), and declares Firefox for Android (gecko_android); no new permission.
+
+Build: download https://github.com/BenjiBurn/FreeCorrector/archive/refs/tags/v1.2.5.zip, run "node scripts/build.js firefox" (Node.js 18+, no dependencies), output in dist/freecorrector-1.2.5-firefox.zip.
+
+To test: type "Bonjour Madame, merci pour votre retour. Est-ce que tu peux me rappeler ?" or "Your going to love it, it's lid is great." in any text field, then press Ctrl+Shift+F.
+```
+
 ## 1.2.4
 
 **Français** (Firefox : « Notes de version » ; Chrome : rien à saisir ; Opera : « Changelog ») :
