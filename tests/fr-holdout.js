@@ -155,6 +155,9 @@ module.exports = [
   ["Elle chantait « Wow! » en boucle.", null, null],
   // "toute" as an adverb after "ta" (reported by the user).
   ["Ta première mission : programmer ta toute première semaine. Ça se fait en quelques minutes, et ça lance tout le reste.", null, null],
+  // Reported by the user: "au fur et à mesure" is not "au four", "il y a la carte" is the verb.
+  ["Et puis au fur et à mesure on s'y fait.", null, null],
+  ["Heureusement, il y a la carte en surimpression à la demande.", null, null],
   // "tu" in a message that says "vous".
   ["Bonjour Madame,\nMerci pour votre réponse. Est-ce que tu peux me rappeler demain ?\nCordialement", "tu peux", "vous pouvez"],
   ["Bonjour Monsieur, je te remercie pour votre aide.", "te", "vous"],

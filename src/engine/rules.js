@@ -421,7 +421,9 @@ function fcCustomRules(paragraph, spellChecker, existing) {
     }
 
     // "plein de monde a la fête" -> à (places and moments that follow "à la")
+    // ("il y a la carte", "Paul a la carte": the verb, after "y" or a name.)
     if (t.lower === "a" && next && /^(la|l’)$/.test(next.lower) && next2 && !FC_SUBJECTS.has(prevLower) &&
+        !/^(y|n’|ne)$/.test(prevLower) && !(prev && /^\p{Lu}/u.test(prev.text) && tokens[i - 2] && !/^[.!?:;]$/.test(tokens[i - 2].text)) &&
         /^(fête|réunion|soirée|journée|conférence|séance|maison|plage|gare|mer|campagne|montagne|piscine|poste|banque|boulangerie|pharmacie|mairie|fac|cantine|messe|radio|télé|télévision|fin|place|main|mode|carte|rentrée|retraite|recherche|base|limite|suite|une|école|heure|hôpital|église|université|entrée|occasion|avance|ancienne|étranger|époque|aube)$/.test(next2.lower)) {
       add(t, "à", "Confusion probable : « à » (préposition) plutôt que « a » (verbe avoir).");
     }

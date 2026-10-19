@@ -249,8 +249,16 @@ function fcCollocIndex(lang) {
   return fcCollocIndexes[lang];
 }
 
+// Set phrases whose words are one letter from a phrase above: never "fixed"
+// ("au fur et à mesure" is not "au four").
+const FC_COLLOC_SAFE = {
+  fr: /au fur et à mesure|au fur et a mesure/giu,
+  en: null,
+};
+
 // [{ start, end, word, fix }] for one paragraph.
 self.fcCollocationSlips = (paragraph, lang) => {
+  const safe = FC_COLLOC_SAFE[lang] ? [...paragraph.matchAll(FC_COLLOC_SAFE[lang])].map((m) => [m.index, m.index + m[0].length]) : [];
   const toks = [];
   for (const m of paragraph.matchAll(/[\p{L}\p{N}]+/gu)) {
     toks.push({ text: m[0], lower: m[0].toLowerCase(), start: m.index, end: m.index + m[0].length });
@@ -285,6 +293,7 @@ self.fcCollocationSlips = (paragraph, lang) => {
       }
       if (!ok || slip < 0) continue;
       const t = toks[i + slip];
+      if (safe.some(([a, b]) => a <= t.start && t.end <= b)) continue;
       // A capitalized word inside a sentence is a name ("rue du Mur").
       const before = paragraph.slice(0, t.start).trimEnd();
       if (/^\p{Lu}/u.test(t.text) && before && !/[.!?…:«"“(\n]$/.test(before)) continue;
