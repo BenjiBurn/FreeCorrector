@@ -171,4 +171,6 @@ module.exports = [
   // Reported by the user: a sentence that starts with a name in CamelCase, blanked as code.
   ["FreeCorrector est maintenant disponible en extension Thunderbird !", null, null],
   ["est-ce que tu viens demain ?", "est-ce", "Est-ce"],
+  // "email" is common French, as written by the user.
+  ["Vous pouvez corriger vos fautes directement dans vos emails.", null, null],
 ];

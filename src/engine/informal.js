@@ -11,6 +11,7 @@ self.FC_INFORMAL_WORDS = new Set([
   "ouf", "bof", "ouais", "nan", "boulot", "bouffe", "pote", "potes", "taf", "dodo", "frigo", "ordi",
   "ordis", "télé", "vélo", "promo", "promos", "récap", "dispo.", "covoit", "covid", "visio", "visios",
   "wifi", "selfie", "selfies", "spoiler", "week-end", "week-ends", "replay", "smiley", "emoji", "emojis",
+  "email", "emails",
   // English
   "lol", "omg", "btw", "idk", "tbh", "lmao", "brb", "asap", "fyi", "thx", "pls", "plz", "okay", "imo",
   "imho", "afaik", "irl", "dm", "dms", "gonna", "wanna", "gotta", "kinda", "sorta", "yeah", "yep",
