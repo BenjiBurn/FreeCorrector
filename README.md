@@ -8,6 +8,7 @@ ligne de vos textes sur Internet : toute l’analyse tourne dans votre navigateu
 
 **[➜ Installer FreeCorrector pour Firefox](https://addons.mozilla.org/fr/firefox/addon/freecorrector/)** (addons.mozilla.org)
 · **[➜ pour Chrome, Edge et Brave](https://chromewebstore.google.com/detail/pbojifdopikeihflcjikofbpfgebahdi)** (Chrome Web Store)
+· **[➜ pour Thunderbird](https://addons.thunderbird.net/fr/thunderbird/addon/freecorrector/)** (addons.thunderbird.net)
 · Site officiel : **[lapigeonnerie.fr/freecorrector](https://lapigeonnerie.fr/freecorrector)**
 
 - Soulignement des fautes dans les `<textarea>`, les champs texte et les éditeurs riches
@@ -41,7 +42,7 @@ suggestions.
 | Firefox 140+ | `dist/freecorrector-<version>-firefox.zip` | [addons.mozilla.org](https://addons.mozilla.org/fr/firefox/addon/freecorrector/) ✅ publié |
 | Chrome, Edge, Brave, Vivaldi (116+) | `dist/freecorrector-<version>-chromium.zip` | [Chrome Web Store](https://chromewebstore.google.com/detail/pbojifdopikeihflcjikofbpfgebahdi) ✅ publié |
 | Opera | `dist/freecorrector-<version>-chromium.zip` | Opera add-ons (en cours de validation) |
-| Thunderbird 140+ (fenêtre de rédaction) | `dist/freecorrector-<version>-thunderbird.zip` | addons.thunderbird.net (pas encore publié) |
+| Thunderbird 140+ (fenêtre de rédaction) | `dist/freecorrector-<version>-thunderbird.zip` | [addons.thunderbird.net](https://addons.thunderbird.net/fr/thunderbird/addon/freecorrector/) ✅ publié |
 | Safari | à convertir sur macOS avec Xcode (`xcrun safari-web-extension-converter dist/chromium`) | App Store |
 
 Les paquets se construisent avec Node.js (aucune dépendance) :
@@ -195,7 +196,7 @@ qu'aucun ne plante, ne place mal un soulignement ou ne dépasse son budget de te
 - [x] Publication sur le [Chrome Web Store](https://chromewebstore.google.com/detail/pbojifdopikeihflcjikofbpfgebahdi) (octobre 2026)
 - [ ] Publication sur Opera add-ons
 - [x] Thunderbird (fenêtre de rédaction des messages)
-- [ ] Publication sur addons.thunderbird.net
+- [x] Publication sur [addons.thunderbird.net](https://addons.thunderbird.net/fr/thunderbird/addon/freecorrector/) (octobre 2026)
 - [x] Site web de présentation : [lapigeonnerie.fr/freecorrector](https://lapigeonnerie.fr/freecorrector)
 
 ## Auteur
