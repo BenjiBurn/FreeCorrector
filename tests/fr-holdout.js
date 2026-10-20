@@ -168,4 +168,7 @@ module.exports = [
   // "sont" is the main verb after a relative clause.
   ["Les documents que tu m’as envoyés sont parfaits, merci !", null, null],
   ["Elle a pris sont sac.", "sont", "son"],
+  // Reported by the user: a sentence that starts with a name in CamelCase, blanked as code.
+  ["FreeCorrector est maintenant disponible en extension Thunderbird !", null, null],
+  ["est-ce que tu viens demain ?", "est-ce", "Est-ce"],
 ];

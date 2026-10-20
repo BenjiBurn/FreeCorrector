@@ -583,7 +583,7 @@ function check(text) {
       // Copies: the sentence rules may adjust them, the cache must stay as is.
       const own = checkParagraph(paragraph).map((m) => ({ ...m, replacements: [...m.replacements] }));
       // Sentence rules depend on the previous paragraph (list items after ":").
-      const all = [...own, ...fcSentenceRules(paragraph, own, spellChecker, prevEnd, "fr", fcNextStart(paragraphs, index))];
+      const all = [...own, ...fcSentenceRules(paragraph, own, spellChecker, prevEnd, "fr", fcNextStart(paragraphs, index), original.slice(paraStart, paraStart + paragraph.length))];
       for (const m of all.sort((a, b) => a.offset - b.offset)) {
         matches.push({ ...m, offset: paraStart + m.offset });
       }

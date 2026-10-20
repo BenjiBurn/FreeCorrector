@@ -67,8 +67,9 @@ function fcLooksLikeSentence(paragraph, spellChecker, lang) {
 // a sentence rule on top of another error. `prevEnd` is the last visible
 // character of the previous paragraph ("" at the start of the text).
 // `spellChecker` (French only) helps tell sentences from titles. `nextStart` is
-// the first visible character of the next paragraph.
-function fcSentenceRules(paragraph, existing, spellChecker, prevEnd, lang = "fr", nextStart = "") {
+// the first visible character of the next paragraph. `raw` is the paragraph
+// before code was blanked out (engine/mask.js).
+function fcSentenceRules(paragraph, existing, spellChecker, prevEnd, lang = "fr", nextStart = "", raw = paragraph) {
   const out = [];
   const free = (start, end) => !existing.some((m) => m.offset < end && start < m.offset + m.length);
   // Chat style ("lol that's hilarious", "mdr t'es sérieux") is written that
@@ -88,7 +89,10 @@ function fcSentenceRules(paragraph, existing, spellChecker, prevEnd, lang = "fr"
     /(^|\s)[#@][\p{L}\p{N}_.-]+\s*$/u.test(paragraph);
 
   const first = FC_FIRST_WORD.exec(paragraph);
-  if (first && !listItem && !continues) {
+  // A blanked name first ("FreeCorrector est…", "JavaScript is…"): the
+  // sentence does not start with the next word.
+  const afterBlank = first && raw.slice(0, first.index + first[0].length - first[1].length).trim() !== "";
+  if (first && !listItem && !continues && !afterBlank) {
     const word = first[1];
     const start = first.index + first[0].length - word.length;
     // Leave alone things like "iPhone", "eBay" or "x2".

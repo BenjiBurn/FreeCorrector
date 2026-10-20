@@ -40,4 +40,6 @@ module.exports = [
   ["I will be there form 9 to 5.", "form", "from"],
   ["I liked their very first album.", null, null],
   ["Their meeting was long.", null, null],
+  // A sentence that starts with a name in CamelCase, blanked as code.
+  ["JavaScript is easy to learn.", null, null],
 ];

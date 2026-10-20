@@ -526,7 +526,7 @@ export async function check(text) {
       const own = cached
         .filter((m) => !(continues && m.ruleId === "EN_Capitalization" && !paragraph.slice(0, m.offset).trim()))
         .map((m) => ({ ...m, replacements: [...m.replacements] }));
-      const all = [...own, ...fcSentenceRules(paragraph, own, null, prevEnd, "en", fcNextStart(paragraphs, index))];
+      const all = [...own, ...fcSentenceRules(paragraph, own, null, prevEnd, "en", fcNextStart(paragraphs, index), original.slice(paraStart, paraStart + paragraph.length))];
       for (const m of all.sort((a, b) => a.offset - b.offset)) matches.push({ ...m, offset: paraStart + m.offset });
       prevEnd = paragraph.trimEnd().slice(-1);
     }
