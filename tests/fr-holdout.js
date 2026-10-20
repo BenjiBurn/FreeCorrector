@@ -173,4 +173,6 @@ module.exports = [
   ["est-ce que tu viens demain ?", "est-ce", "Est-ce"],
   // "email" is common French, as written by the user.
   ["Vous pouvez corriger vos fautes directement dans vos emails.", null, null],
+  // Reported by the user: "à" brings out another mistake further on ("commandable"), "as" hides it.
+  ["Les derniers exemplaires sont a nouveau commandable sur le site.", "a", "à"],
 ];

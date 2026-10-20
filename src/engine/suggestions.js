@@ -272,11 +272,11 @@ function fcSentenceBounds(text, start, end) {
 }
 const FC_CONTEXT_CHARS = 250;
 
-// Grammar errors of a sentence, as [start, end] pairs.
+// Grammar errors of a sentence, as [start, end, first suggestion].
 function fcSentenceErrors(sentence) {
   let spans = fcErrorCountCache.get(sentence);
   if (spans === undefined) {
-    spans = gc_engine.parse(sentence, "FR", false, null, false).map((e) => [e.nStart, e.nEnd]);
+    spans = gc_engine.parse(sentence, "FR", false, null, false).map((e) => [e.nStart, e.nEnd, e.aSuggestions?.[0]]);
     if (fcErrorCountCache.size >= FC_RANK_CACHE_SIZE) fcErrorCountCache.clear();
     fcErrorCountCache.set(sentence, spans);
   }
@@ -285,6 +285,27 @@ function fcSentenceErrors(sentence) {
 
 function fcCountErrors(sentence) {
   return fcSentenceErrors(sentence).length;
+}
+
+// Errors of a sentence once the ones at least a word away from [a, b) (the
+// candidate) take their first suggestion. A good fix can bring out another
+// real mistake that the original error hid: "sont à nouveau commandable" now
+// shows that "commandable" needs an s, while "sont as nouveau commandable"
+// only confuses the rules into silence. Both then count as clean, and the
+// usual order decides. An error next to the candidate is about the candidate
+// ("au balles"), so it counts.
+function fcErrorsAfterRepair(sentence, a, b) {
+  const spans = fcSentenceErrors(sentence);
+  const away = (x, y) => /\p{L}\s/u.test(sentence.slice(b, x)) || /\s\p{L}/u.test(sentence.slice(y, a));
+  if (!spans.length || spans.some(([x, y, fix]) => !fix || !away(x, y))) return spans.length;
+  let fixed = sentence;
+  let limit = Infinity;
+  for (const [x, y, fix] of [...spans].sort((p, q) => q[0] - p[0])) {
+    if (y > limit) return spans.length;
+    fixed = fixed.slice(0, x) + fix + fixed.slice(y);
+    limit = x;
+  }
+  return Math.min(spans.length, fcCountErrors(fixed));
 }
 
 function fcHasErrorAt(text, start, length) {
@@ -344,6 +365,7 @@ function fcRankSuggestions(spellChecker, text, start, length, suggestions, isSpe
       c,
       extra,
       errors: fcCountErrors(before + c + after),
+      repaired: isSpelling ? null : fcErrorsAfterRepair(before + c + after, before.length, before.length + c.length),
       caseChange: wordIsLower !== (c === c.toLowerCase()) ? 1 : 0,
       // For grammar errors, sounding the same is the strongest hint:
       // "parlé" -> "parler" rather than "parle".
@@ -363,10 +385,11 @@ function fcRankSuggestions(spellChecker, text, start, length, suggestions, isSpe
   return scored
     .filter((x) => !x.extra || x.errors <= bar)
     .sort((a, b) =>
-      a.errors - b.errors ||
+      (isSpelling ? a.errors - b.errors : a.repaired - b.repaired) ||
       a.caseChange - b.caseChange ||
       a.soundTier - b.soundTier ||
-      a.cost - b.cost
+      a.cost - b.cost ||
+      a.errors - b.errors
     )
     .map((x) => x.c);
 }
