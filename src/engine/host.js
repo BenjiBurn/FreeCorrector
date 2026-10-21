@@ -9,7 +9,7 @@
 // With the "auto" language, each paragraph goes to the engine of its own
 // language (language.js).
 
-/* global fcApi, fcParagraphLanguages, fcSplitQuotes, fcRuleKey, FC_LANGUAGES */
+/* global fcApi, fcParagraphLanguages, fcSplitQuotes, fcRuleKey, fcLexiconReady, FC_LANGUAGES */
 /* exported fcEngineCheck, fcEngineWarmup */
 
 const FC_MAX_TEXT_LENGTH = 50000;
@@ -143,6 +143,8 @@ async function fcEngineCheck(text, settings) {
   if (text.length > FC_MAX_TEXT_LENGTH) return { error: "too-long" };
   const paragraphs = text.split("\n");
   const wanted = settings.language ?? "auto";
+  // The word lists that help tell the languages apart (engine/language.js).
+  if (wanted === "auto") await fcLexiconReady;
   const langs = wanted === "auto" ? fcParagraphLanguages(paragraphs) : paragraphs.map(() => wanted);
   // Quotations in the other language get their own engine.
   const split = paragraphs.map((p, i) =>

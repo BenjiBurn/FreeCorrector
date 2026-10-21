@@ -185,6 +185,9 @@ sur des phrases correctes. À lancer après chaque modification du moteur.
 code, URL, paragraphe de 28 000 caractères, mot de 5 000 lettres, Unicode exotique) et vérifie
 qu'aucun ne plante, ne place mal un soulignement ou ne dépasse son budget de temps.
 
+`node tests/lang.js` vérifie la détection de la langue sur des textes courts : titres de tickets
+en anglais sans mot outil (« Bodies list incoherent display »), français plein d'anglicismes.
+
 ## Feuille de route
 
 - [x] Chrome, Edge, Opera, Brave, Vivaldi (Manifest V3 avec document hors écran pour le worker)

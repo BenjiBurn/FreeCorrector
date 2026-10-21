@@ -2,7 +2,8 @@
 // words and accented letters. Plain JavaScript: it runs in the Firefox
 // background page and in the Chromium offscreen document alike.
 
-/* exported fcParagraphLanguages, fcSplitQuotes, FC_LANGUAGES */
+/* global fcApi */
+/* exported fcParagraphLanguages, fcSplitQuotes, fcSetLanguageLexicon, fcLexiconReady, FC_LANGUAGES */
 
 const FC_LANGUAGES = ["fr", "en"];
 
@@ -23,7 +24,9 @@ const FC_LANG_WORDS = {
      "but or of at by from be been have has had do does did will would can could should my your " +
      "his her their our its there what when where why how about just some any all very also " +
      "than then because into out up down over again only yes thanks hello please him them " +
-     "us am i i'm don't it's can't won't isn't doesn't didn't " +
+     "us am i i'm don't it's can't won't isn't doesn't didn't that's what's there's let's i've i'll " +
+     "i'd you're we're they're you've you'll he's she's wasn't aren't haven't hasn't couldn't " +
+     "wouldn't shouldn't " +
      // "me", "an", "as", "on", "son", "plus" are French words too: not listed.
      "in for to best new good great near how cheap buy free online get make know think want need " +
      "see go going like love work help today tomorrow yesterday now here well more most one two " +
@@ -35,12 +38,71 @@ const FC_LANG_WORDS = {
 const FC_FRENCH_LETTERS = /[éèêëàâîïôûùçœ]/giu;
 const FC_ELISION = /(^|[\s(«"])(j|l|d|n|s|c|m|t|qu)['’][\p{L}]/giu;
 
+// Other words that are at least ten times more frequent in one language than
+// in the other (data/*-freq.txt): "display", "incoherent", "list" lean to
+// English, "réunion", "merci" to French; "table", "cool", "important" lean to
+// neither. They decide a text without function words ("Bodies list
+// incoherent display"), at half the weight of a function word, so that an
+// e-mail in French full of "meeting" and "deadline" stays French.
+// Word -> "fr" | "en". Empty until the lists are loaded (fcLexiconReady).
+const FC_LEXICON = new Map();
+const FC_LEXICON_WEIGHT = 0.5;
+const FC_LEXICON_RATIO = 10;
+
+// Fills FC_LEXICON from the two frequency lists ("word count" per line).
+function fcSetLanguageLexicon(frList, enList) {
+  const parse = (list) => {
+    const counts = new Map();
+    let total = 0;
+    for (const line of list.split("\n")) {
+      const space = line.lastIndexOf(" ");
+      const count = Number(line.slice(space + 1));
+      if (space > 0 && count > 0) {
+        counts.set(line.slice(0, space), count);
+        total += count;
+      }
+    }
+    return { counts, total };
+  };
+  const fr = parse(frList);
+  const en = parse(enList);
+  FC_LEXICON.clear();
+  for (const [lang, own, other] of [["fr", fr, en], ["en", en, fr]]) {
+    for (const [word, count] of own.counts) {
+      if (word.length < 3 || /\d/.test(word) || FC_LANG_WORDS.fr.has(word) || FC_LANG_WORDS.en.has(word)) continue;
+      // A word missing from the other list counts once there.
+      const share = count / own.total;
+      const otherShare = (other.counts.get(word) ?? 1) / other.total;
+      if (share >= FC_LEXICON_RATIO * otherShare) FC_LEXICON.set(word, lang);
+    }
+  }
+}
+
+// Loads the lists of the extension (or of the web page) once; without them
+// (tests, a failed load) only function words and accents decide.
+const fcLexiconReady = (async () => {
+  try {
+    // fcApi (lib/settings.js) is a global "const", not a property of globalThis.
+    const api = typeof fcApi === "undefined" ? null : fcApi;
+    if (!api?.runtime?.getURL) return;
+    const read = (lang) => fetch(api.runtime.getURL(`data/${lang}-freq.txt`)).then((r) => (r.ok ? r.text() : Promise.reject(r.status)));
+    const [fr, en] = await Promise.all([read("fr"), read("en")]);
+    fcSetLanguageLexicon(fr, en);
+  } catch {
+    // Function words only.
+  }
+})();
+
 function fcLanguageScores(paragraph) {
   const scores = { fr: 0, en: 0 };
   for (const word of paragraph.toLowerCase().match(/[\p{L}'’]+/gu) ?? []) {
     const w = word.replace(/’/g, "'");
-    if (FC_LANG_WORDS.fr.has(w)) scores.fr += 1;
-    if (FC_LANG_WORDS.en.has(w)) scores.en += 1;
+    const fr = FC_LANG_WORDS.fr.has(w);
+    const en = FC_LANG_WORDS.en.has(w);
+    if (fr) scores.fr += 1;
+    if (en) scores.en += 1;
+    const lean = fr || en ? null : FC_LEXICON.get(w);
+    if (lean) scores[lean] += FC_LEXICON_WEIGHT;
   }
   scores.fr += 0.5 * (paragraph.match(FC_FRENCH_LETTERS)?.length ?? 0);
   scores.fr += 1 * (paragraph.match(FC_ELISION)?.length ?? 0);
