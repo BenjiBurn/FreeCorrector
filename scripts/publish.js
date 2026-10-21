@@ -289,28 +289,45 @@ async function chrome(c, dry) {
 // One-time: the refresh token of the Chrome Web Store API, through Google's
 // sign-in in the browser (OAuth client of type "Desktop app"). Written into
 // .store-credentials.json, never printed.
-async function chromeLogin() {
+//   node scripts/publish.js chrome-login          -> prints the address to open
+//   node scripts/publish.js chrome-login "<url>"  -> finishes with the address the
+//     browser was sent to (http://127.0.0.1:…/?code=…) if this script had stopped
+async function chromeLogin(finalUrl) {
   const creds = readCredentials();
   const c = creds.chrome ?? {};
   if (!c.clientId || !c.clientSecret) throw new Error("remplir d'abord chrome.clientId et chrome.clientSecret dans .store-credentials.json");
-  const server = http.createServer();
-  await new Promise((r) => server.listen(0, "127.0.0.1", r));
-  const redirect = `http://127.0.0.1:${server.address().port}`;
-  const url = "https://accounts.google.com/o/oauth2/v2/auth?" + new URLSearchParams({
-    client_id: c.clientId, redirect_uri: redirect, response_type: "code", scope: CHROME_SCOPE, access_type: "offline", prompt: "consent",
-  });
-  console.log("Ouvrir cette adresse dans le navigateur et accepter :\n");
-  console.log(url + "\n");
-  const code = await new Promise((resolve, reject) => {
-    server.on("request", (req, res) => {
-      const q = new URL(req.url, redirect).searchParams;
-      res.setHeader("content-type", "text/html; charset=utf-8");
-      res.end(q.get("code") ? "<p>C'est bon, vous pouvez fermer cet onglet.</p>" : "<p>Refusé.</p>");
-      if (q.get("code")) resolve(q.get("code"));
-      else if (q.get("error")) reject(new Error(`Google a refusé : ${q.get("error")}`));
+  let code;
+  let redirect;
+  if (finalUrl) {
+    const u = new URL(finalUrl);
+    code = u.searchParams.get("code");
+    redirect = u.origin;
+    if (!code) throw new Error("pas de « code= » dans cette adresse");
+  } else {
+    const server = http.createServer();
+    await new Promise((r) => server.listen(0, "127.0.0.1", r));
+    redirect = `http://127.0.0.1:${server.address().port}`;
+    const url = "https://accounts.google.com/o/oauth2/v2/auth?" + new URLSearchParams({
+      client_id: c.clientId, redirect_uri: redirect, response_type: "code", scope: CHROME_SCOPE, access_type: "offline", prompt: "consent",
     });
-    setTimeout(() => reject(new Error("pas de réponse au bout de 10 minutes")), 600000);
-  }).finally(() => server.close());
+    console.log("Ouvrir cette adresse dans le navigateur et accepter (elle reste valable 30 minutes) :\n");
+    console.log(url + "\n");
+    code = await new Promise((resolve, reject) => {
+      server.on("request", (req, res) => {
+        const q = new URL(req.url, redirect).searchParams;
+        res.setHeader("content-type", "text/html; charset=utf-8");
+        if (q.get("code")) {
+          res.end("<p>C'est bon, vous pouvez fermer cet onglet.</p>");
+          resolve(q.get("code"));
+        } else {
+          // Refused (app still in testing…): keep waiting, the user can fix it and try again.
+          res.end(`<p>Google a refusé (${q.get("error") ?? "?"}). Corriger le réglage, puis rouvrir l'adresse donnée par le script.</p>`);
+          console.log(`Google a refusé (${q.get("error") ?? "?"}) : en attente d'un nouvel essai…`);
+        }
+      });
+      setTimeout(() => reject(new Error("pas de réponse au bout de 30 minutes")), 1800000);
+    }).finally(() => server.close());
+  }
   const res = await fetch("https://oauth2.googleapis.com/token", {
     method: "POST",
     headers: { "content-type": "application/x-www-form-urlencoded" },
@@ -336,7 +353,7 @@ async function chromeLogin() {
     }
     return;
   }
-  if (args[0] === "chrome-login") return chromeLogin();
+  if (args[0] === "chrome-login") return chromeLogin(args[1]);
 
   const dry = args.includes("--dry-run");
   const wanted = args.filter((a) => !a.startsWith("--"));
