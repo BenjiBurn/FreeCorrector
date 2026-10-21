@@ -10,6 +10,9 @@ module Thunderbird (construit au commit `83082b6`) : la 1.2.6 y est une simple m
 ```text
 • FreeCorrector existe aussi pour Thunderbird : vos e-mails sont corrigés pendant que vous les écrivez.
 • Dans la réponse à un e-mail (Gmail, Thunderbird), le message cité et la signature ne sont plus corrigés : seul votre texte l’est.
+• Plus de pastille dans les formulaires de connexion : identifiant, e-mail, mot de passe et codes ne sont jamais corrigés.
+• « Désactiver sur ce site » s’applique aussi aux cadres intégrés venus d’un autre site (fenêtres de connexion, widgets).
+• Les textes anglais courts sont mieux reconnus (« Bodies list incoherent display » n’est plus corrigé comme du français).
 • Moins de fausses alertes : « email » est accepté, plus de majuscule demandée après un nom comme « FreeCorrector » en début de phrase, « Les documents que tu m’as envoyés sont parfaits » ne propose plus « son ».
 ```
 
@@ -18,6 +21,9 @@ module Thunderbird (construit au commit `83082b6`) : la 1.2.6 y est une simple m
 ```text
 • FreeCorrector is also available for Thunderbird: your emails are checked as you write them.
 • When you reply to an email (Gmail, Thunderbird), the quoted message and the signature are no longer checked: only your own text is.
+• No more badge on sign-in forms: user names, email addresses, passwords and codes are never checked.
+• "Turn off on this site" now also covers embedded frames from other sites (sign-in boxes, widgets).
+• Short English texts are recognized better ("Bodies list incoherent display" is no longer checked as French).
 • Fewer false alarms: no capital letter asked for after a name like "JavaScript" at the start of a sentence, and in French.
 ```
 
@@ -26,7 +32,7 @@ module Thunderbird (construit au commit `83082b6`) : la 1.2.6 y est une simple m
 ```text
 No account or login is needed. Everything runs locally (CSP connect-src 'self'): no network requests, no data collected, no remote code. Our own code is neither minified nor bundled; the engines in vendor/ are unmodified copies of Grammalecte 2.3.0 and harper.js 2.10.0 (see NOTE_FOR_REVIEWERS.md).
 
-1.2.6 changes the in-page UI (src/content/: the quoted message of a reply is not checked) and some checking rules (src/engine/); no new permission.
+1.2.6 changes the in-page UI (src/content/: the quoted message of a reply and sign-in fields are not checked; the per-site switch asks the background for the tab's host name with a { type: "siteHost" } message) and some checking rules and the language detection (src/engine/; language.js reads the bundled data/*-freq.txt lists); no new permission.
 
 Build: download https://github.com/BenjiBurn/FreeCorrector/archive/refs/tags/v1.2.6.zip, run "node scripts/build.js firefox" (or "thunderbird"; Node.js 18+, no dependencies), output in dist/freecorrector-1.2.6-firefox.zip (or -thunderbird.zip).
 
