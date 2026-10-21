@@ -7,4 +7,4 @@ dist/
 Thumbs.db
 CLAUDE.local.md
 tests/.wiki/
-.atn-credentials.json
+.store-credentials.json
