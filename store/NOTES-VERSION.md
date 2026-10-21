@@ -1,9 +1,9 @@
 # Notes de version à coller dans les stores
 
-## 1.2.6 (prochaine version, pas encore publiée)
+## 1.2.6
 
-Brouillon, à compléter jusqu’à la sortie. Sur Thunderbird, la 1.2.5 publiée contient déjà le
-module Thunderbird (construit au commit `83082b6`) : la 1.2.6 y est une simple mise à jour.
+Sur Thunderbird, la 1.2.5 publiée contient déjà le module Thunderbird (construit au commit
+`83082b6`) : la 1.2.6 y est une simple mise à jour (« Upload New Version »).
 
 **Français** (Firefox : « Notes de version » ; Thunderbird : « Notes de version » ; Chrome : rien à saisir ; Opera : « Changelog ») :
 

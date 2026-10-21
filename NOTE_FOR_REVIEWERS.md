@@ -1,4 +1,4 @@
-# Note for reviewers — FreeCorrector 1.2.5
+# Note for reviewers — FreeCorrector 1.2.6
 
 FreeCorrector is a free, open-source (GPL-3.0) spelling and grammar checker for French and
 English. All checking happens locally in the browser: the extension makes **no network
@@ -18,9 +18,9 @@ To rebuild from the source archive (Node.js 18 or later, no dependencies to inst
 
 ```sh
 node scripts/build.js firefox
-# -> dist/firefox/ and dist/freecorrector-1.2.5-firefox.zip
+# -> dist/firefox/ and dist/freecorrector-1.2.6-firefox.zip
 node scripts/build.js thunderbird
-# -> dist/thunderbird/ and dist/freecorrector-1.2.5-thunderbird.zip
+# -> dist/thunderbird/ and dist/freecorrector-1.2.6-thunderbird.zip
 ```
 
 ## Third-party code (unmodified copies)
@@ -57,7 +57,8 @@ it:
     ranking of suggestions.
 - `data/fr-freq.txt`, `data/en-freq.txt`: word frequency lists from the FrequencyWords project
   (CC BY-SA 4.0, https://github.com/hermitdave/FrequencyWords). They are used to rank
-  suggestions.
+  suggestions and, since 1.2.6, to tell French from English (`engine/language.js` reads them
+  from the extension with `fetch(runtime.getURL(...))`, allowed by `connect-src 'self'`).
 - `editor/`: an extension page where users can paste and check a longer text.
 - `lib/menus.js`: the right-click entry "Check with FreeCorrector" on selected text. It stores the
   selection in `storage.local` and opens the editor page with it.
@@ -75,7 +76,11 @@ it:
   content script, which applies the first suggestion of each problem in the focused field.
 - The content script matches `<all_urls>` because checking must work in any text field. It reads
   text only from the field the user is typing in, and sends it to the extension's own background
-  page through `runtime.sendMessage`.
+  page through `runtime.sendMessage`. Sign-in fields (user name, e-mail, password forms,
+  one-time codes) are left alone (new in 1.2.6).
+- New in 1.2.6, no new permission: the content script asks the background for the host name of
+  its tab (`{ type: "siteHost" }`, answered from `sender.tab.url`), so that the popup's "turn off
+  on this site" switch also covers frames the page shows from other hosts.
 
 ## Firefox for Android
 
