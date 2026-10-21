@@ -99,7 +99,7 @@ Les images se renseignent une fois (elles valent pour toutes les langues) :
 |---|---|
 | Catégorie | Productivité → Outils (Productivity → Tools) |
 | Icône du store (128×128) | `store/icone-128.png` |
-| Captures d’écran (1280×800, au moins 1) | `store/capture-1-bulle.png`, `capture-2-correcteur.png`, `capture-3-anglais.png`, `capture-4-liste.png` |
+| Captures d’écran (1280×800, au moins 1) | `store/capture-1-bulle.png`, `capture-2-correcteur.png`, `capture-3-anglais.png`, `capture-4-liste.png`, `capture-5-desactiver.png` (fiche anglaise : `capture-5-desactiver-en.png`) |
 | Petite vignette promotionnelle (440×280, **obligatoire**) | `store/promo-440x280.png` |
 | Bannière (1400×560, facultative) | `store/banniere-1400x560.png` |
 | Vidéo YouTube | laisser vide |

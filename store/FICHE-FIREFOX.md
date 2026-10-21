@@ -116,6 +116,7 @@ Made by BenjiBurn.
 | `capture-2-correcteur.png` | La page Correcteur : collez un texte, toutes les fautes sont listées. | The Correcteur page: paste a text and see every mistake. |
 | `capture-3-anglais.png` | Français et anglais, détectés automatiquement. | English and French, detected automatically. |
 | `capture-4-liste.png` | Le compteur ouvre la liste de toutes les fautes du champ. | The counter opens the list of every mistake in the field. |
+| `capture-5-desactiver.png` (fiche anglaise : `capture-5-desactiver-en.png`) | Désactivez FreeCorrector sur un site en un clic, depuis le bouton de la barre d’outils. | Turn FreeCorrector off on a website in one click, from the toolbar button. |
 
 Icône de la fiche, si elle est demandée : `store/icone-128.png` (128×128).
 
