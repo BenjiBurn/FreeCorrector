@@ -4,7 +4,7 @@
 // offscreen document (offscreen.html). This worker reads the settings, makes
 // sure the document exists and forwards each check to it.
 
-/* global fcApi, fcGetSettings */
+/* global fcApi, fcGetSettings, fcHostOf */
 
 importScripts("../lib/settings.js", "../lib/i18n.js", "../lib/menus.js", "../lib/commands.js");
 
@@ -47,8 +47,13 @@ async function fcForward(type, text = "") {
 
 const fcCheck = (text) => fcForward("check", text);
 
-fcApi.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
+fcApi.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg?.target) return false;
+  // The host name of the tab, for content/main.js.
+  if (msg?.type === "siteHost") {
+    sendResponse(fcHostOf(sender.tab?.url ?? ""));
+    return false;
+  }
   // A field got focus: have the engines ready before the first check.
   if (msg?.type === "warmup") {
     fcForward("warmup").catch(() => {});

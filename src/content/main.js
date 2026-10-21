@@ -6,12 +6,27 @@
   let settings = await fcGetSettings();
   let ui = null;
   let attached = new WeakMap();
+  // "Turn off on this site" is about the site in the address bar, also for the
+  // frames it shows from other hosts (sign-in boxes, comment widgets…).
+  const site = (await Promise.resolve(fcApi.runtime.sendMessage({ type: "siteHost" })).catch(() => "")) || location.hostname;
 
   const isActive = () =>
-    settings.enabled && !settings.disabledSites.includes(location.hostname);
+    settings.enabled && !settings.disabledSites.includes(site);
 
   // Code editors are contenteditable too, but their text is not prose.
   const CODE_EDITORS = ".CodeMirror, .cm-editor, .monaco-editor, .ace_editor, .code-editor, [data-language]";
+
+  // Sign-in, sign-up and identity fields: user names, e-mail addresses, codes,
+  // phone and card numbers… never prose, and a badge there is in the way.
+  const IDENTITY_AUTOCOMPLETE = /(?<![\w-])(username|email|one-time-code|current-password|new-password|tel(-[\w-]+)?|cc-[\w-]+|postal-code|street-address|address-line\d|address-level\d|country(-name)?|given-name|family-name|additional-name|name|nickname|organization|bday(-[\w-]+)?|webauthn)(?![\w-])/i;
+  const IDENTITY_WORDS = /user|login|log-in|signin|sign-in|e-?mail|courriel|identifiant|pseudo|passw|mot.?de.?passe|otp|2fa|captcha|phone|t[eé]l[eé]phone|iban/i;
+  function isIdentityField(el) {
+    if (IDENTITY_AUTOCOMPLETE.test(el.getAttribute("autocomplete") ?? "")) return true;
+    if (/^(email|tel|numeric|decimal)$/i.test(el.getAttribute("inputmode") ?? "")) return true;
+    if (IDENTITY_WORDS.test(`${el.name} ${el.id} ${el.getAttribute("aria-label") ?? ""} ${el.placeholder}`)) return true;
+    // A form with a password field signs in or signs up.
+    return !!(el.form ?? el.closest("form"))?.querySelector("input[type=password]");
+  }
 
   // The element to check for a focused element, or null: the field itself
   // for <textarea>/<input>, the editing host (outermost editable ancestor)
@@ -23,7 +38,7 @@
     if (el.localName === "input") {
       const type = (el.getAttribute("type") || "text").toLowerCase();
       if (type !== "text" && type !== "search") return null;
-      return el.disabled || el.readOnly ? null : el;
+      return el.disabled || el.readOnly || isIdentityField(el) ? null : el;
     }
     if (!el.isContentEditable) return null;
     let host = el;

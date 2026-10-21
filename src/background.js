@@ -1,12 +1,17 @@
 // Firefox background page: hosts the engine directly (engine/host.js).
 // Content scripts send { type: "check", text } and get back { matches } or
-// { error }, and { type: "warmup" } when a field gets focus, to have the
-// engines ready before the first check. Everything runs locally: no text
+// { error }, { type: "warmup" } when a field gets focus, to have the
+// engines ready before the first check, and { type: "siteHost" } for the host
+// name of the tab (see content/main.js). Everything runs locally: no text
 // ever leaves the browser.
 
-/* global fcApi, fcGetSettings, fcEngineCheck, fcEngineWarmup */
+/* global fcApi, fcGetSettings, fcEngineCheck, fcEngineWarmup, fcHostOf */
 
-fcApi.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
+fcApi.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+  if (msg?.type === "siteHost") {
+    sendResponse(fcHostOf(sender.tab?.url ?? ""));
+    return false;
+  }
   if (msg?.type === "warmup") {
     fcGetSettings().then(fcEngineWarmup, () => {});
     return false;
