@@ -175,4 +175,12 @@ module.exports = [
   ["Vous pouvez corriger vos fautes directement dans vos emails.", null, null],
   // Reported by the user: "à" brings out another mistake further on ("commandable"), "as" hides it.
   ["Les derniers exemplaires sont a nouveau commandable sur le site.", "a", "à"],
+  // Reported from the extension (1.2.7): "en soi", not "sois".
+  ["Après je roule en Mondeo, donc en soit j'aime bien hein !", "soit", "soi"],
+  ["En soit, ce n’est pas une mauvaise idée.", "soit", "soi"],
+  ["Quoi qu’il en soit, nous partirons demain.", null, null],
+  ["Qu’il en soit ainsi.", null, null],
+  ["Je doute qu’il en soit capable.", null, null],
+  ["Il arrive qu’une personne commette un crime ou en soit elle-même victime.", null, null],
+  ["Le projet en soit est intéressant.", "soit", "soi"],
 ];

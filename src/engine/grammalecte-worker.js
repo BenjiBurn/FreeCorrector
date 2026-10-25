@@ -469,6 +469,8 @@ function checkParagraph(paragraph) {
     // "Bien arrivée à Marseille, il fait beau": the participle comes before the
     // "il" of the next clause and belongs to the writer, not to it.
     if (/ppas_adj_accord_il/.test(m.ruleId) && !/(^|[^\p{L}])ils?(?![\p{L}'’])/iu.test(paragraph.slice(0, err.nStart))) continue;
+    // "en soit": our rule tells "en soi" from the verb ("ou en soit elle-même victime").
+    if (/conf_soi_soit/.test(m.ruleId) && /^soit$/i.test(m.word) && /(^|[^\p{L}])en\s+$/iu.test(paragraph.slice(0, err.nStart))) continue;
     // Holidays ("le 14 Juillet", "le 8 Mai") and titles ("Germinal") keep their capital.
     if (/maj_mois/.test(m.ruleId) && (/^(vendémiaire|brumaire|frimaire|nivôse|pluviôse|ventôse|germinal|floréal|prairial|messidor|thermidor|fructidor)$/i.test(m.word) ||
         /(^|\s)(14|1er|8|11|15)\s+$/.test(paragraph.slice(0, err.nStart)))) continue;

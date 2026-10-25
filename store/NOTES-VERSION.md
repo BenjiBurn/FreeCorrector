@@ -1,5 +1,11 @@
 # Notes de version à coller dans les stores
 
+## 1.2.8 (prochaine version, pas encore publiée)
+
+Brouillon, à compléter jusqu’à la sortie.
+
+- « en soit » → « en soi » (premier signalement reçu par le bouton « Signaler ») ; « ou en soit victime » n’est plus souligné.
+
 ## 1.2.7
 
 **Français** (Firefox : « Notes de version » ; Thunderbird : « Notes de version » ; Chrome : rien à saisir ; Opera : « Changelog ») :

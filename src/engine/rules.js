@@ -2013,6 +2013,14 @@ function fcRoundFourRules(tokens, i, { add, morph, apo, paragraph, spellChecker 
       !/^(un|très|trop|si|assez|bien|à|pour|de|d’|aussi|fort|quelque|tant|sous|depuis|avant|dans)$/.test(L1)) {
     add(t, /^(je|j’|tu)$/.test(L1) || /^(je|tu)$/.test(L2) && /^(ne|n’)$/.test(L1) ? "peux" : "peut", "Le verbe « pouvoir » devant un infinitif : « il peut avoir lieu » ; « peu » veut dire « pas beaucoup ».", true);
   }
+  // "donc en soit j'aime bien" -> soi (reported by a user; "sois" came first)
+  // ("quoi qu’il en soit", "qu’il en soit ainsi", "il n’en soit rien", "ou en soit victime": the verb, left alone;
+  // "en soi" ends the phrase or comes before a new clause.)
+  if (t.lower === "soit" && L1 === "en" &&
+      (isBoundary(next) || /^(je|j’|tu|il|elle|on|nous|vous|ils|elles|c’|ce|ça|cela|ceci|est|n’|ne|pas|mais|et|un|une)$/.test(R1)) &&
+      !/^(il|elle|ils|elles|on|ce|cela|ça|qui|que|qu’|n’|ne|y|ainsi|rien|tout|nous|vous|je|j’|tu)$/.test(L2)) {
+    add(t, "soi", "« En soi » (en lui-même, par nature) s’écrit sans « t ».", true);
+  }
   // "pouvez-vous leurs en envoyer" -> leur (the pronoun never takes an s)
   if (t.lower === "leurs" && /^(en|y)$/.test(R1)) {
     add(t, "leur", "Le pronom « leur » (à eux) ne prend jamais de « s ».", true);
