@@ -30,6 +30,7 @@
       "lib/i18n.js",
       "lib/menus.js",
       "lib/commands.js",
+      "lib/welcome.js",
       "engine/language.js",
       "engine/host.js",
       "background.js"

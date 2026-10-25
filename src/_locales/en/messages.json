@@ -116,5 +116,19 @@
   "edLangBoth": { "message": "French and English" },
   "edLangDetected": { "message": "$1 (detected)" },
   "edSaved": { "message": "Saved on this computer" },
-  "edCredit": { "message": "Made by BenjiBurn · Grammalecte (French) and Harper (English), free software" }
+  "edCredit": { "message": "Made by BenjiBurn · Grammalecte (French) and Harper (English), free software" },
+  "wlcTitle": { "message": "Welcome to FreeCorrector" },
+  "wlcHeading": { "message": "FreeCorrector is ready" },
+  "wlcIntro": { "message": "It underlines your mistakes as you type, in English and French. Everything happens on your computer: your writing is never sent over the Internet." },
+  "wlcIntroTb": { "message": "It underlines your mistakes as you write your emails, in English and French. Everything happens on your computer: your messages are never sent anywhere else." },
+  "wlcTryTitle": { "message": "Try it now" },
+  "wlcTryHint": { "message": "Click an underlined word to see the fix." },
+  "wlcSample": { "message": "Hi Sarah, thanks for you help yesterday! Their going to send the contract tomorow, and I'm really exited about it." },
+  "wlcTipsTitle": { "message": "Good to know" },
+  "wlcTipBadge": { "message": "The badge at the bottom right of a field counts the mistakes: click it to see them all." },
+  "wlcTipSite": { "message": "To turn FreeCorrector off on a website, click its icon in the toolbar, then switch off “$1”. If you don't see the icon, pin it from the extensions menu (the puzzle piece)." },
+  "wlcTipComposeTb": { "message": "The FreeCorrector button of the compose window turns checking off or picky mode on. In a reply, the quoted message and your signature are left alone." },
+  "wlcTipDict": { "message": "A correct word is underlined? Add it to the dictionary from the bubble: it will never be flagged again." },
+  "wlcTipShortcut": { "message": "Ctrl+Shift+F fixes every mistake in the field you are typing in at once." },
+  "wlcTipLogin": { "message": "Sign-in fields (user name, email, password) are never checked." }
 }

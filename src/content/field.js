@@ -193,10 +193,16 @@ class FcFieldBase {
     this.renderBadge();
 
     let res;
-    try {
-      res = await fcApi.runtime.sendMessage({ type: "check", text });
-    } catch (err) {
-      res = { error: String(err?.message ?? err) };
+    // Right after the install (or a restart), the background may not listen
+    // yet: "Receiving end does not exist". It is worth a few more tries.
+    for (let attempt = 0; ; attempt++) {
+      try {
+        res = await fcApi.runtime.sendMessage({ type: "check", text });
+      } catch (err) {
+        res = { error: String(err?.message ?? err) };
+      }
+      if (!/Receiving end does not exist|Could not establish connection/i.test(res?.error ?? "") || attempt >= 4) break;
+      await new Promise((resolve) => setTimeout(resolve, 500 * (attempt + 1)));
     }
     // A newer edit has already scheduled another check.
     if (this.destroyed || id !== this.reqId || this.readText() !== text) return;

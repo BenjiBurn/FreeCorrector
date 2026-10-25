@@ -6,7 +6,7 @@
 
 /* global fcApi, fcGetSettings, fcHostOf */
 
-importScripts("../lib/settings.js", "../lib/i18n.js", "../lib/menus.js", "../lib/commands.js");
+importScripts("../lib/settings.js", "../lib/i18n.js", "../lib/menus.js", "../lib/commands.js", "../lib/welcome.js");
 
 const FC_OFFSCREEN_URL = "chromium/offscreen.html";
 let fcCreating = null;

@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title data-i18n="wlcTitle">Bienvenue dans FreeCorrector</title>
+  <link rel="stylesheet" href="../lib/common.css">
+  <link rel="stylesheet" href="welcome.css">
+</head>
+<body>
+  <main>
+    <header class="top">
+      <img src="../icons/icon.svg" alt="" width="48" height="48">
+      <div>
+        <h1 data-i18n="wlcHeading">FreeCorrector est prêt</h1>
+        <p class="muted" id="intro"></p>
+      </div>
+    </header>
+
+    <section class="card">
+      <h2 data-i18n="wlcTryTitle">Essayez tout de suite</h2>
+      <p class="muted" data-i18n="wlcTryHint">Cliquez sur un mot souligné pour voir la correction.</p>
+      <textarea id="try" spellcheck="false"></textarea>
+    </section>
+
+    <section class="card">
+      <h2 data-i18n="wlcTipsTitle">Bon à savoir</h2>
+      <ul class="tips" id="tips"></ul>
+    </section>
+
+    <div class="actions">
+      <button type="button" id="open-options" class="btn primary" data-i18n="popupOptions">Options et dictionnaire</button>
+      <button type="button" id="open-editor" class="btn" data-i18n="popupOpenEditor">Ouvrir le correcteur</button>
+    </div>
+
+    <footer class="muted" data-i18n="credit">Créé par BenjiBurn</footer>
+  </main>
+
+  <script src="../lib/settings.js"></script>
+  <script src="../lib/i18n.js"></script>
+  <script src="../engine/language.js"></script>
+  <script src="../content/styles.js"></script>
+  <script src="../content/field.js"></script>
+  <script src="../content/ui.js"></script>
+  <script src="welcome.js"></script>
+</body>
+</html>
