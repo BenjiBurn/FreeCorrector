@@ -138,5 +138,7 @@
   "reviewClose": { "message": "Ne plus demander" },
   "optVersion": { "message": "Version $1" },
   "reportMistake": { "message": "Signaler" },
-  "reportMistakeTitle": { "message": "Cette correction est fausse ? Signalez-la : vous verrez ce qui est envoyé avant de valider." }
+  "reportMistakeTitle": { "message": "Cette correction est fausse ? Signalez-la : vous verrez ce qui est envoyé avant de valider." },
+  "wlcHelpTitle": { "message": "Aidez-nous à améliorer FreeCorrector" },
+  "wlcHelpText": { "message": "Une correction vous semble fausse ? Cliquez sur « Signaler » dans la bulle. Vous voyez exactement ce qui est envoyé, et rien ne part sans votre accord. Chaque signalement sert à corriger le correcteur." }
 }

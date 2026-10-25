@@ -123,3 +123,12 @@ footer {
   font-size: 12px;
   text-align: center;
 }
+
+.help {
+  border-color: color-mix(in srgb, var(--accent) 35%, var(--border));
+  background: color-mix(in srgb, var(--accent) 7%, var(--bg));
+}
+
+.help p {
+  margin: 6px 0 0;
+}

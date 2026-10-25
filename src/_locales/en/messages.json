@@ -138,5 +138,7 @@
   "reviewClose": { "message": "Don't ask again" },
   "optVersion": { "message": "Version $1" },
   "reportMistake": { "message": "Report" },
-  "reportMistakeTitle": { "message": "Is this wrong? Report it: you will see what is sent before sending." }
+  "reportMistakeTitle": { "message": "Is this wrong? Report it: you will see what is sent before sending." },
+  "wlcHelpTitle": { "message": "Help us improve FreeCorrector" },
+  "wlcHelpText": { "message": "A correction looks wrong? Click “Report” in the bubble. You see exactly what is sent, and nothing leaves without your OK. Every report helps fix the checker." }
 }
