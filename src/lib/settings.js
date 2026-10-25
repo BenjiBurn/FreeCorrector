@@ -1,7 +1,7 @@
 // Shared by the background script, content scripts, popup and options page.
 // Each context loads this file as a classic script, so everything here is global.
 
-/* exported fcApi, FC_DEFAULTS, fcGetSettings, fcSetSettings, fcHostOf, fcRuleKey */
+/* exported fcApi, FC_DEFAULTS, fcGetSettings, fcSetSettings, fcHostOf, fcRuleKey, fcCountFixes */
 
 const fcApi = globalThis.browser ?? globalThis.chrome;
 
@@ -36,6 +36,15 @@ async function fcGetSettings() {
 
 function fcSetSettings(patch) {
   return fcApi.storage.local.set(patch);
+}
+
+// How many fixes the user applied, kept in this browser only: the popup asks
+// for a review on the store after a while (popup/popup.js).
+function fcCountFixes(n) {
+  if (!n) return;
+  Promise.resolve(fcApi.storage.local.get("fixCount"))
+    .then(({ fixCount = 0 }) => fcApi.storage.local.set({ fixCount: fixCount + n }))
+    .catch(() => {});
 }
 
 function fcHostOf(url) {

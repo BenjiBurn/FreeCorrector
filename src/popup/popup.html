@@ -16,6 +16,17 @@
     </div>
   </header>
 
+  <!-- Shown once the user has applied many fixes (popup.js). -->
+  <div class="review" id="review" hidden>
+    <button type="button" class="review-close" id="review-close" data-i18n-aria-label="reviewClose" aria-label="Fermer">×</button>
+    <strong><span class="stars" aria-hidden="true">★★★★★</span> <span data-i18n="reviewTitle">FreeCorrector vous rend service ?</span></strong>
+    <span data-i18n="reviewText">Un avis sur le store aide d’autres personnes à le découvrir.</span>
+    <div class="review-actions">
+      <button type="button" class="link" id="review-leave" data-i18n="reviewLeave">Laisser un avis</button>
+      <button type="button" class="link later" id="review-later" data-i18n="reviewLater">Plus tard</button>
+    </div>
+  </div>
+
   <label class="row">
     <span data-i18n="popupEnabled">Correction activée</span>
     <input type="checkbox" id="enabled" class="switch">

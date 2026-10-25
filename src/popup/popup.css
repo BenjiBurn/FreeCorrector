@@ -78,3 +78,44 @@ footer {
   cursor: pointer;
 }
 .primary-action:hover { filter: brightness(1.1); }
+
+/* "Leave a review", shown once many fixes were applied. */
+.review {
+  position: relative;
+  margin: 0 0 12px;
+  padding: 11px 28px 11px 12px;
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--accent) 9%, var(--bg));
+  font-size: 13px;
+  line-height: 1.4;
+}
+.review strong {
+  display: block;
+  margin-bottom: 3px;
+}
+.review .stars {
+  color: #f5a524;
+  letter-spacing: 1px;
+}
+.review-actions {
+  display: flex;
+  gap: 16px;
+  margin-top: 8px;
+}
+.review-actions .later {
+  color: var(--muted);
+  font-weight: 500;
+}
+.review-close {
+  all: unset;
+  position: absolute;
+  top: 5px;
+  right: 9px;
+  color: var(--muted);
+  font-size: 17px;
+  line-height: 1;
+  cursor: pointer;
+}
+.review-close:hover { color: var(--fg); }
+.review-close:focus-visible { outline: 2px solid var(--accent); border-radius: 4px; }

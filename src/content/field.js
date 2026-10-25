@@ -1,5 +1,5 @@
 /* exported FcFieldBase, FcTextField, FC_RULE_CAPITAL, FC_RULE_FINAL_PUNCT */
-/* global fcApi, fcT, fcPlural */
+/* global fcApi, fcT, fcPlural, fcCountFixes */
 
 // A checker attached to one editable element. FcFieldBase holds what every
 // kind of field shares (checking, the counter badge, keeping underlines in
@@ -303,6 +303,7 @@ class FcFieldBase {
     // Some editors apply the change asynchronously: catch up afterwards.
     Promise.resolve(this.replaceText(offset, length, replacement))
       .finally(() => setTimeout(() => this.poll(), 50));
+    fcCountFixes(1);
   }
 
   // The "fix all" shortcut: the first suggestion of every problem shown, from
@@ -325,6 +326,7 @@ class FcFieldBase {
       limit = m.offset;
     }
     if (fixes.length) await this.replaceFixes(text, fixes);
+    fcCountFixes(fixes.length);
     setTimeout(() => this.poll(), 50);
     return fixes.length;
   }

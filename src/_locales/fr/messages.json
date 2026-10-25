@@ -130,5 +130,11 @@
   "wlcTipComposeTb": { "message": "Le bouton FreeCorrector de la fenêtre de rédaction coupe la correction ou active le mode exigeant. Dans une réponse, le message cité et votre signature ne sont pas corrigés." },
   "wlcTipDict": { "message": "Un mot correct est souligné ? Ajoutez-le au dictionnaire depuis la bulle : il ne sera plus jamais signalé." },
   "wlcTipShortcut": { "message": "Ctrl+Maj+F corrige d’un coup toutes les fautes du champ où vous écrivez." },
-  "wlcTipLogin": { "message": "Les champs de connexion (identifiant, e-mail, mot de passe) ne sont jamais corrigés." }
+  "wlcTipLogin": { "message": "Les champs de connexion (identifiant, e-mail, mot de passe) ne sont jamais corrigés." },
+  "reviewTitle": { "message": "FreeCorrector vous rend service ?" },
+  "reviewText": { "message": "Un avis sur le store aide d’autres personnes à le découvrir." },
+  "reviewLeave": { "message": "Laisser un avis" },
+  "reviewLater": { "message": "Plus tard" },
+  "reviewClose": { "message": "Ne plus demander" },
+  "optVersion": { "message": "Version $1" }
 }

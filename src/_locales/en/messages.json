@@ -130,5 +130,11 @@
   "wlcTipComposeTb": { "message": "The FreeCorrector button of the compose window turns checking off or picky mode on. In a reply, the quoted message and your signature are left alone." },
   "wlcTipDict": { "message": "A correct word is underlined? Add it to the dictionary from the bubble: it will never be flagged again." },
   "wlcTipShortcut": { "message": "Ctrl+Shift+F fixes every mistake in the field you are typing in at once." },
-  "wlcTipLogin": { "message": "Sign-in fields (user name, email, password) are never checked." }
+  "wlcTipLogin": { "message": "Sign-in fields (user name, email, password) are never checked." },
+  "reviewTitle": { "message": "Is FreeCorrector helping you?" },
+  "reviewText": { "message": "A review on the store helps other people find it." },
+  "reviewLeave": { "message": "Leave a review" },
+  "reviewLater": { "message": "Later" },
+  "reviewClose": { "message": "Don't ask again" },
+  "optVersion": { "message": "Version $1" }
 }

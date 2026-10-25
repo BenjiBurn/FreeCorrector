@@ -4,6 +4,7 @@ fcLocalizePage();
 
 (async () => {
   const $ = (id) => document.getElementById(id);
+  $("version").textContent = fcT("optVersion", fcApi.runtime.getManifest().version);
   let settings = await fcGetSettings();
   const sortWords = (words) => words.sort((a, b) => a.localeCompare(b, fcUiLang));
 
