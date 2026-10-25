@@ -28,6 +28,7 @@ const EN_MISSPELLINGS = {
   febuary: "february", wensday: "wednesday", wendsday: "wednesday", wednsday: "wednesday", tuesay: "tuesday", thrusday: "thursday",
   neice: "niece", yatch: "yacht", colleage: "colleague", colleages: "colleagues", sence: "sense", consequenses: "consequences", wich: "which", whitch: "which", collegue: "colleague", collegues: "colleagues",
   worstest: "worst", bestest: "best", comfortabler: "more comfortable", beautifuller: "more beautiful", expensiver: "more expensive",
+  dosent: "doesn't", dosen: "doesn't", doesent: "doesn't", gude: "guide", guidlines: "guidelines",
   nobodys: "nobody's", everybodys: "everybody's", somebodys: "somebody's", anybodys: "anybody's", everyones: "everyone's", someones: "someone's", anyones: "anyone's",
   mispell: "misspell", mispelled: "misspelled", supercede: "supersede", tounge: "tongue", definately: "definitely",
   definatly: "definitely", definitly: "definitely", seperate: "separate", seperately: "separately", occured: "occurred",
@@ -716,6 +717,7 @@ export function englishRules(paragraph, existing, frequency = () => 0) {
     roundThreeRules(toks, i, paragraph, add, frequency);
     roundFourRules(toks, i, paragraph, add, frequency);
     roundSevenRules(toks, i, paragraph, add, frequency);
+    roundEightRules(toks, i, paragraph, add, frequency);
   }
 
   // ---------- Phrases borrowed from other languages ----------
@@ -2027,10 +2029,124 @@ function roundSevenRules(toks, i, paragraph, add, frequency) {
     const lowerStem = /^\p{Ll}/u.test(stem);
     const counted = toks.slice(Math.max(s, i - 3), i).some((x) => /^(\d+|two|three|four|five|six|seven|eight|nine|ten|many|several|few|both|multiple|dozens|all)$/.test(x.lower));
     if (lowerStem && /^(are|were)$/.test(R1) && L1 !== "else" ||
-        lowerStem && counted && (/^(out|over|here|there|left|ago|are|were|have)$/.test(R1) || R1 === "need" && R2 === "to") ||
+        // "two broken bone’s in my wrist", "the three proposal’s we discussed"
+        lowerStem && counted && (/^(out|over|here|there|left|ago|are|were|have|in|on|at|we|i|you|they|that|which|for|from|and|or|with|by|to)$/.test(R1) || isBoundary(next) || R1 === "need" && R2 === "to") ||
         !lowerStem && L1 === "the" && i - 1 === s && /^(are|were|have|had)$/.test(R1)) {
       fix(plural, "A plural takes no apostrophe.", t.start, t.end, true);
     }
+  }
+}
+
+// ---------- Eighth blind round (2026-10-25): work e-mails, tickets, reviews, school, health ----------
+
+function roundEightRules(toks, i, paragraph, add, frequency) {
+  const t = toks[i];
+  const prev = toks[i - 1], next = toks[i + 1], next2 = toks[i + 2];
+  const L1 = prev?.lower ?? "", L2 = toks[i - 2]?.lower ?? "", R1 = next?.lower ?? "", R2 = next2?.lower ?? "";
+  const fix = (replacement, message, start = t.start, end = t.end, keepCase = false) => add(start, end, replacement, message, { override: true, keepCase });
+  const lowerNoun = (x) => !!x && /^\p{Ll}+$/u.test(x.text) && frequency(x.lower) >= 3 && !/(ing|ly|ful|ous|ive|able|ible)$/.test(x.lower) && !YOURE_FOLLOWERS.test(x.lower) && !EN_DET_ANY.test(x.lower) && !EN_PREP.test(x.lower);
+  let s = i;
+  while (s > 0 && !/^[.!?;]$/.test(toks[s - 1].text)) s--;
+  const before = toks.slice(s, i);
+  const sentence = toks.slice(s, Math.min(toks.length, i + 20)).map((x) => x.lower).join(" ");
+
+  // "submit you’re expense reports", "missed you’re call!", "overlaps it’s parent container" -> your, its
+  // (after a verb or a preposition, a noun follows, then a noun, a preposition or the end)
+  if (/^(you're|it's)$/.test(t.lower) && prev && !isBoundary(prev) &&
+      !/^(that|what|if|because|and|but|or|so|when|since|where|while|until|till|before|after|once|unless|as|than|whether|why|how|who|which|though|although|think|know|hope|guess|sure|said|says|until)$/.test(L1) &&
+      lowerNoun(next) && !EN_PAST_VERB(R1, frequency) && !enBaseOfThird(R1) &&
+      (isBoundary(next2) || EN_PREP.test(R2) || lowerNoun(next2) && !EN_PAST_VERB(R2, frequency))) {
+    if (t.lower === "you're") fix("your", "Did you mean “your” (belonging to you)?");
+    else fix("its", "Possessive: “its” (no apostrophe); “it's” means it is.");
+  }
+  // "Their deploying the hotfix now" -> They're (a verb in -ing with its object)
+  if (t.lower === "their" && /^\p{Ll}+ing$/u.test(next?.text ?? "") && frequency(R1) >= 2.5 &&
+      /^(the|a|an|to|it|this|that|our|your|my|his|her|their|us|me|them|now|right|so|again|back|out|up|home|together|for|all|some|everything|on|in|over)$/.test(R2)) {
+    fix(/^\p{Lu}/u.test(t.text) ? "They're" : "they're", "Did you mean “they're” (they are)?", t.start, t.end, true);
+  }
+  // "The budget numbers for Q3 was sent", "Unit tests for the parser was skipped" -> were
+  if (t.lower === "was") {
+    const p = before.findIndex((x) => /^(for|of|from|on|in|with|about|behind|under|across)$/.test(x.lower));
+    // A short subject: a few words before the noun, then only its complement.
+    const simple = (x) => /^(the|a|an|this|that|these|those|our|your|my|his|her|their|its|all|some|new|old|latest|final|recent|several|many|most|both)$/.test(x.lower) ||
+      /^\p{Lu}/u.test(x.text) || /\d/.test(x.text) || EN_PREP.test(x.lower) || lowerNoun(x);
+    if (p >= 1 && p <= 4 && i - s - p <= 6 && enLooksPlural(before[p - 1], frequency) &&
+        before.every(simple) && !before.some((x) => /^(one|each|every|none|neither|either|any|is|are|were|has|have|had)$/.test(x.lower))) {
+      fix("were", `The subject “${before[p - 1].text}” is plural: “were”.`);
+    }
+  }
+  // "The design team excepted all the copy changes" -> accepted
+  if (t.lower === "excepted" && /^(all|the|our|your|my|his|her|their|this|that|these|those|an|a|it|them|him|every|both|most|some|any)$/.test(R1) &&
+      !/^(be|is|are|was|were|been|being)$/.test(L1)) {
+    fix("accepted", "Did you mean “accepted” (agreed to)?");
+  }
+  // "Which channel should I post the incident summary too?" -> to (the preposition at the end)
+  if (t.lower === "too" && next?.text === "?" && /^(which|what|who|whom|where)$/.test(toks[s]?.lower ?? "") &&
+      before.some((x) => /^(post|send|sent|talk|speak|reply|respond|refer|go|listen|write|forward|move|add|attach|link|submit|deliver|ship|mail|email|point|assign|direct|report|upload|switch|migrate|redirect|return|give|explain|apply|belong|compare|connect|subscribe|invite)$/.test(x.lower))) {
+    fix("to", "At the end of the question, the preposition “to”.");
+  }
+  // "when the users email address contains" -> user's (one user, then what is theirs)
+  if (/^(the|a|each|every|this|that)$/.test(L1) && /^\p{Ll}+s$/u.test(t.text) && enLooksPlural(t, frequency) && !/ss$/.test(t.lower) &&
+      /^(email|account|password|profile|name|data|settings|address|id|role|session|permissions|avatar|request|phone|preferences|history|cart|order|browser|device|location|language|timezone|username)$/.test(R1)) {
+    fix(`${t.lower.slice(0, -1)}'s`, "Possessive: an apostrophe before the “s”.");
+  }
+  // "click Export, than select CSV" -> then (the next step)
+  if (t.lower === "than" && /^(,|and)$/.test(L1) &&
+      /^(select|click|open|press|go|add|run|type|choose|enter|restart|refresh|save|close|tap|scroll|wait|try|check|reload|log|sign|copy|paste|drag|drop|submit|confirm|delete|remove|install|update|navigate)$/.test(R1)) {
+    fix("then", "Did you mean “then” (next)? “Than” compares.");
+  }
+  // "my mentors, who's advice got me through" -> whose (a noun follows)
+  if (t.lower === "who's" && lowerNoun(next) && !/ing$/.test(R1) && !EN_PAST_VERB(R1, frequency) &&
+      !/^(next|there|here|online|available|ready|home|out|up|down|that|this|it|been|got|not|still|also|always|never|really|right|wrong|ahead|responsible|first|last|left|done|who|in|on|at|on)$/.test(R1)) {
+    fix("whose", "Possessive: “whose”; “who's” means who is.");
+  }
+  // "The principle lesson I learned" -> principal (main), "Our principle will be out" (the head of a school)
+  if (t.lower === "principle" && (/^(the|a|our|my|his|her|their|its)$/.test(L1) &&
+      /^(lesson|reason|cause|goal|aim|concern|investigator|dancer|engineer|architect|source|author|component|amount|balance|role|character|office|purpose|objective|problem|issue|focus|benefit|risk|factor|player|owner|sponsor|takeaway|challenge|difference)$/.test(R1) ||
+      /^(our|my|your|his|her|their|the|school's)$/.test(L1) && /^(will|would|is|was|has|had|can|could|should|retired|left|resigned)$/.test(R1) && !/^(of|behind|that)$/.test(R2) &&
+      /(school|teacher|class|student|kids?|district|parents?|pta|picture day|principal)/.test(sentence + " " + toks.slice(Math.max(0, s - 30), s).map((x) => x.lower).join(" ")))) {
+    fix("principal", "“Principal”: the main one, or the head of a school; a “principle” is a rule.");
+  }
+  // "send your child in there best outfit" -> their (an adjective and a noun follow)
+  if (t.lower === "there" && /^(in|on|at|for|with|into|from|to|of)$/.test(L1) &&
+      /^(best|favorite|favourite|own|new|old|nicest|finest|brand|whole|entire|usual)$/.test(R1) && lowerNoun(next2)) {
+    fix("their", "Possessive: “their” (belonging to them).");
+  }
+  // "The repairman come by yesterday" -> came (a past marker, a noun subject)
+  if (EN_PRESENT_TO_PAST[t.lower] && prev && lowerNoun(prev) && /^(the|my|our|your|his|her|their|a|an)$/.test(L2) && i - 2 === s &&
+      /(yesterday|\bago\b|last (night|week|month|year|time|monday|tuesday|wednesday|thursday|friday|saturday|sunday)|this morning)/.test(sentence)) {
+    fix(EN_PRESENT_TO_PAST[t.lower], "A past event: the simple past.");
+  }
+  // "it's worst when I walk downhill" -> worse (a comparison, not "the worst")
+  if (t.lower === "worst" && /^(it's|is|was|gets|got|getting|feels|felt|even|much|way|are|were|seems|seemed|far)$/.test(L1) &&
+      (isBoundary(next) || /^(when|than|if|after|in|at|now|today|because|since|during|than|every|each|at)$/.test(R1))) {
+    fix("worse", "A comparison: “worse”; “the worst” needs “the”.");
+  }
+  // "The nurse told my wife and I to bring" -> me (the object of a verb)
+  if (t.lower === "i" && L1 === "and" && /^(to|for|a|an|the|that|about|some|our|at|on|in|over|up|back|home|when|if|and)$/.test(R1) || t.lower === "i" && L1 === "and" && isBoundary(next)) {
+    let k = i - 2;
+    while (k > s && /^(my|your|his|her|our|their|the|a|\p{Ll}+)$/u.test(toks[k].lower) && !/^(told|asked|invited|thanked|helped|let|gave|sent|showed|called|emailed|texted|for|with|to|between|from|about|against|like|joined|brought|took|drove|picked|met|paid|charged|tell|ask|invite|thank|help|give|send|show|call|email|text)$/.test(toks[k].lower) && i - k < 5) k--;
+    if (k >= s && k < i - 2 && /^(told|asked|invited|thanked|helped|let|gave|sent|showed|called|emailed|texted|for|with|to|between|from|about|against|like|joined|brought|took|drove|picked|met|paid|charged|tell|ask|invite|thank|help|give|send|show|call|email|text)$/.test(toks[k].lower)) {
+      fix("me", "After a verb or a preposition: “me” (the object), as in “told me”.", t.start, t.end, true);
+    }
+  }
+  // "the specialist has a opening" -> an opening (a vowel sound follows)
+  if (t.lower === "a" && next && /^[aeio]\p{Ll}+$/u.test(next.text) && !/^(one|once|eu|ewe)/.test(R1) && frequency(R1) >= 2.5) {
+    fix(`${t.text === "A" ? "An" : "an"} ${next.text}`, "Before a vowel sound: “an”.", t.start, next.end, true);
+  }
+  // "Our team will be on sight Wednesday" -> on site (the place)
+  if (t.lower === "sight" && L1 === "on" && /^(be|been|being|is|are|was|were|team|staff|crew|work|working|stay|stayed|remain|remained|we'll|they'll|i'll|you'll|he'll|she'll)$/.test(L2)) {
+    fix("site", "At the place: “on site”; “sight” is what you see.");
+  }
+  // "confirm weather the invoice should" -> whether (if)
+  if (t.lower === "weather" && /^(know|knows|knew|confirm|decide|decided|ask|asked|wonder|wondering|check|see|sure|unsure|determine|tell|clarify|out|matter|regardless|consider|discuss)$/.test(L1) &&
+      /^(the|it|or|we|you|they|to|this|that|there|he|she|i|our|your|my|their|his|her|a|an|anyone|someone|not)$/.test(R1)) {
+    fix("whether", "Did you mean “whether” (if)? “Weather” is rain and sun.");
+  }
+  // "hit its peek around 9 p.m." -> peak (the highest point)
+  if (t.lower === "peek" && /^(its|the|their|our|a|an|record|all-time)$/.test(L1) &&
+      /^(hit|hits|hitting|reached|reach|reaches|reaching|at|past|during|near|after|before)$/.test(L2) && !/^(sneak)$/.test(L1)) {
+    fix("peak", "The highest point: “peak”; to “peek” is to glance.");
   }
 }
 

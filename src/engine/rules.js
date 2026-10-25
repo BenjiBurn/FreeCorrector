@@ -1944,6 +1944,126 @@ function fcRoundFourRules(tokens, i, { add, morph, apo, paragraph, spellChecker 
   if (/^contactes?$/.test(t.lower) && /^(prendre|prends|prend|prenez|prenons|prennent|pris|prise|repris|reprendre|garder|gardé|garde|en|le|du|bon|premier)$/.test(L1)) {
     add(t, "contact", "Le nom « contact » (prendre contact) ; « contacte » est le verbe.", true);
   }
+  // ---------- Eighth blind round (2026-10-25) ----------
+  // "votre demande à bien été validée", "Emma à oublié son gilet" -> a (avoir, before a participle)
+  if (t.lower === "à" && next && !/^(tout|au|aux)$/.test(L1)) {
+    const p = /^(bien|déjà|enfin|toujours|jamais|pas|aussi|même|encore|vraiment|finalement)$/.test(R1) ? next2 : next;
+    // A participle that can also be a noun ("oublié") only after a name ("Emma à oublié").
+    // Not a pronoun: "quant à lui", "à lui seul" ("lui" is also the participle of "luire").
+    if (p && !fcHas(morph(p), /:O|:R/) && !/^(lui|elle|eux|nous|vous|soi|moi|toi)$/.test(p.lower) &&
+        (p.lower === "été" || /(é|ée|és|ées|i|ie|is|ies|u|ue|us|ues)$/.test(p.lower) && !fcHas(morph(p), /:Y/) &&
+        (isPpOnly(p) || fcHas(morph(p), /:Q/) && /^\p{Lu}/u.test(prev?.text ?? "") && !isBoundary(prev)))) {
+      add(t, "a", "Devant un participe passé : « a » (verbe avoir), pas la préposition « à ».", true);
+    }
+  }
+  // "me préciser ou en est la livraison", "sans savoir ou cette aventure allait" -> où
+  const knowVerb = /^(savoir|sais|sait|savez|savons|savent|savait|préciser|précisez|précise|indiquer|indiquez|indique|dire|dites|dis|demander|demande|demandez|expliquer|expliquez|explique|voir|vois|voit|voyez|regarder|regardez|comprendre|comprends|comprend|ignore|ignorez|deviner|devine|imaginer|imagine|confirmer|confirmez)$/;
+  if (t.lower === "ou" && (knowVerb.test(L1) || /^(me|nous|lui|leur|m’)$/.test(L1) && knowVerb.test(L2)) &&
+      /^(en|se|s’|il|ils|elle|elles|on|je|j’|tu|nous|vous|ça|cela|ce|cette|cet|ces|le|la|les|l’|mon|ma|mes|ton|ta|tes|son|sa|ses|leur|leurs|notre|votre|nos|vos|est|sont|sera|va|vont|trouver|acheter|mettre|aller)$/.test(R1)) {
+    add(t, "où", "« Où » (le lieu, la situation) ; « ou » marque un choix.", true);
+  }
+  // "je vous enverrais la facture dès réception" -> enverrai (a promise with a time: the future)
+  if (/rais$/.test(t.lower) && fcHas(morph(t), /:K[^/]*:1s/) && !fcHas(morph(t), /:(Ip|Iq|If)/)) {
+    let k = i - 1;
+    while (k >= 0 && /^(ne|n’|vous|te|t’|lui|leur|le|la|les|l’|en|y|me|m’)$/.test(tokens[k].lower)) k--;
+    const lemma = fcMorph(spellChecker, t.text).map((m) => m.match(/^>(\S+?)\//)?.[1]).find(Boolean) ?? "";
+    const after = words.slice(words.indexOf(t.lower) + t.lower.length);
+    if (k >= 0 && /^(je|j’)$/.test(tokens[k].lower) && !/(^|\s)si\s/.test(words.slice(0, words.indexOf(t.lower))) &&
+        !/^(pouvoir|vouloir|devoir|aimer|adorer|préférer|savoir|souhaiter|être|avoir|falloir|valoir|dire|penser|croire)$/.test(lemma) &&
+        /(^|\s)(dès|demain|bientôt|rapidement|prochainement|lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche|ce soir|cet après-midi|ce week-end|d’ici|dans la journée|dans la semaine|la semaine prochaine|tout à l’heure|sous \d+)(\s|$)/.test(after)) {
+      const future = t.lower.slice(0, -1);
+      if (spellChecker.isValidToken(future)) add(t, future, "Une action à venir, promise : le futur « -rai » (je vous enverrai), pas le conditionnel « -rais ».", true);
+    }
+  }
+  // "un cache mal configurer" -> configuré (a participle describing the noun)
+  if (/er$/.test(t.lower) && fcHas(morph(t), /:Y/) && /^(mal|bien)$/.test(L1) && prev2 && fcHas(morph(prev2), /:N/) && prev3 && fcHas(morph(prev3), /:D/) &&
+      (isBoundary(next) || /^(sur|dans|par|en|à|au|aux|pour|avec|depuis|et|ou|qui|que|car)$/.test(R1))) {
+    const nm = morph(prev2).join(" ");
+    const want = /:f:p/.test(nm) ? ":f:p" : /:m:p/.test(nm) ? ":m:p" : /:f:s/.test(nm) ? ":f:s" : ":m:s";
+    const form = String(suggVerbPpas(t.lower, want) || "").split("|").filter(Boolean)[0];
+    if (form && form !== t.lower) add(t, form, `« ${L1} » + participe passé, accordé avec « ${prev2.text} ».`, true);
+  }
+  // "des deux cotés", "à coté" -> côtés, côté ("coté" comes from "coter")
+  if (/^cotés?$/.test(t.lower) && /^(deux|chaque|un|ce|cet|l’autre|autre|bon|bons|mauvais|du|de|à|aux|les|des|mes|tes|ses|nos|vos|leurs|mon|ton|son|notre|votre|leur|tous|quatre|trois)$/.test(L1)) {
+    add(t, t.lower.replace("coté", "côté"), "« Côté » (le flanc, la partie) prend un accent circonflexe ; « coté » vient de « coter ».", true);
+  }
+  // "ma voix et complètement cassée" -> est (an adverb and an adjective after a noun)
+  if (t.lower === "et" && prev && nounOnly(prev) && prev2 && fcHas(morph(prev2), /:D/) &&
+      /^(complètement|totalement|vraiment|très|trop|super|tellement|plutôt|assez|hyper|carrément|entièrement|toujours|encore|déjà)$/.test(R1) &&
+      next2 && fcHas(morph(next2), /:[AQ]/) && !fcHas(morph(next2), /:N/) && !(tokens[i + 3] && nounOnly(tokens[i + 3]))) {
+    add(t, "est", "Le verbe « être » : « ma voix est cassée » ; « et » relie deux éléments.", true);
+  }
+  // "qui fête ces 30 ans" -> ses
+  if (t.lower === "ces" && next && /^\d+$/.test(next.text) && R2 === "ans" &&
+      /^(fête|fêtes|fêtait|fêtera|fêter|fêté|a|as|avait|aura|aurait|souffle|soufflera|soufflé)$/.test(L1)) {
+    add(t, "ses", "« Ses » (les siens) : « elle fête ses 30 ans ».", true);
+  }
+  // "le flan a la vanille" -> à la (a dish and its flavor)
+  if (t.lower === "a" && R1 === "la" && /^(vanille|fraise|framboise|crème|pistache|noisette|menthe|tomate|provençale|bolognaise|normande|broche|vapeur|poêle|plancha|fois|carbonara|grecque|japonaise|italienne|mexicaine|marocaine|libanaise)$/.test(R2) &&
+      prev && nounOnly(prev) && !/^\p{Lu}/u.test(prev.text)) {
+    add(span(t, next), "à la", "« À la » (une recette, une manière) ; « a » est le verbe avoir.", true);
+  }
+  // "les frais de port son à la charge" -> sont ("son" before a preposition is the verb)
+  if (t.lower === "son" && prev && (nounOnly(prev) || /^(ils|elles|qui)$/.test(L1)) && !fcHas(morph(prev), /:D/) &&
+      /^(à|au|aux|en|dans|sur|chez|pour|par|très|trop|déjà|toujours|encore|tellement|vraiment)$/.test(R1)) {
+    add(t, "sont", "Le verbe « être » au pluriel : « ils sont » ; « son » est un possessif.", true);
+  }
+  // "la réunion peu avoir lieu" -> peut (pouvoir before an infinitive)
+  if (t.lower === "peu" && next && fcHas(morph(next), /:Y/) && (!fcHas(morph(next), /:[NAQ]/) || /^(avoir|être|faire|dire|devoir|savoir)$/.test(R1)) &&
+      !/^(un|très|trop|si|assez|bien|à|pour|de|d’|aussi|fort|quelque|tant|sous|depuis|avant|dans)$/.test(L1)) {
+    add(t, /^(je|j’|tu)$/.test(L1) || /^(je|tu)$/.test(L2) && /^(ne|n’)$/.test(L1) ? "peux" : "peut", "Le verbe « pouvoir » devant un infinitif : « il peut avoir lieu » ; « peu » veut dire « pas beaucoup ».", true);
+  }
+  // "pouvez-vous leurs en envoyer" -> leur (the pronoun never takes an s)
+  if (t.lower === "leurs" && /^(en|y)$/.test(R1)) {
+    add(t, "leur", "Le pronom « leur » (à eux) ne prend jamais de « s ».", true);
+  }
+  // "est-ce quel peut garder" -> qu’elle (a verb follows: the pronoun "elle")
+  if (t.lower === "quel" && next && fcHas(morph(next), /:V[^/]*:(Ip|Iq|If|K|Sp):3s/) && !fcHas(morph(next), /:[NAD]/) &&
+      !/^(est|était|sera|serait|fut|soit|semble|semblait|paraît|reste)$/.test(R1) &&
+      !(/^(peut|pourrait|doit|devrait|va|allait|vient)$/.test(R1) && R2 === "être")) {
+    add(t, apo("qu’elle"), "Devant un verbe : « qu’elle » (que + elle) ; « quel » accompagne un nom.", true);
+  }
+  // "je passe le sujet en résolut" -> résolu (the participle; "résolut" is a past historic)
+  if (t.lower === "résolut" && /^(en|été|est|a|ai|as|avons|avez|ont|sont|être|marqué|marque|passé|passe|considéré|sujet|problème|ticket|bug)$/.test(L1)) {
+    add(t, "résolu", "Le participe passé « résolu » ; « résolut » est un passé simple.", true);
+  }
+  // "Maxime la déjà fait" -> l’a (an adverb, then a participle)
+  if (t.lower === "la" && /^(déjà|jamais|toujours|bien|enfin|pas|vraiment|souvent|presque|même|encore)$/.test(R1) &&
+      next2 && fcHas(morph(next2), /:Q/) && !fcHas(morph(next2), /:Y/) && prev && !fcHas(morph(prev), /:R|:D/)) {
+    add(t, apo("l’a"), "« L’a » (le + a, verbe avoir) devant un participe passé.", true);
+  }
+  // "à peine sortit du four" -> sorti (the participle, not the past historic)
+  if (L1 === "peine" && L2 === "à" && /[it]$/.test(t.lower) && fcHas(morph(t), /:Is/) && !fcHas(morph(t), /:Q/)) {
+    const form = String(suggVerbPpas(t.lower, ":m:s") || "").split("|").filter(Boolean)[0];
+    if (form) add(t, form, "Après « à peine », le participe passé : « à peine sorti ».", true);
+  }
+  // "sa marche très bien" -> ça (a verb follows: "ça" stands for "cela")
+  if (t.lower === "sa" && /^(marche|marchait|va|fait|sert|suffit|dépend|arrive|change|commence|craint|roule|tourne|coûte|fonctionne|plante|bug|bugue|rame|prend|tient|passe)$/.test(R1) &&
+      (isBoundary(next2) || /^(très|bien|pas|plus|mal|super|trop|vraiment|parfaitement|nickel|toujours|jamais|encore|aussi|comme|si|pareil)$/.test(R2))) {
+    add(t, "ça", "« Ça » (cela) devant un verbe ; « sa » accompagne un nom (sa voiture).", true);
+  }
+  // "mon espace adhérant" -> adhérent (the member; "adhérant" is the participle)
+  if (/^adhérants?$/.test(t.lower) && /^(espace|carte|numéro|statut|compte|liste|nombre|nouvel|nouveaux|un|une|les|des|nos|vos|mes|ses|cher|chers|chère|chères|aux|l’|d’)$/.test(L1)) {
+    add(t, t.lower.replace("adhérant", "adhérent"), "Le nom « adhérent » (le membre) ; « adhérant » est le participe présent.", true);
+  }
+  // "pour la récupéré" -> récupérer (an infinitive after a preposition or a modal)
+  if (/é$/.test(t.lower) && isPpOnly(t) && fcHas(morph(t), /:V1/) && /^(la|le|les|l’|me|m’|te|t’|se|s’|nous|vous|lui|leur|y|en)$/.test(L1) &&
+      /^(pour|sans|de|d’|à|faut|veux|veut|voulez|peux|peut|pouvez|dois|doit|devez|vais|va|allez|vont|aller|faire)$/.test(L2)) {
+    const inf = t.lower.replace(/é$/, "er");
+    if (spellChecker.isValidToken(inf)) add(t, inf, "Après une préposition ou un verbe comme « pouvoir », l’infinitif : « pour la récupérer ».", true);
+  }
+  // "Les photos de notre mariage sont enfin arrivés" -> arrivées (a feminine plural subject)
+  if (fcHas(morph(t), /:Q[^/]*:m:p/) && !fcHas(morph(t), /:Q[^/]*:[fe]:p/) && i > s + 2) {
+    let k = i - 1;
+    while (k > s && /^(ne|n’|pas|plus|jamais|enfin|bien|déjà|toujours|encore|tous|toutes|vraiment|finalement)$/.test(tokens[k].lower)) k--;
+    const head = tokens[s + 1];
+    if (/^(sont|étaient|seront|seraient|furent)$/.test(tokens[k].lower) && /^(les|mes|nos|ces|vos|tes|ses|leurs|des)$/.test(tokens[s].lower) &&
+        head && fcHas(morph(head), /:N:f:p/) && !fcHas(morph(head), /:N:[me]/) && !fcHas(morph(head), /:V/) && k - s <= 9 &&
+        !tokens.slice(s, k).some((x) => /^(et|ou|qui|que|qu’)$/.test(x.lower) || fcHas(morph(x), /:V[^/]*:(Ip|Iq|If|K)/) && x !== tokens[k])) {
+      const form = String(suggVerbPpas(t.lower, ":f:p") || "").split("|").filter(Boolean)[0];
+      if (form && form !== t.lower) add(t, form, `Le participe passé s’accorde avec le sujet féminin pluriel « ${head.text} ».`, true);
+    }
+  }
 }
 
 // ---------- "tu" in a message that says "vous" ----------
