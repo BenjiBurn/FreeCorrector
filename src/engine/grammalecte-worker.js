@@ -463,6 +463,12 @@ function checkParagraph(paragraph) {
     if (/conf_t_as_ta/.test(m.ruleId) && /^\s+toutes?\s+(?!(la|l['’]|les|une|ma|ta|sa|mes|tes|ses|nos|vos|leurs?|cette|ces|ce)\b)\p{L}/iu.test(paragraph.slice(err.nEnd))) continue;
     // "Oh là là", "ah là là là": an interjection, not a doubled word.
     if (/doublon/.test(m.ruleId) && /^là(\s+là)+$/i.test(m.word)) continue;
+    // Next to a word blanked as code or a name ("intervenir à VivaTech sur…" reads
+    // "à      sur"): the rule judged a gap, not the sentence.
+    if (/^(conf_|g2__conf_)/.test(m.ruleId) && (/^\s\s{3,}/.test(paragraph.slice(err.nEnd)) || /\s{3,}\s$/.test(paragraph.slice(0, err.nStart)))) continue;
+    // "Bien arrivée à Marseille, il fait beau": the participle comes before the
+    // "il" of the next clause and belongs to the writer, not to it.
+    if (/ppas_adj_accord_il/.test(m.ruleId) && !/(^|[^\p{L}])ils?(?![\p{L}'’])/iu.test(paragraph.slice(0, err.nStart))) continue;
     // Holidays ("le 14 Juillet", "le 8 Mai") and titles ("Germinal") keep their capital.
     if (/maj_mois/.test(m.ruleId) && (/^(vendémiaire|brumaire|frimaire|nivôse|pluviôse|ventôse|germinal|floréal|prairial|messidor|thermidor|fructidor)$/i.test(m.word) ||
         /(^|\s)(14|1er|8|11|15)\s+$/.test(paragraph.slice(0, err.nStart)))) continue;

@@ -368,9 +368,12 @@ function fcCustomRules(paragraph, spellChecker, existing) {
       add(t, "sûr", "« Sûr » (certain) prend un accent circonflexe.");
     }
 
-    // "Plusieurs personne" -> personnes
+    // "Plusieurs personne" -> personnes. "Nombreux" only as a determiner ("de
+    // nombreux jour"), not as an attribute: "venus si nombreux samedi".
+    const nombreuxAttribute = /^nombreu(x|ses)$/.test(prevLower) && !!prev2 &&
+      !/^(de|d’|les|des|ces|ses|mes|tes|nos|vos|leurs|et|ou|aux|à|en|par|pour|avec|sur|dans)$/.test(prev2.lower);
     if (/^(plusieurs|quelques|divers|diverses|différents|différentes|maints|maintes|nombreux|nombreuses)$/.test(prevLower) &&
-        fcHas(morph(t), /:N:.:s/) && !fcHas(morph(t), /:N:.:[pi]/) && !fcHas(morph(t), /:V/)) {
+        !nombreuxAttribute && fcHas(morph(t), /:N:.:s/) && !fcHas(morph(t), /:N:.:[pi]/) && !fcHas(morph(t), /:V/)) {
       const plural = String(suggPlur(t.lower) || "").split("|").filter(Boolean)[0];
       if (plural) add(t, plural, `Après « ${prevLower} », le nom se met au pluriel.`);
     }
