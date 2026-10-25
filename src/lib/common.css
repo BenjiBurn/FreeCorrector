@@ -8,6 +8,8 @@
   --accent: #2563eb;
   --danger: #e5484d;
   --field: #f6f7f9;
+  /* Text on an accent background (buttons). */
+  --on-accent: #ffffff;
   color-scheme: light;
 }
 
@@ -20,6 +22,8 @@
     --accent: #60a5fa;
     --danger: #f87171;
     --field: #2a2f36;
+    /* The dark accent is light: white text on it was hard to read. */
+    --on-accent: #0b1b33;
     color-scheme: dark;
   }
 }

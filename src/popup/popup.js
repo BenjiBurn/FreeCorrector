@@ -9,7 +9,8 @@ fcLocalizePage();
   const pickyBox = document.getElementById("picky");
 
   const [tab] = await fcApi.tabs.query({ active: true, currentWindow: true });
-  const host = fcHostOf(tab?.url ?? "");
+  // Web sites only: on the extension's own pages the host is its internal id.
+  const host = /^https?:/.test(tab?.url ?? "") ? fcHostOf(tab.url) : "";
   let settings = await fcGetSettings();
 
   function render() {

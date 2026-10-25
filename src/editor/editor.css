@@ -80,7 +80,7 @@ main {
   cursor: pointer;
 }
 .btn:hover:not(:disabled) { background: var(--hover); }
-.btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
 .btn.primary:hover:not(:disabled) { filter: brightness(1.1); background: var(--accent); }
 .btn:disabled { opacity: 0.45; cursor: default; }
 
@@ -170,7 +170,7 @@ main {
   border-radius: 7px;
   border: 0;
   background: var(--accent);
-  color: #fff;
+  color: var(--on-accent);
   cursor: pointer;
   white-space: pre;
 }

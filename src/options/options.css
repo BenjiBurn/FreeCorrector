@@ -79,7 +79,7 @@ form button {
   border-radius: 8px;
   padding: 7px 14px;
   background: var(--accent);
-  color: #fff;
+  color: var(--on-accent);
   cursor: pointer;
 }
 
