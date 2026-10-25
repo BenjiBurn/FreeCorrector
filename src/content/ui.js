@@ -375,6 +375,13 @@ class FcUi {
       more.rel = "noopener noreferrer";
       actions.append(more);
     }
+    const report = fcEl("button", "fc-action", fcT("reportMistake"));
+    report.title = fcT("reportMistakeTitle");
+    report.addEventListener("click", () => {
+      onDone?.();
+      Promise.resolve(fcApi.runtime.sendMessage({ type: "openReport", url: fcReportUrl(field.text, match) })).catch(() => {});
+    });
+    actions.append(report);
     frag.append(actions);
     return frag;
   }
@@ -384,6 +391,40 @@ class FcUi {
     this.closeCard();
     this.closePanel();
   }
+}
+
+// The report page of the website, with the sentence, the underlined word and
+// the fix in the fragment (#r=…): the browser never sends a fragment to the
+// server, so nothing leaves until the person clicks "Send" on that page.
+const FC_REPORT_PAGE = { fr: "https://lapigeonnerie.fr/freecorrector/report", en: "https://lapigeonnerie.fr/freecorrector/en/report" };
+
+function fcReportUrl(text, match) {
+  // The sentence around the match, at most a few hundred characters.
+  let start = match.offset;
+  while (start > 0 && !/[.!?\n]/.test(text[start - 1]) && match.offset - start < 300) start--;
+  let end = match.offset + match.length;
+  while (end < text.length && text[end] !== "\n" && end - match.offset < 300) {
+    end++;
+    if (/[.!?]/.test(text[end - 1]) && end > match.offset + match.length) break;
+  }
+  const base = fcApi.runtime.getURL("");
+  const app = FC_COMPOSE_WINDOW || typeof globalThis.messenger !== "undefined" ? "thunderbird"
+    : base.startsWith("moz-extension:") ? "firefox" : base.startsWith("chrome-extension:") ? "chrome" : "web";
+  const data = {
+    s: text.slice(start, end).trim(),
+    w: match.word,
+    f: match.replacements?.[0] ?? "",
+    m: String(match.message ?? "").slice(0, 300),
+    id: match.ruleId ?? "",
+    l: match.lang ?? "",
+    a: app,
+    v: fcApi.runtime.getManifest?.().version ?? "",
+  };
+  const bytes = new TextEncoder().encode(JSON.stringify(data));
+  let bin = "";
+  for (const b of bytes) bin += String.fromCharCode(b);
+  const b64 = btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  return `${FC_REPORT_PAGE[fcUiLang] ?? FC_REPORT_PAGE.en}#r=${b64}`;
 }
 
 function fcEl(tag, className = "", text = "") {

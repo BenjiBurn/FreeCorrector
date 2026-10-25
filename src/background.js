@@ -8,6 +8,15 @@
 /* global fcApi, fcGetSettings, fcEngineCheck, fcEngineWarmup, fcHostOf */
 
 fcApi.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+  // "Report" in the bubble: the website's report page (content scripts cannot
+  // open tabs). Thunderbird opens it in the default browser.
+  if (msg?.type === "openReport") {
+    const url = String(msg.url ?? "");
+    if (!url.startsWith("https://lapigeonnerie.fr/freecorrector/")) return false;
+    const tb = globalThis.messenger?.windows?.openDefaultBrowser;
+    Promise.resolve(tb ? tb(url) : fcApi.tabs.create({ url })).catch(() => {});
+    return false;
+  }
   if (msg?.type === "siteHost") {
     sendResponse(fcHostOf(sender.tab?.url ?? ""));
     return false;

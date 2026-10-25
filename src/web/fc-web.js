@@ -104,6 +104,10 @@
             return { error: String(err?.message ?? err) };
           }
         }
+        // "Report" in the bubble: the report page, in a new tab.
+        if (msg?.type === "openReport" && String(msg.url).startsWith("https://lapigeonnerie.fr/freecorrector/")) {
+          window.open(msg.url, "_blank", "noopener");
+        }
         return undefined;
       },
       onMessage: { addListener() {} },

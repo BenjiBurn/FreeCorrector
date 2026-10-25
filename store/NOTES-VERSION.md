@@ -1,5 +1,39 @@
 # Notes de version à coller dans les stores
 
+## 1.2.7 (prochaine version, pas encore publiée)
+
+Brouillon, à compléter jusqu’à la sortie.
+
+**Français** (Firefox : « Notes de version » ; Thunderbird : « Notes de version » ; Chrome : rien à saisir ; Opera : « Changelog ») :
+
+```text
+• Nouveau : un bouton « Signaler » dans la bulle, pour nous dire quand une correction est fausse. Vous voyez et pouvez modifier ce qui est envoyé, rien ne part sans votre clic.
+• Une page d’accueil à l’installation, avec un champ pour essayer et les réglages utiles (désactiver sur un site, dictionnaire, raccourci).
+• Beaucoup plus de fautes trouvées en français et en anglais, et moins de fausses alertes : le point final n’est plus réclamé dans les messages de chat, les titres et les listes.
+• La version de l’extension est affichée en bas des options ; boutons plus lisibles en mode sombre.
+```
+
+**English** (Opera "Changelog", Firefox and Thunderbird if an English field is offered):
+
+```text
+• New: a "Report" button in the bubble, to tell us when a correction is wrong. You see and can edit what is sent; nothing leaves without your click.
+• A welcome page at install, with a field to try it and the useful settings (turn off on a site, dictionary, shortcut).
+• Many more mistakes found in English and French, and fewer false alarms: no final period asked for in chat messages, titles and lists.
+• The extension's version is shown at the bottom of the options; easier-to-read buttons in dark mode.
+```
+
+**Notes aux testeurs** (Firefox et Thunderbird, en anglais) :
+
+```text
+No account or login is needed. Everything runs locally (CSP connect-src 'self'): no network requests, no data collected, no remote code. Our own code is neither minified nor bundled; the engines in vendor/ are unmodified copies of Grammalecte 2.3.0 and harper.js 2.10.0 (see NOTE_FOR_REVIEWERS.md).
+
+1.2.7 adds a welcome page opened once at install (welcome/, lib/welcome.js), a "Report" button in the bubble that opens the author's website with the data in the URL fragment (sent only if the user clicks Send there; see NOTE_FOR_REVIEWERS.md), a review link in the popup after 100 fixes, and checking rules (src/engine/); no new permission.
+
+Build: download https://github.com/BenjiBurn/FreeCorrector/archive/refs/tags/v1.2.7.zip, run "node scripts/build.js firefox" (or "thunderbird"; Node.js 18+, no dependencies), output in dist/freecorrector-1.2.7-firefox.zip (or -thunderbird.zip).
+
+To test: type "je suis aller au marché" or "Your going to love it, it's lid is great." in any text field (in Thunderbird: in the body of a new message).
+```
+
 ## 1.2.6
 
 Sur Thunderbird, la 1.2.5 publiée contient déjà le module Thunderbird (construit au commit

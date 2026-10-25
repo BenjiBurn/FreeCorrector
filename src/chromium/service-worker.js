@@ -49,6 +49,12 @@ const fcCheck = (text) => fcForward("check", text);
 
 fcApi.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg?.target) return false;
+  // "Report" in the bubble: the website's report page (content scripts cannot open tabs).
+  if (msg?.type === "openReport") {
+    const url = String(msg.url ?? "");
+    if (url.startsWith("https://lapigeonnerie.fr/freecorrector/")) fcApi.tabs.create({ url }).catch(() => {});
+    return false;
+  }
   // The host name of the tab, for content/main.js.
   if (msg?.type === "siteHost") {
     sendResponse(fcHostOf(sender.tab?.url ?? ""));

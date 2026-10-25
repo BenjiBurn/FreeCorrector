@@ -136,5 +136,7 @@
   "reviewLeave": { "message": "Laisser un avis" },
   "reviewLater": { "message": "Plus tard" },
   "reviewClose": { "message": "Ne plus demander" },
-  "optVersion": { "message": "Version $1" }
+  "optVersion": { "message": "Version $1" },
+  "reportMistake": { "message": "Signaler" },
+  "reportMistakeTitle": { "message": "Cette correction est fausse ? Signalez-la : vous verrez ce qui est envoyé avant de valider." }
 }

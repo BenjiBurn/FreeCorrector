@@ -136,5 +136,7 @@
   "reviewLeave": { "message": "Leave a review" },
   "reviewLater": { "message": "Later" },
   "reviewClose": { "message": "Don't ask again" },
-  "optVersion": { "message": "Version $1" }
+  "optVersion": { "message": "Version $1" },
+  "reportMistake": { "message": "Report" },
+  "reportMistakeTitle": { "message": "Is this wrong? Report it: you will see what is sent before sending." }
 }

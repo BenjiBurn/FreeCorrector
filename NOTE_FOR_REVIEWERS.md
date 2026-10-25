@@ -62,6 +62,15 @@ it:
 - `editor/`: an extension page where users can paste and check a longer text.
 - `lib/menus.js`: the right-click entry "Check with FreeCorrector" on selected text. It stores the
   selection in `storage.local` and opens the editor page with it.
+- `welcome/`: a page opened once, on `runtime.onInstalled` with reason `install` (`lib/welcome.js`).
+- "Report" in the bubble (`content/ui.js`, `fcReportUrl`): opens a tab on the author's website,
+  `https://lapigeonnerie.fr/freecorrector/report#r=…`, with the sentence, the underlined word and
+  the suggestion in the URL fragment. The extension makes no request: the background only opens
+  the tab, a fragment is never sent to the server, and the page sends nothing until the user has
+  reviewed (and can edit) the content and clicked "Send". Privacy policy:
+  https://lapigeonnerie.fr/freecorrector-confidentialite
+- The popup may show a "leave a review" link after 100 applied fixes; the counter (`fixCount`)
+  stays in `storage.local`.
 - `_locales/`: the interface in French and English (`default_locale` is `en`).
 
 ## Permissions
