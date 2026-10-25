@@ -1,8 +1,6 @@
 # Notes de version à coller dans les stores
 
-## 1.2.7 (prochaine version, pas encore publiée)
-
-Brouillon, à compléter jusqu’à la sortie.
+## 1.2.7
 
 **Français** (Firefox : « Notes de version » ; Thunderbird : « Notes de version » ; Chrome : rien à saisir ; Opera : « Changelog ») :
 

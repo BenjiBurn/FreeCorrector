@@ -1,4 +1,4 @@
-# Note for reviewers — FreeCorrector 1.2.6
+# Note for reviewers — FreeCorrector 1.2.7
 
 FreeCorrector is a free, open-source (GPL-3.0) spelling and grammar checker for French and
 English. All checking happens locally in the browser: the extension makes **no network
@@ -18,9 +18,9 @@ To rebuild from the source archive (Node.js 18 or later, no dependencies to inst
 
 ```sh
 node scripts/build.js firefox
-# -> dist/firefox/ and dist/freecorrector-1.2.6-firefox.zip
+# -> dist/firefox/ and dist/freecorrector-1.2.7-firefox.zip
 node scripts/build.js thunderbird
-# -> dist/thunderbird/ and dist/freecorrector-1.2.6-thunderbird.zip
+# -> dist/thunderbird/ and dist/freecorrector-1.2.7-thunderbird.zip
 ```
 
 ## Third-party code (unmodified copies)
