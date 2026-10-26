@@ -42,4 +42,8 @@ module.exports = [
   ["Their meeting was long.", null, null],
   // A sentence that starts with a name in CamelCase, blanked as code.
   ["JavaScript is easy to learn.", null, null],
+  // Reported by a user: "greek" got "geek"; a known name wants its capital.
+  ["I love greek food.", "greek", "Greek"],
+  ["We spent a week in paris.", "paris", "Paris"],
+  ["We had a bigg house.", "bigg", "big"],
 ];

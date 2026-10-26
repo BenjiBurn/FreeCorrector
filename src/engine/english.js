@@ -455,7 +455,17 @@ async function lintParagraph(paragraph) {
     // Not a contraction used for the wrong word: that is grammar, ranked above.
     const oneWord = /^[\p{L}'’]+$/u.test(m.word) && !/['’](re|s|ll|ve|d|t)$/i.test(m.word);
     const rare = frequency(m.word) < 2.7;
-    if (oneWord && m.category !== "typo" && (m.category === "spelling" || rare || contractionFor(m.word))) {
+    // "greek food", "trip to paris": a common word the dictionary only knows with
+    // its capital is that name, not "geek" or "pairs" (but "finnish" -> "finish",
+    // a word sixty times more frequent; frequencies are log10 counts).
+    const named = m.category === "spelling" && /^\p{Ll}+$/u.test(m.word) && !rare &&
+      frequency(m.word) >= Math.max(0, ...m.replacements.slice(0, 3).map(frequency)) - 1 &&
+      await lintCount(m.word) > 0 && await lintCount(m.word[0].toUpperCase() + m.word.slice(1)) === 0;
+    if (named) {
+      const name = m.word[0].toUpperCase() + m.word.slice(1);
+      m.replacements = [name, ...m.replacements.filter((r) => r !== name)];
+      m.message = "Names of people, places, languages and nationalities take a capital letter.";
+    } else if (oneWord && m.category !== "typo" && (m.category === "spelling" || rare || contractionFor(m.word))) {
       if (ranked++ < MAX_RANKED && performance.now() < deadline) m.replacements = await rankSpelling(paragraph, m);
       if (rare || contractionFor(m.word)) {
         m.category = "spelling";
