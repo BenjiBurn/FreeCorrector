@@ -238,7 +238,9 @@ async function rankSpelling(paragraph, m) {
     cost += index >= 0 ? HARPER_ORDER_WEIGHT * index : 0.2;
     if (c === contraction || c.toLowerCase() === contraction?.toLowerCase()) cost -= 1;
     // A plural typo wants a plural fix: "grocerys" -> "groceries", not "grocery".
-    if (/[^s's]s$/i.test(m.word) && !/s$/i.test(c)) cost += 1;
+    // But a past form takes no -s: "it tooks" -> "took", not "tools".
+    if (m.word.toLowerCase() === `${c.toLowerCase()}s` && EN_IRREGULAR_PAST.test(c)) cost -= 1;
+    else if (/[^s's]s$/i.test(m.word) && !/s$/i.test(c)) cost += 1;
     return { c, cost, errors: 0 };
   }).sort((a, b) => a.cost - b.cost);
 

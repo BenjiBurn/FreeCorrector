@@ -46,4 +46,10 @@ module.exports = [
   ["I love greek food.", "greek", "Greek"],
   ["We spent a week in paris.", "paris", "Paris"],
   ["We had a bigg house.", "bigg", "big"],
+  // Signalé depuis l'extension (1.2.7) : « tooks » proposait « tools » ; un passé ne prend pas de -s.
+  ["It tooks some times, but a fix has been delivered for this issue in production.", "tooks", "took"],
+  ["They wents home early.", "wents", "went"],
+  ["It took some time, but a fix has been delivered.", null, null],
+  ["He took his tools and left.", null, null],
+  ["She got a new car.", null, null],
 ];
