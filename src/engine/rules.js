@@ -2160,6 +2160,26 @@ function fcRoundFourRules(tokens, i, { add, morph, apo, paragraph, spellChecker 
       (isBoundary(next) || /^(tout|toute|demain|ce|cet|cette|dans|vers|jusqu’|jusqu|avant|après|à|pour|depuis|aussi|ce|ici|bientôt)$/.test(R1))) {
     add(t, "là", "« Là » (l’endroit) prend un accent grave.", true);
   }
+  // "Ça me parait normal" -> paraît, as a style hint: the 1990 spelling is correct too,
+  // the traditional one is offered (asked by a user). One message for every word, so
+  // that turning the hint off turns it off everywhere (fcRuleKey).
+  const readings = morph(t);
+  const rectified = readings.filter((m) => /\/R$/.test(m));
+  // ("ce fut": « être » is never touched; "la soule", "la ruta": after a determiner, only a
+  // noun; the traditional form must be a word people use.)
+  const afterDet = prev && fcHas(morph(prev), /:D/);
+  if (rectified.length && /[iu]/.test(t.lower) && !readings.some((m) => /^>(être|avoir)\//.test(m)) &&
+      !(afterDet && !rectified.some((m) => /:N/.test(m)))) {
+    const others = readings.filter((m) => !/\/R$/.test(m));
+    // "il boite" (boiter) stays; "une boite" is the noun. "parait" is rarely "parer".
+    const nounAfterDet = afterDet && others.every((m) => /:V/.test(m));
+    if (!others.length || nounAfterDet || /^(parait|apparait|disparait|reparait)$/.test(t.lower)) {
+      const forms = [...t.lower].flatMap((ch, k) => (/[iu]/.test(ch) ? [t.lower.slice(0, k) + (ch === "i" ? "î" : "û") + t.lower.slice(k + 1)] : []));
+      const traditional = forms.find((f) => fcMorph(spellChecker, f).some((m) => !/\/R$/.test(m)) &&
+        (typeof fcFrequency !== "function" || fcFrequency(f) > 0));
+      if (traditional) add(t, traditional, `Orthographe traditionnelle : « ${traditional} » (« ${t.lower} » est l’orthographe rectifiée de 1990, correcte aussi).`, false, false, "style");
+    }
+  }
 }
 
 // ---------- "tu" in a message that says "vous" ----------
