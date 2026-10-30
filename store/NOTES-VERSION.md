@@ -7,6 +7,7 @@ Brouillon, à compléter jusqu’à la sortie.
 - « en soit » → « en soi » (premier signalement reçu par le bouton « Signaler ») ; « ou en soit victime » n’est plus souligné.
 - Anglais : un nom écrit sans majuscule (« greek », « paris », « tokyo ») propose la majuscule (« Greek ») au lieu d’un autre mot (« geek ») ; signalé par un utilisateur.
 - Anglais : un passé avec un -s en trop (« it tooks », « they wents ») propose « took », « went » au lieu d’un autre mot (« tools ») ; signalé par un utilisateur.
+- Un impératif sans accent suivi de « toi », « moi »… (« achete toi ») propose « achète » au lieu de « acheté » ; signalé par un utilisateur.
 
 ## 1.2.7
 

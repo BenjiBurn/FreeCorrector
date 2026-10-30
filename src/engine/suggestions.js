@@ -308,6 +308,15 @@ function fcErrorsAfterRepair(sentence, a, b) {
   return Math.min(spans.length, fcCountErrors(fixed));
 }
 
+// Errors of a sentence with a spelling candidate at `a`, minus a missing hyphen
+// right after it: that is a mistake of its own, shown once the word is fixed.
+// "achete toi" -> "achète" (then "achète-toi"), not "acheté" that hides it.
+function fcCountErrorsForWord(sentence, a) {
+  return fcSentenceErrors(sentence).filter(
+    ([x, y, fix]) => !(x === a && fix && / /.test(sentence.slice(x, y)) && fix === sentence.slice(x, y).replace(/ /g, "-"))
+  ).length;
+}
+
 function fcHasErrorAt(text, start, length) {
   const [s, e] = fcSentenceBounds(text, start, start + length);
   const a = start - s;
@@ -364,7 +373,7 @@ function fcRankSuggestions(spellChecker, text, start, length, suggestions, isSpe
     return {
       c,
       extra,
-      errors: fcCountErrors(before + c + after),
+      errors: isSpelling ? fcCountErrorsForWord(before + c + after, before.length) : fcCountErrors(before + c + after),
       repaired: isSpelling ? null : fcErrorsAfterRepair(before + c + after, before.length, before.length + c.length),
       caseChange: wordIsLower !== (c === c.toLowerCase()) ? 1 : 0,
       // For grammar errors, sounding the same is the strongest hint:

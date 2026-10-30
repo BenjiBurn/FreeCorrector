@@ -183,4 +183,10 @@ module.exports = [
   ["Je doute qu’il en soit capable.", null, null],
   ["Il arrive qu’une personne commette un crime ou en soit elle-même victime.", null, null],
   ["Le projet en soit est intéressant.", "soit", "soi"],
+  // Signalé depuis l'extension (1.2.7) : impératif sans accent devant « toi », « achète », pas « acheté ».
+  ["Ptn mais achete toi une boite auto si t'es pas cap de passer les vitesses.", "achete", "achète"],
+  ["Il a achete du pain.", "achete", "acheté"],
+  ["Achète-toi une voiture neuve.", null, null],
+  ["Il s’est acheté une voiture neuve.", null, null],
+  ["Tu l’as acheté toi-même ?", null, null],
 ];
