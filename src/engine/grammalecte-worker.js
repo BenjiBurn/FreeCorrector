@@ -461,6 +461,8 @@ function checkParagraph(paragraph) {
     // "ta toute première semaine": "toute" is the adverb before an adjective, not
     // "t'as toute la journée" (a determiner follows there).
     if (/conf_t_as_ta/.test(m.ruleId) && /^\s+toutes?\s+(?!(la|l['’]|les|une|ma|ta|sa|mes|tes|ses|nos|vos|leurs?|cette|ces|ce)\b)\p{L}/iu.test(paragraph.slice(err.nEnd))) continue;
+    // "y'a plus de lait": the usual informal spelling of "il y a", like "t'es".
+    if (/tu_y_attaché/.test(m.ruleId) && /^y['’]a$/i.test(m.word)) continue;
     // "Oh là là", "ah là là là": an interjection, not a doubled word.
     if (/doublon/.test(m.ruleId) && /^là(\s+là)+$/i.test(m.word)) continue;
     // Next to a word blanked as code or a name ("intervenir à VivaTech sur…" reads
@@ -565,7 +567,10 @@ function checkParagraph(paragraph) {
   const ontToOn = custom.filter((m) => m.ruleId === "FC_ON" && /^ont$/i.test(m.word));
   const afterOnt = (m) => /ppas|infi/.test(m.ruleId) &&
     ontToOn.some((o) => m.offset > o.offset && /^ont(\s+\S+)?\s+$/i.test(paragraph.slice(o.offset, m.offset)));
-  const notOverridden = (m) => !overriding.some((o) => overlaps(o, m)) && !afterOnt(m);
+  // "ma posé" -> m’a: the agreement Grammalecte wants with "ma" ("posé" -> posée) goes too.
+  const maToMa = custom.filter((m) => /^FC_M_AS?$/.test(m.ruleId) && /^ma$/i.test(m.word));
+  const afterMa = (m) => /gn_ma_ta_sa/.test(m.ruleId) && maToMa.some((o) => /^ma\s+$/i.test(paragraph.slice(o.offset, m.offset)));
+  const notOverridden = (m) => !overriding.some((o) => overlaps(o, m)) && !afterOnt(m) && !afterMa(m);
   const found = [...spelling.filter(notOverridden), ...grammar.filter(notOverridden), ...custom]
     .filter((m) => !urls.some(([a, b]) => m.offset < b && a < m.offset + m.length))
     .sort((a, b) => a.offset - b.offset);

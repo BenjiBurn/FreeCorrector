@@ -663,7 +663,9 @@ function fcCustomRules(paragraph, spellChecker, existing) {
     // ---------- Typos that make another real word ----------
 
     // "Elle et partie", "il et là" -> est ("il", "on", "ça" are never coordinated)
-    if (t.lower === "et" && prev && next && ((/^(il|on|ça|cela|c’)$/.test(prevLower) && !/^(moi|toi|lui|elle|nous|vous|eux|elles)$/.test(next.lower)) ||
+    // ("je corrige ça et je te renvoie": a subject follows, "ça" was an object.)
+    if (t.lower === "et" && prev && next && ((/^(il|on|ça|cela|c’)$/.test(prevLower) &&
+        !/^(moi|toi|lui|elle|nous|vous|eux|elles|je|j’|tu|t’|il|on|ils)$/.test(next.lower)) ||
         (prevLower === "elle" && fcHas(morph(next), /:(V[^/]*:Q|A|W)/) && !/^(moi|toi|lui|elle|nous|vous|eux|elles|son|sa|ses|mon|ma|mes|ton|ta|tes|un|une|le|la|les|des|leur|leurs)$/.test(next.lower) && /^\p{Ll}/u.test(next.text)))) {
       add(t, "est", "Confusion probable : « est » (verbe être) plutôt que « et ».", true);
     }
@@ -1164,7 +1166,9 @@ function fcCustomRules(paragraph, spellChecker, existing) {
     }
 
     // "Les enfants on faim" -> ont (after a plural noun, before a noun or a participle)
+    // ("mais on oublie vite": "mais" is also the plural of the month "mai".)
     if (t.lower === "on" && prev && fcHas(morph(prev), /:N:.:p/) && !fcHas(morph(prev), /:N:.:s/) && next &&
+        !/^(mais|et|ou|donc|or|ni|car|puis|alors|si|que|comme|quand)$/.test(prevLower) &&
         (fcHas(morph(next), /:V[^/]*:Q/) || (fcHas(morph(next), /:N/) && !fcHas(morph(next), /:V[^/]*:(Ip|Iq|If|K|Is):3s/)))) {
       add(t, "ont", "Confusion probable : « ont » (verbe avoir) plutôt que « on ».");
     }
@@ -1522,8 +1526,9 @@ function fcRoundThreeRules(tokens, i, { add, morph, apo, paragraph, spellChecker
   // "de les enfants" -> des ; "à le marché" -> au ; "de un pull" -> d’un
   if (/^(de|à)$/.test(t.lower) && /^(le|les|un|une)$/.test(R1) && next2 && fcHas(morph(next2), /:N/) && !fcHas(morph(next2), /:V/) && !/^[aeiouyéèêâîôûœh]/.test(R2) || /^(de|à)$/.test(t.lower) && /^(un|une)$/.test(R1) && next2 && fcHas(morph(next2), /:N/)) {
     const fix = { "de le": "du", "de les": "des", "à le": "au", "à les": "aux", "de un": apo("d’un"), "de une": apo("d’une") }[`${t.lower} ${R1}`];
-    // ("sous le nom de Le Confiturier": a title, not an article to contract.)
-    if (fix && !(fix.startsWith("d’") && /^(\d|à)/.test(R2)) && !(/^\p{Lu}/u.test(next.text) && /^\p{Lu}/u.test(next2.text) && t.text === t.lower)) add(span(t, next), fix, `« ${t.lower} ${R1} » se contracte : « ${fix} ».`, true);
+    // ("sous le nom de Le Confiturier": a title, not an article to contract;
+    // "qui à le numéro": the verb « a », handled below.)
+    if (fix && !(fix.startsWith("d’") && /^(\d|à)/.test(R2)) && !(t.lower === "à" && /^(qui|il|elle|on|ça|personne|quelqu’un)$/.test(L1)) && !(/^\p{Lu}/u.test(next.text) && /^\p{Lu}/u.test(next2.text) && t.text === t.lower)) add(span(t, next), fix, `« ${t.lower} ${R1} » se contracte : « ${fix} ».`, true);
   }
   // "avec tu" -> toi
   if (t.lower === "tu" && /^(avec|pour|chez|sans|comme|que|et|de|contre|derrière|devant|après|avant)$/.test(L1) && endOfClause && L1 !== "que") add(t, "toi", "Après une préposition : « toi ».", true);
@@ -1605,10 +1610,13 @@ function fcRoundFourRules(tokens, i, { add, morph, apo, paragraph, spellChecker 
   if (t.lower === "mais" && prev && next && fcHas(morph(prev), /:V|:Q/) && !fcHas(morph(prev), /:N/) && nounOnly(next) && fcHas(morph(next), /:p/)) {
     add(t, "mes", "Le possessif : « mes » (mes affaires).", true);
   }
-  // "Mon chef ma demandé" -> m’a
-  if (t.lower === "ma" && /^(dit|fait|donné|appelé|envoyé|demandé|écrit|répondu|parlé|montré|offert|prêté|expliqué|raconté|promis|proposé|conseillé|appris|laissé|aidé|invité|attendu|vu|eu|pris|mis|rendu|confié|annoncé|prévenu|félicité|remercié|rappelé|averti|oublié|reconnu|déçu|surpris)$/.test(R1) &&
+  // "Mon chef ma demandé" -> m’a ("ma posé un lapin": any masculine participle that is not a noun)
+  if (t.lower === "ma" && (/^(dit|fait|donné|appelé|envoyé|demandé|écrit|répondu|parlé|montré|offert|prêté|expliqué|raconté|promis|proposé|conseillé|appris|laissé|aidé|invité|attendu|vu|eu|pris|mis|rendu|confié|annoncé|prévenu|félicité|remercié|rappelé|averti|oublié|reconnu|déçu|surpris)$/.test(R1) ||
+      next && /^\p{Ll}+é$/u.test(next.text) && fcHas(morph(next), /:Q:A:m:s/) && !fcHas(morph(next), /:N/)) &&
       !/^(de|à|par|pour|sur|dans|avec|sans|en)$/.test(L1)) {
-    add(t, apo("m’a"), "« M’a » (me + a) : « il m’a demandé ».", true);
+    // "Tu ma manqué" -> m’as
+    if (L1 === "tu") add(t, apo("m’as"), "« M’as » (me + as) : « tu m’as manqué ».", true);
+    else add(t, apo("m’a"), "« M’a » (me + a) : « il m’a demandé ».", true);
   }
   // "je ne sais pas quand penser" -> qu’en
   if (t.lower === "quand" && /^(penser|dire|faire|conclure)$/.test(R1)) add(t, apo("qu’en"), "« Qu’en » (que + en) : « qu’en penser ».", true);
@@ -2071,6 +2079,86 @@ function fcRoundFourRules(tokens, i, { add, morph, apo, paragraph, spellChecker 
       const form = String(suggVerbPpas(t.lower, ":f:p") || "").split("|").filter(Boolean)[0];
       if (form && form !== t.lower) add(t, form, `Le participe passé s’accorde avec le sujet féminin pluriel « ${head.text} ».`, true);
     }
+  }
+
+  // ---------- Ninth blind round (2026-10-30): informal writing ----------
+  const ETRE = /^(suis|es|est|sommes|êtes|sont|étais|était|étions|étiez|étaient|serai|seras|sera|serons|serez|seront)$/;
+  const SUBJECT = /^(je|j’|tu|t’|il|elle|on|nous|vous|ils|elles)$/;
+  // "je suis grave fatiguer" -> fatigué (an adverb between "être" and the participle)
+  if (/^\p{Ll}+er$/u.test(t.text) && fcHas(morph(t), /:V1[^/]*:Y/) && !fcHas(morph(t), /:[NA]/) && ETRE.test(L2) &&
+      /^(grave|trop|super|hyper|vraiment|tellement|carrément|complètement|vachement|assez|déjà|encore|toujours|bien)$/.test(L1)) {
+    add(t, t.lower.replace(/er$/, "é"), "Après « être », le participe passé : « je suis fatigué ».", true);
+  }
+  // "Y'a quelqu’un qui à le numéro ?" -> a ("à le" does not exist; a subject comes before)
+  if (t.lower === "à" && /^(le|les)$/.test(R1) && /^(qui|il|elle|on|ça|personne|quelqu’un)$/.test(L1)) {
+    add(t, "a", "Le verbe « avoir » : « qui a le numéro ».", true);
+  }
+  // ", ont l’invite plus" -> on (a pronoun and a verb follow, no plural subject before)
+  if (t.lower === "ont" && (isBoundary(prev) || /^(mais|et|donc|puis|alors|quand|si)$/.test(L1)) &&
+      /^(l’|le|la|les|me|m’|te|t’|se|s’|lui|leur|y|en)$/.test(R1) && next2 && fcHas(morph(next2), /:V[^/]*:Ip[^/]*:3s/) && !fcHas(morph(next2), /:Q/)) {
+    add(t, "on", "Le pronom « on » : « on l’invite » ; « ont » est le verbe avoir.", true);
+  }
+  // "Ma fille c’est fait vacciner", "le chat c’est mis à spammer", "Ma moto c’est arrêtée" -> s’est
+  if (t.lower === "c’" && R1 === "est" && next2 && i > s && !isBoundary(prev)) {
+    const R3 = tokens[i + 3], R4 = tokens[i + 4];
+    if (/^(fait|faite)$/.test(R2) && R3 && fcHas(morph(R3), /:Y/) ||
+        /^(mis|mise)$/.test(R2) && R3?.lower === "à" && R4 && fcHas(morph(R4), /:Y/) ||
+        fcHas(morph(next2), /:Q:A:f/) && !fcHas(morph(next2), /:[NA]:[me]|:Q:A:m/) && nounOnly(prev) && fcHas(morph(prev), /:N:f/)) {
+      add(span(t, next), apo("s’est"), "Verbe pronominal : « elle s’est arrêtée » ; « c’est » veut dire « cela est ».", true);
+    }
+  }
+  // "Léa a dormi chez ces grands-parents", "il a laissé ces clés dessus" -> ses
+  if (t.lower === "ces" && next && !/^(-là|qui|que|qu’|dont|là)$/.test(R2) &&
+      !tokens.slice(s, i).some((x) => /^(je|j’|tu|t’|nous|vous|on)$/.test(x.lower)) &&
+      (L1 === "chez" && /^(parents|grands-parents|beaux-parents|cousins|cousines|potes|amis|copains|copines|frères|sœurs|oncles|tantes)$/.test(R1) ||
+       /^(oublié|oubliée|laissé|laissée|retrouvé|retrouvée|perdu|perdue|rangé|rangée|récupéré|récupérée|repris|reprise|cherché|cherchée)$/.test(L1) &&
+       /^(clés|clefs|lunettes|affaires|papiers|sensations|marques|esprits|habitudes|devoirs|chaussures|valises|bagages|gants)$/.test(R1))) {
+    add(t, "ses", "Le possessif : « ses » (les siens) ; « ces » montre quelque chose.", true);
+  }
+  // "Il est ou le lien ?", "au prix ou je les ai payés" -> où
+  if (t.lower === "ou") {
+    let q = i + 1;
+    while (q < tokens.length && q <= i + 6 && !/^[.!?;]$/.test(tokens[q].text)) q++;
+    if (/^(est|sont|es|êtes|était|étaient)$/.test(L1) && tokens[q]?.text === "?" && !tokens.slice(i + 1, q).some((x) => x.lower === "ou") ||
+        /^(prix|moment|jour|endroit|fois|heure|cas|époque|année|soir|matin|lieu|pays|ville|instant|période|semaine|mois|là)$/.test(L1) && SUBJECT.test(R1)) {
+      add(t, "où", "« Où » (le lieu, le moment) prend un accent grave.", true);
+    }
+  }
+  // "les petits a 17h", "donné a fond" -> à
+  if (t.lower === "a" && next && (R1 === "fond" ||
+      /^\d{1,2}h(\d\d)?$/.test(R1) && !/^(de|d’)$/.test(R2) && !/^(il|elle|on|qui|ça|cela|y|n’)$/.test(L1))) {
+    add(t, "à", "La préposition « à » : « à 17 h », « à fond ».", true);
+  }
+  // "La livraison était rapide est le produit correspond" -> et (two clauses joined)
+  if (t.lower === "est" && prev && fcHas(morph(prev), /:A/) && !fcHas(morph(prev), /:V/) &&
+      /^(était|est|étaient|sont|semblait|reste|restait|paraît|parait)$/.test(L2) &&
+      /^(le|la|l’|les|un|une|mon|ma|mes|son|sa|ses|ton|ta|tes|notre|nos|votre|vos|leur|leurs)$/.test(R1)) {
+    add(t, "et", "Pour relier deux propositions : « et ».", true);
+  }
+  // "font de leurs mieux" -> leur (« leur mieux » never takes an s)
+  if (t.lower === "leurs" && R1 === "mieux") add(t, "leur", "« Faire de leur mieux » : « leur » sans s.", true);
+  // "deux heures, voir une demi-journée" -> voire (or even)
+  if (t.lower === "voir" && prev?.text === "," && (/^(même|plus|moins|pire|carrément|jamais)$/.test(R1) ||
+      (/^(un|une|deux|trois|quatre|cinq|six|dix|quinze|vingt|\d+)$/.test(R1) &&
+       /^(heure|heures|journée|journées|demi-journée|jour|jours|semaine|semaines|mois|an|ans|année|années|minute|minutes|fois)$/.test(R2)))) {
+    add(t, "voire", "« Voire » (et même) ; « voir » est le verbe.", true);
+  }
+  // "Les viewers on hâte" -> ont (a plural subject, then a noun of « avoir faim »)
+  if (t.lower === "on" && prev && /^\p{L}+[sx]$/u.test(prev.text) &&
+      !/^(mais|puis|alors|dans|sans|sous|vers|chez|depuis|dès|lors|plus|moins|très|trop|jamais|toujours|tous|toutes|nous|vous|les|des|mes|tes|ses|nos|vos|ces|aux|leurs|deux|trois|pas|fois|ans|jours|mois|heures|parfois|ailleurs|dehors|après|avant)$/.test(L1) &&
+      /^(hâte|faim|soif|peur|envie|besoin|raison|tort|honte|sommeil|froid|chaud|mal)$/.test(R1)) {
+    add(t, "ont", "Le verbe « avoir » au pluriel : « ils ont hâte ».", true);
+  }
+  // "Le colis est près, venez le chercher" -> prêt (ready, not near: no « de » follows)
+  if (t.lower === "près" && /^(est|sont)$/.test(L1) && prev2 && nounOnly(prev2) && prev3 && fcHas(morph(prev3), /:D/) &&
+      (isBoundary(next) || R1 === "pour" || R1 === "à" && next2 && fcHas(morph(next2), /:Y/))) {
+    const fem = fcHas(morph(prev2), /:N:f/) && !fcHas(morph(prev2), /:N:[me]/);
+    add(t, (fem ? "prête" : "prêt") + (L1 === "sont" ? "s" : ""), "« Prêt » (préparé) ; « près » veut dire proche.", true);
+  }
+  // "je suis la tout l’après-midi" -> là (a place: no noun follows)
+  if (t.lower === "la" && ETRE.test(L1) && L2 !== "c’" && SUBJECT.test(L2) &&
+      (isBoundary(next) || /^(tout|toute|demain|ce|cet|cette|dans|vers|jusqu’|jusqu|avant|après|à|pour|depuis|aussi|ce|ici|bientôt)$/.test(R1))) {
+    add(t, "là", "« Là » (l’endroit) prend un accent grave.", true);
   }
 }
 

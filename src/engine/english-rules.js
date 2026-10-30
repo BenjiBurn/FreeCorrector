@@ -707,7 +707,9 @@ export function englishRules(paragraph, existing, frequency = () => 0) {
       add(t.start, t.end, { are: "is", were: "was", have: "has" }[t.lower], "“News” is singular.", { override: true });
     }
     // "Yesterday we go to the zoo" -> went
+    // ("I ordered it last Monday and I have not received it": a new clause, a present perfect.)
     if (/^(yesterday|last)$/.test(toks.find((x, k) => k < i - 1 && k >= Math.max(0, i - 4))?.lower ?? "") && /^(i|we|they|you|he|she)$/.test(L1) &&
+        !/^(and|but|so|because|since|now|still)$/.test(toks[i - 2]?.lower ?? "") &&
         EN_PRESENT_TO_PAST[t.lower]) {
       add(t.start, t.end, EN_PRESENT_TO_PAST[t.lower], "A past event (“yesterday”): the simple past.", { override: true });
     }
@@ -718,6 +720,7 @@ export function englishRules(paragraph, existing, frequency = () => 0) {
     roundFourRules(toks, i, paragraph, add, frequency);
     roundSevenRules(toks, i, paragraph, add, frequency);
     roundEightRules(toks, i, paragraph, add, frequency);
+    roundNineRules(toks, i, paragraph, add, frequency);
   }
 
   // ---------- Phrases borrowed from other languages ----------
@@ -2147,6 +2150,65 @@ function roundEightRules(toks, i, paragraph, add, frequency) {
   if (t.lower === "peek" && /^(its|the|their|our|a|an|record|all-time)$/.test(L1) &&
       /^(hit|hits|hitting|reached|reach|reaches|reaching|at|past|during|near|after|before)$/.test(L2) && !/^(sneak)$/.test(L1)) {
     fix("peak", "The highest point: “peak”; to “peek” is to glance.");
+  }
+}
+
+// Ninth blind round (2026-10-30): English written by non-native speakers.
+function roundNineRules(toks, i, paragraph, add, frequency) {
+  const t = toks[i];
+  const prev = toks[i - 1], next = toks[i + 1], next2 = toks[i + 2];
+  const L1 = prev?.lower ?? "", L2 = toks[i - 2]?.lower ?? "", R1 = next?.lower ?? "", R2 = next2?.lower ?? "";
+  const fix = (replacement, message, start = t.start, end = t.end) => add(start, end, replacement, message, { override: true });
+  const DET = /^(the|a|an|this|that|these|those|my|your|his|her|its|our|their|free|last)$/;
+
+  // "He can goes to the meeting", "it doesn't works" -> go, work (a modal or "do" takes the base form)
+  if (/^(can|could|will|would|should|must|might|may|shall|cannot|can't|won't|wouldn't|couldn't|shouldn't|mustn't|doesn't|don't|didn't)$/.test(t.lower) &&
+      !(t.text === "May" && i > 0 && !isBoundary(prev)) && !DET.test(L1) && next && /^\p{Ll}+$/u.test(next.text)) {
+    const base = R1 !== "has" && enBaseOfThird(R1);
+    if (base) fix(base, `After “${t.text}”, the base form: “${base}”.`, next.start, next.end);
+  }
+  // "Does anyone knows a good tool?" -> know
+  if (/^(do|does|did)$/.test(t.lower) && /^(anyone|anybody|someone|somebody|everyone|everybody|he|she|it|this|that|nobody|you|they|we|i)$/.test(R1) &&
+      next2 && /^\p{Ll}+$/u.test(next2.text) && R2 !== "has") {
+    const base = enBaseOfThird(R2);
+    if (base) fix(base, `After “${t.text.toLowerCase()} … ”, the base form: “${base}”.`, next2.start, next2.end);
+  }
+  // "It took me some times to reproduce" -> some time (a length of time)
+  if (t.lower === "some" && R1 === "times" && R2 === "to" &&
+      toks.slice(Math.max(0, i - 3), i).some((x) => /^(take|takes|took|taking|taken|need|needs|needed|spend|spent|give|gave|given)$/.test(x.lower))) {
+    fix("some time", "A length of time: “some time”.", t.start, next.end);
+  }
+  // "its still crashing", "its a known issue" -> it's (no noun can follow the possessive here)
+  // (Not before a word that can be an adjective: "its broken screen", "its working directory".)
+  if (t.lower === "its" && /^(still|not|been|going|gonna|getting|just|really|already|always|never|probably|actually|a|an|the|okay|ok)$/.test(R1)) {
+    fix(/^\p{Lu}/u.test(t.text) ? "It's" : "it's", "“It's” (it is, it has); “its” is the possessive.");
+  }
+  // "I can't loose this match" -> lose (the verb; "loose" is not tight)
+  if (t.lower === "loose" && /^(can|can't|cannot|could|couldn't|will|won't|would|don't|didn't|doesn't|to|might|may|must|should|gonna|not|never)$/.test(L1) &&
+      /^(the|this|that|my|your|our|their|his|her|a|an|it|them|me|us|him|weight|money|time|track|hope|interest|control|everything|anything|sleep|data)$/.test(R1)) {
+    fix("lose", "To “lose” (not win, not keep); “loose” means not tight.");
+  }
+  // "I did a mistake" -> made (one makes a mistake)
+  const doToMake = { do: "make", does: "makes", did: "made", doing: "making", done: "made" }[t.lower];
+  if (doToMake && (/^(mistake|mistakes|error|errors)$/.test(R1) ||
+      /^(a|an|the|some|this|that|my|no|many|few|several|two|three|any|another|big|huge|small|stupid|silly|terrible)$/.test(R1) && /^(mistake|mistakes|error|errors)$/.test(R2) ||
+      /^(a|an|the|some|my|no|any|another)$/.test(R1) && /^(big|huge|small|stupid|silly|terrible|little|serious)$/.test(R2) && /^(mistake|mistakes|error|errors)$/.test(toks[i + 3]?.lower ?? ""))) {
+    fix(doToMake, "One “makes” a mistake.");
+  }
+  // "There are too much bugs" -> many (a plural noun is counted)
+  if (t.lower === "much" && /^(too|so|how|as)$/.test(L1) && enLooksPlural(next, frequency) && !enBaseOfThird(R1) &&
+      !EN_UNCOUNT_FOOD.test(R1.replace(/s$/, ""))) {
+    fix("many", `“${next.text}” is plural and counted: “many”.`);
+  }
+  // "the payment page is down since 8 a.m." -> has been (still true since then)
+  if (/^(is|are|am)$/.test(t.lower) &&
+      /^(down|broken|offline|closed|unavailable|stuck|blocked|sick|ill|missing|empty|unreachable|open|here|out)$/.test(R1) && R2 === "since") {
+    fix(t.lower === "is" ? "has been" : "have been", "Still true since then: the present perfect.");
+  }
+  // "The tests passes locally" -> pass (a plural subject)
+  if (/^(passes|fails|works|runs|looks|seems|needs|takes|makes|gets|goes|crashes|breaks|shows|returns|contains|uses|lives|costs|comes|stays|wants|loads|starts|stops)$/.test(t.lower) &&
+      enLooksPlural(prev, frequency) && /^(the|these|those|our|my|your|their|all|some|many|both|his|her|its)$/.test(L2) && (i < 3 || isBoundary(toks[i - 3]))) {
+    fix(enBaseOfThird(t.lower), `The subject “${prev.text}” is plural.`);
   }
 }
 

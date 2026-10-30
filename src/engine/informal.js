@@ -12,9 +12,13 @@ self.FC_INFORMAL_WORDS = new Set([
   "ordis", "télé", "vélo", "promo", "promos", "récap", "dispo.", "covoit", "covid", "visio", "visios",
   "wifi", "selfie", "selfies", "spoiler", "week-end", "week-ends", "replay", "smiley", "emoji", "emojis",
   "email", "emails",
+  "rdv", "ptn", "osef", "anniv", "annivs", "gg", "y'a", "y’a", "modo", "modos", "réu", "réus", "péno", "pénos",
+  // Gaming and streaming words French chat keeps in English ("le stream", "une game")
+  "stream", "streams", "streamer", "streameur", "streameuse", "game", "games", "follow", "follows", "dev", "devs",
+  "sub", "subs", "emote", "emotes", "viewer", "viewers", "run", "runs", "edit",
   // English
   "lol", "omg", "btw", "idk", "tbh", "lmao", "brb", "asap", "fyi", "thx", "pls", "plz", "okay", "imo",
-  "imho", "afaik", "irl", "dm", "dms", "gonna", "wanna", "gotta", "kinda", "sorta", "yeah", "yep",
+  "imho", "afaik", "irl", "dm", "dms", "lgtm", "nit", "nits", "tldr", "wfh", "gonna", "wanna", "gotta", "kinda", "sorta", "yeah", "yep",
   "nope", "haha", "hahaha", "hehe", "xoxo", "bday", "congrats", "convo", "info", "app", "apps", "emoji",
   // Loanwords common in English cooking and daily life
   "al", "dente", "pancetta", "guanciale", "prosciutto", "bruschetta", "focaccia", "ciabatta", "gnocchi", "burrata",

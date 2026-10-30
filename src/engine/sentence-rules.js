@@ -133,11 +133,12 @@ function fcSentenceRules(paragraph, existing, spellChecker, prevEnd, lang = "fr"
     lang === "fr" && (FC_CHAT_FR.test(paragraph) || words.length <= 20 && FC_TU.test(paragraph)) ||
     // A short afterthought after "!" or "?": "N’oublie pas le pain ! Et du beurre aussi".
     /[!?]\s+[^.!?]+$/.test(paragraph) && (paragraph.split(/[!?]\s+/).pop().match(/[\p{L}\p{N}]+/gu) ?? []).length <= 4;
-  // Prose, where a missing full stop is a slip: an earlier sentence of the
-  // paragraph ends with one, or the paragraph follows one that does. A lone
-  // line (a chat message, a title, a list item) or sentences closed by "!" and
-  // "?" only (a chat) go without.
-  const prose = /[.…]\s+\p{L}/u.test(paragraph.trimEnd()) || /[.…]/.test(prevEnd);
+  // Prose, where a missing full stop is a slip: two earlier sentences of the
+  // paragraph end with one, or the paragraph follows one that does. A lone
+  // line (a chat message, a title, a list item), two sentences (a review, an ad,
+  // a text: "Très bon état. Remise en main propre uniquement") or sentences
+  // closed by "!" and "?" only (a chat) go without.
+  const prose = (paragraph.trimEnd().match(/[.…]\s+\p{L}/gu) ?? []).length >= 2 || /[.…]/.test(prevEnd);
   if (last && prose && !listItem && !signature && !continued && !endsOnTag && !chat && words.length >= FC_MIN_WORDS_FOR_PUNCT &&
       fcLooksLikeSentence(paragraph, spellChecker, lang)) {
     const word = last[1];

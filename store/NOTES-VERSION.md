@@ -8,6 +8,8 @@ Brouillon, à compléter jusqu’à la sortie.
 - Anglais : un nom écrit sans majuscule (« greek », « paris », « tokyo ») propose la majuscule (« Greek ») au lieu d’un autre mot (« geek ») ; signalé par un utilisateur.
 - Anglais : un passé avec un -s en trop (« it tooks », « they wents ») propose « took », « went » au lieu d’un autre mot (« tools ») ; signalé par un utilisateur.
 - Un impératif sans accent suivi de « toi », « moi »… (« achete toi ») propose « achète » au lieu de « acheté » ; signalé par un utilisateur. En début de phrase, « Leve » propose « Lève » et plus « L’Eve ».
+- Messages familiers (SMS, Discord, forums, annonces, avis) : beaucoup moins de fausses alertes (rdv, ptn, stream, game, y’a…, et plus de point final réclamé dans un message de deux phrases) et plus de fautes trouvées (« je suis grave fatiguer », « il est ou ? », « ma posé », « c’est fait vacciner »…).
+- Anglais écrit par des non-natifs : « he can goes », « does anyone knows », « I did a mistake », « too much bugs », « its still crashing », « can’t loose »…
 
 ## 1.2.7
 
