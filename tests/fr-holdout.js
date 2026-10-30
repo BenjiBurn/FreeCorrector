@@ -189,4 +189,7 @@ module.exports = [
   ["Achète-toi une voiture neuve.", null, null],
   ["Il s’est acheté une voiture neuve.", null, null],
   ["Tu l’as acheté toi-même ?", null, null],
+  // Vu par la tâche quotidienne : « Leve » en début de phrase proposait « L’Eve » avant « Lève ».
+  ["Leve toi vite, on part.", "Leve", "Lève"],
+  ["Eve est arrivée hier soir.", null, null],
 ];

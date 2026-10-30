@@ -343,7 +343,9 @@ function fcRankSuggestions(spellChecker, text, start, length, suggestions, isSpe
   if (isWord) {
     const sources = isSpelling ? suggestions.slice(0, 5) : [word];
     extras.push(...fcHomophoneVerbForms(spellChecker, word, sources).slice(0, 6));
-    if (isSpelling || !suggestions.length) extras.push(...fcElisionCandidates(spellChecker, word));
+    // Not when only an accent is wrong: "Leve" is "Lève", not "L’Eve".
+    const accentOnly = suggestions.some((s) => !/['’]/.test(s) && fcPlain(s) === fcPlain(word));
+    if ((isSpelling || !suggestions.length) && !accentOnly) extras.push(...fcElisionCandidates(spellChecker, word));
     if (isSpelling) extras.push(...fcFrequentNeighbours(spellChecker, word));
   }
   const wordIsLower = word === word.toLowerCase();
