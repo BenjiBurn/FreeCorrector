@@ -1217,6 +1217,14 @@ function fcCustomRules(paragraph, spellChecker, existing) {
         /^(fasses|fasse|fassiez|fassions|fassent|dises|dise|disiez|disent|penses|pense|pensiez|arrive|arrivent|décides|décide|choisisses|choisisse|veuilles|veuille)$/.test(next2.lower)) {
       add(t, t.lower === "quoique" ? "quoi que" : apo("quoi qu’"), "« Quoi que » (quelle que soit la chose que) s’écrit en deux mots.", true);
     }
+    // "pas besoin de faire quoique ce soit" -> quoi que ce soit (anything)
+    // ("Quoique ce soit difficile", "quoique ce soit de sa faute": although, an attribute follows.)
+    const next3 = tokens[i + 3];
+    if (t.lower === "quoique" && next?.lower === "ce" && next2?.lower === "soit" &&
+        (!next3 || /^[.,;:!?)…]$/.test(next3.text) ||
+         prev && (fcHas(morph(prev), /:V/) || /^(pas|sans|rien|jamais|plus)$/.test(prevLower)) && /^(de|d’|sur|pour|contre|avec|qui|dans)$/.test(next3.lower))) {
+      add(t, "quoi que", "« Quoi que ce soit » (n’importe quoi) s’écrit en deux mots.", true);
+    }
 
     // "Au faite, tu viens ?" -> au fait
     if (t.lower === "faite" && prevLower === "au" && (!next || /^[,.!?]$/.test(next.text))) {
@@ -1587,7 +1595,7 @@ function fcRoundFourRules(tokens, i, { add, morph, apo, paragraph, spellChecker 
        prev && fcHas(morph(prev), /:N/) && prev2 && fcHas(morph(prev2), /:D/) && fcHas(morph(next), /:V\d_[^:/]*q[^/]*:Ip[^/]*:3s/) && !fcHas(morph(next), /:A|:D/) &&
        /^(toujours|souvent|jamais|parfois|encore|régulièrement|sous|derrière|chez|dès|tout|vite|bien|mal)$/.test(R2)) &&
       !/^(sont|est|fut|furent|sera|seront|serait|seraient|était|étaient|doit|doivent|devait|devrait|peut|peuvent|pouvait|pourrait|semble|semblait|sembla)$/.test(R1) &&
-      !/^(de|à|par|pour|sur|dans|avec|sans|que|qu’)$/.test(L1)) {
+      !/^(de|à|par|pour|sur|dans|avec|sans|que|qu’|quoique)$/.test(L1)) {
     add(t, "se", "Devant un verbe pronominal : « se » (il se plaint).", true);
   }
   // "Le rendez-vous ces bien passé" -> s’est

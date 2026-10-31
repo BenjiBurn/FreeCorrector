@@ -215,7 +215,7 @@ const FC_REAL_WORD_CONFUSIONS = [
   // nuit / nui
   ["nui", "nuit", (c) => /^(la|une|cette|bonne|fait|toute|chaque|en|de)$/.test(c.l1)],
   // soir / soit / soif
-  ["soit", "soir", (c) => /^(ce|demain|hier|chaque|un|le|du|bon|bonne|samedi|dimanche|lundi|mardi|mercredi|jeudi|vendredi)$/.test(c.l1) && !/^(que|qu’|quoi|soit|bien)$/.test(c.l2) &&
+  ["soit", "soir", (c) => /^(ce|demain|hier|chaque|un|le|du|bon|bonne|samedi|dimanche|lundi|mardi|mercredi|jeudi|vendredi)$/.test(c.l1) && !/^(que|qu’|quoi|quoique|soit|bien)$/.test(c.l2) &&
     (c.end || /^(à|vers|je|on|il|nous|vous|tu|et)$/.test(c.r1))],
   ["soif", "soir", (c) => /^(ce|demain|hier|chaque|samedi|dimanche|lundi|mardi|mercredi|jeudi|vendredi)$/.test(c.l1)],
   ["soit", "soif", (c) => /^(ai|as|a|avons|avez|ont|avais|avait|j’ai)$/.test(c.l1) && (c.end || c.r1 === "et")],

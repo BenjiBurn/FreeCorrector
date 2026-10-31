@@ -198,4 +198,10 @@ module.exports = [
   ["Il boite depuis sa chute.", null, null],
   ["Ce fut un plaisir de vous rencontrer.", null, null],
   ["La soule est un jeu de balle médiéval.", null, null],
+  // Signalé depuis l'extension (1.2.7) : « quoique ce soit » proposait « soir » et « se », la faute est « quoi que ».
+  ["Un C15 tant que ça roule t'as pas besoin de faire quoique ce soit", "quoique", "quoi que"],
+  ["Sans dire quoique ce soit, il partit.", "quoique", "quoi que"],
+  ["Quoique ce soit difficile, il viendra.", null, null],
+  ["Il est parti, quoique ce soit tard.", null, null],
+  ["Il a refusé, quoique ce soit de sa faute.", null, null],
 ];
