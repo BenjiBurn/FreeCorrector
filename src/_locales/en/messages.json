@@ -12,6 +12,7 @@
   "credit": { "message": "Made by BenjiBurn" },
 
   "menuCheckSelection": { "message": "Check with FreeCorrector" },
+  "menuReportMissed": { "message": "Report a missed mistake" },
 
   "optTitle": { "message": "Options · FreeCorrector" },
   "optIntro": { "message": "Free and open-source checker. Everything is analyzed on your computer: no text is sent over the Internet." },

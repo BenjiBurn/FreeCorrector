@@ -60,8 +60,10 @@ it:
   suggestions and, since 1.2.6, to tell French from English (`engine/language.js` reads them
   from the extension with `fetch(runtime.getURL(...))`, allowed by `connect-src 'self'`).
 - `editor/`: an extension page where users can paste and check a longer text.
-- `lib/menus.js`: the right-click entry "Check with FreeCorrector" on selected text. It stores the
-  selection in `storage.local` and opens the editor page with it.
+- `lib/menus.js`: two right-click entries on selected text.
+  - "Check with FreeCorrector" stores the selection in `storage.local` and opens the editor page with it.
+  - "Report a missed mistake" (new in 1.2.8) opens the same report page as the bubble's "Report" button
+    (see below) with the selection in the URL fragment: no request, nothing sent until the user clicks "Send".
 - `welcome/`: a page opened once, on `runtime.onInstalled` with reason `install` (`lib/welcome.js`).
 - "Report" in the bubble (`content/ui.js`, `fcReportUrl`): opens a tab on the author's website,
   `https://lapigeonnerie.fr/freecorrector/report#r=…`, with the sentence, the underlined word and

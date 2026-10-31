@@ -12,6 +12,7 @@
   "credit": { "message": "Créé par BenjiBurn" },
 
   "menuCheckSelection": { "message": "Corriger avec FreeCorrector" },
+  "menuReportMissed": { "message": "Signaler une faute non détectée" },
 
   "optTitle": { "message": "Options · FreeCorrector" },
   "optIntro": { "message": "Correcteur libre et gratuit. L’analyse se fait sur votre ordinateur : aucun texte n’est envoyé sur Internet." },
