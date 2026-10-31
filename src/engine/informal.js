@@ -61,6 +61,8 @@ self.FC_INFORMAL_WORDS = new Set([
   // DIY and gaming words French uses every day ("du placo", "farmer de l’or")
   "placo", "placos", "farmer", "farme", "farmes", "farment", "farmé", "farmée", "farmez", "farmait", "farming",
   "loot", "looter", "nerf", "nerfé", "buff", "buffé", "stuff", "stuffé", "rush", "rusher", "spawn", "respawn", "skin", "skins", "lag", "laguer",
+  // Car words ("une 208 rebadgée": the same car sold under another brand)
+  "rebadger", "rebadgé", "rebadgée", "rebadgés", "rebadgées", "rebadging",
   // American chat words and slang, and brands people type every day.
   "omw", "lmk", "idk", "idc", "tbh", "imo", "imho", "ngl", "smh", "wyd", "hbu", "ikr", "ttyl", "rn", "thx", "pls", "plz", "lol", "lmao", "lmfao",
   "lowkey", "highkey", "fam", "bougie", "rizz", "sus", "yeet", "adulting", "hangry", "bestie", "besties", "selfie", "selfies", "vibe", "vibes", "vibing", "ghosted", "ghosting",

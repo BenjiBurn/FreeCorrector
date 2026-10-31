@@ -12,6 +12,7 @@ Brouillon, à compléter jusqu’à la sortie.
 - Nouveau : clic droit sur une sélection → « Signaler une faute non détectée », quand FreeCorrector n’a rien souligné alors qu’il y avait une faute.
 - Orthographe traditionnelle proposée en bleu pour les formes rectifiées de 1990 (« parait » → « paraît », « boite » → « boîte », « connait », « maitre »…) : les deux sont correctes, la suggestion se désactive d’un clic ; demandé par un utilisateur.
 - « faire quoique ce soit » propose « quoi que ce soit » au lieu de « soir » et « se » ; « quoique ce soit difficile » n’est plus souligné ; signalé par un utilisateur.
+- « rebadgé », « rebadgée » (voiture vendue sous une autre marque) ne sont plus soulignés ; signalé par un utilisateur.
 - Anglais écrit par des non-natifs : « he can goes », « does anyone knows », « I did a mistake », « too much bugs », « its still crashing », « can’t loose »…
 
 ## 1.2.7

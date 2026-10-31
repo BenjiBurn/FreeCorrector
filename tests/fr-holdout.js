@@ -204,4 +204,9 @@ module.exports = [
   ["Quoique ce soit difficile, il viendra.", null, null],
   ["Il est parti, quoique ce soit tard.", null, null],
   ["Il a refusé, quoique ce soit de sa faute.", null, null],
+  // Signalé depuis l'extension (1.2.7) : « rebadgée » (voiture vendue sous une autre marque) n'est pas une faute.
+  ["Ça va finir avec une 208 rebadgée.", null, null],
+  ["Ce modèle n’est qu’un utilitaire rebadgé.", null, null],
+  ["Les constructeurs aiment rebadger leurs modèles.", null, null],
+  ["Il a rebandé son arc.", null, null],
 ];
