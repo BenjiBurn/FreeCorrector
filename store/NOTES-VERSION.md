@@ -1,8 +1,40 @@
 # Notes de version à coller dans les stores
 
-## 1.2.8 (prochaine version, pas encore publiée)
+## 1.2.8
 
-Brouillon, à compléter jusqu’à la sortie.
+**Français** (Firefox : « Notes de version » ; Thunderbird : « Notes de version » ; Chrome : rien à saisir ; Opera : « Changelog ») :
+
+```text
+• Nouveau : FreeCorrector n’a rien souligné alors qu’il y avait une faute ? Sélectionnez la phrase, clic droit, « Signaler une faute non détectée ».
+• Bien mieux adapté aux messages du quotidien (SMS, Discord, forums, annonces, avis) : beaucoup moins de fausses alertes sur le langage familier (rdv, y’a, stream…) et plus de fautes trouvées.
+• L’orthographe traditionnelle est proposée en suggestion de style pour les formes rectifiées de 1990 (« parait » → « paraît », « boite » → « boîte ») ; désactivable d’un clic.
+• Anglais : bien plus de fautes typiques des francophones trouvées (« he can goes », « I did a mistake », « too much bugs »…), et les noms écrits sans majuscule (« greek » → « Greek »).
+• Plusieurs corrections suite à vos signalements, merci à vous !
+```
+
+**English** (Opera "Changelog", Firefox and Thunderbird if an English field is offered):
+
+```text
+• New: FreeCorrector underlined nothing, yet there was a mistake? Select the sentence, right-click, "Report a missed mistake".
+• Much better with everyday messages (texts, Discord, forums, ads, reviews): far fewer false alarms on informal language and more mistakes found.
+• French: the traditional spelling is offered as a style hint for the 1990 reformed forms ("parait" → "paraît"); one click turns it off.
+• English: many more mistakes typical of non-native writers found ("he can goes", "I did a mistake", "too much bugs"…), and names typed in lowercase ("greek" → "Greek").
+• Several fixes thanks to your reports. Thank you!
+```
+
+**Notes aux testeurs** (Firefox et Thunderbird, en anglais) :
+
+```text
+No account or login is needed. Everything runs locally (CSP connect-src 'self'): no network requests, no data collected, no remote code. Our own code is neither minified nor bundled; the engines in vendor/ are unmodified copies of Grammalecte 2.3.0 and harper.js 2.10.0 (see NOTE_FOR_REVIEWERS.md).
+
+1.2.8 adds a second right-click entry on selected text, "Report a missed mistake" (lib/menus.js): it opens the same report page of the author's website as the bubble's "Report" button, with the selection in the URL fragment (sent only if the user clicks Send there; see NOTE_FOR_REVIEWERS.md). The rest is checking rules (src/engine/); no new permission.
+
+Build: download https://github.com/BenjiBurn/FreeCorrector/archive/refs/tags/v1.2.8.zip, run "node scripts/build.js firefox" (or "thunderbird"; Node.js 18+, no dependencies), output in dist/freecorrector-1.2.8-firefox.zip (or -thunderbird.zip).
+
+To test: type "je suis aller au marché" or "He can goes to the meeting." in any text field (in Thunderbird: in the body of a new message). Select some text and right-click to see both entries.
+```
+
+**Détail des changements** (pour nous) :
 
 - « en soit » → « en soi » (premier signalement reçu par le bouton « Signaler ») ; « ou en soit victime » n’est plus souligné.
 - Anglais : un nom écrit sans majuscule (« greek », « paris », « tokyo ») propose la majuscule (« Greek ») au lieu d’un autre mot (« geek ») ; signalé par un utilisateur.
