@@ -226,8 +226,9 @@ class FcFieldBase {
 
   // `allMatches` is everything the engine reported; `matches` is what we show.
   isVisible(m) {
-    // Search queries are not sentences: no capital asked for the first word.
-    if (this.isSearch && m.offset === 0 && m.replacements[0] !== m.word &&
+    // Search queries are not sentences, and searches ignore case: no capital
+    // asked for ("ford capri" -> Ford).
+    if (this.isSearch && m.replacements[0] !== m.word &&
         m.replacements[0]?.toLowerCase() === m.word.toLowerCase()) return false;
     if (m.ruleId !== FC_RULE_CAPITAL && m.ruleId !== FC_RULE_FINAL_PUNCT) return true;
     if (!this.ui.sentenceRules || this.isSearch) return false;
@@ -370,7 +371,7 @@ class FcTextField extends FcFieldBase {
   constructor(el, ui) {
     super(el, ui);
     this.isInput = el.localName === "input";
-    this.isSearch = this.isInput && (el.getAttribute("type") || "").toLowerCase() === "search";
+    this.isSearch = this.isInput && fcIsSearchInput(el);
     this.spans = [];
     this.mirror = document.createElement("div");
     this.mirror.className = "fc-mirror";
@@ -403,6 +404,7 @@ class FcTextField extends FcFieldBase {
       right: parseFloat(cs.borderRightWidth) || 0,
       bottom: parseFloat(cs.borderBottomWidth) || 0,
     };
+    this.paddingRight = parseFloat(cs.paddingRight) || 0;
     const style = this.mirror.style;
     for (const prop of FC_MIRRORED_PROPS) style[prop] = cs[prop];
     if (this.isInput) {
@@ -443,8 +445,33 @@ class FcTextField extends FcFieldBase {
     ms.height = `${box.height}px`;
     this.inner.style.transform = `translate(${-el.scrollLeft}px, ${-el.scrollTop}px)`;
 
-    const area = { left, top, right: left + box.width, bottom: top + box.height, height: box.height };
+    // A wide right padding keeps room for the site's own buttons (leboncoin's
+    // "Rechercher"): the badge goes before it.
+    const reserved = this.isInput && this.paddingRight >= FC_BADGE_SIZE ? this.paddingRight : 0;
+    const area = { left, top, right: left + box.width - reserved, bottom: top + box.height, height: box.height };
+    if (this.isInput) area.right = this.freeRight(area);
     this.placeBadge(area, hostRect, this.isInput);
+  }
+
+  // The right end of `area` not covered by the page's own content (a button laid
+  // over the field without padding): the badge goes left of it.
+  freeRight(area) {
+    const el = this.el;
+    const y = area.top + area.height / 2;
+    let right = area.right;
+    for (let k = 0; k < 3 && y >= 0 && y < window.innerHeight; k++) {
+      const x = right - 4 - FC_BADGE_SIZE / 2;
+      if (x - FC_BADGE_SIZE < area.left || x < 0 || x >= window.innerWidth) break;
+      const top = document.elementsFromPoint(x, y).find((e) => e !== this.ui.host);
+      let isField = false;
+      for (let n = el; n && !isField; n = n.parentNode ?? n.host) isField = n === top;
+      if (!top || isField || el.contains(top)) break;
+      const r = top.getBoundingClientRect();
+      // (A dialog over the page is not a button on the field.)
+      if (r.width > (area.right - area.left) / 2 || r.left >= right) break;
+      right = r.left;
+    }
+    return right;
   }
 
   renderMarks() {
@@ -523,6 +550,15 @@ class FcTextField extends FcFieldBase {
     for (const f of fixes) middle = middle.slice(0, f.offset - start) + f.best + middle.slice(f.offset - start + f.length);
     this.replaceText(start, end - start, middle);
   }
+}
+
+// A search box: a query, not a sentence. Sites mark them in many ways
+// (leboncoin: a text input with role="combobox" and "Rechercher sur leboncoin").
+function fcIsSearchInput(el) {
+  if ((el.getAttribute("type") || "").toLowerCase() === "search" || el.enterKeyHint === "search") return true;
+  if (/^(searchbox|combobox)$/.test(el.getAttribute("role") ?? "") || el.closest("[role=search]")) return true;
+  if (/^(q|query|s|search|recherche|keywords?)$/i.test(el.name)) return true;
+  return /search|recherch|cherche/i.test(`${el.id} ${el.placeholder} ${el.getAttribute("aria-label") ?? ""}`);
 }
 
 function fcErrorText(code) {
