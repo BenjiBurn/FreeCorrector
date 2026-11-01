@@ -437,7 +437,8 @@ function checkParagraph(paragraph) {
   }
 
   const grammar = [];
-  for (const err of gc_engine.parse(paragraph, "FR", false, null, false)) {
+  const errors = [...gc_engine.parse(paragraph, "FR", false, null, false)];
+  for (const err of errors) {
     const category = OPTION_CATEGORY[err.sType] ?? "typo";
     const m = {
       offset: err.nStart,
@@ -478,6 +479,12 @@ function checkParagraph(paragraph) {
     // Holidays ("le 14 Juillet", "le 8 Mai") and titles ("Germinal") keep their capital.
     if (/maj_mois/.test(m.ruleId) && (/^(vendémiaire|brumaire|frimaire|nivôse|pluviôse|ventôse|germinal|floréal|prairial|messidor|thermidor|fructidor)$/i.test(m.word) ||
         /(^|\s)(14|1er|8|11|15)\s+$/.test(paragraph.slice(0, err.nStart)))) continue;
+    // "les notes individuels": the adjective is the mistake, not the noun ("notés"),
+    // when the same rule also flags the adjective after it. (Not "son robe" -> sa.)
+    if (/gn_/.test(m.ruleId) && m.replacements.length &&
+        spellChecker.getMorph(m.word.toLowerCase()).some((x) => /:N/.test(x)) &&
+        m.replacements.every((r) => spellChecker.getMorph(r.toLowerCase()).every((x) => /:[AQV]/.test(x) && !/:N/.test(x))) &&
+        errors.some((e) => e.nStart >= err.nEnd && e.sRuleId.replace(/_a\d+_\d+$/, "") === err.sRuleId.replace(/_a\d+_\d+$/, ""))) continue;
     // "les cheveux coupés court", "très court": an adverb, invariable.
     if (/^(court|ras|net|bas|haut)$/.test(m.word) && /gn_/.test(m.ruleId) &&
         /\b(coup\p{L}*|cheveux)\s+(\p{L}+\s+){0,2}$/u.test(paragraph.slice(Math.max(0, err.nStart - 40), err.nStart))) continue;

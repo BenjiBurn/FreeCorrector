@@ -5,6 +5,7 @@
 Brouillon, à compléter jusqu’à la sortie.
 
 - « ça n’a pas fonctionné » : le « a » après « n’ » n’est plus souligné (« à ») ; signalé par un utilisateur.
+- « les notes individuels » : seul « individuels » est souligné (→ « individuelles »), plus « notes » → « notés » ; signalé par un utilisateur.
 
 ## 1.2.8
 

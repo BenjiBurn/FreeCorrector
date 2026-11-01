@@ -215,4 +215,9 @@ module.exports = [
   ["On comprend pourquoi ça n’a pas fonctionné.", null, null],
   ["Ça n’a aucun sens, on ne m’a rien dit.", null, null],
   ["Il pense a son avenir.", "a", "à"],
+  // Signalé depuis l'extension (1.2.7) : « les notes individuels » soulignait aussi « notes » (-> « notés »).
+  ["Valide que je puisse bien supprimer les notes individuels.", "individuels", "individuelles"],
+  ["Les sorties prévus sont annulées.", "prévus", "prévues"],
+  ["Je garde les notes individuelles.", null, null],
+  ["Les notes prises hier sont claires.", null, null],
 ];
