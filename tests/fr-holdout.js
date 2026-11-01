@@ -220,4 +220,10 @@ module.exports = [
   ["Les sorties prévus sont annulées.", "prévus", "prévues"],
   ["Je garde les notes individuelles.", null, null],
   ["Les notes prises hier sont claires.", null, null],
+  // Signalé depuis l'extension (1.2.7) : « Ne prend pas… » proposait « prennent » avant l'impératif « prends »
+  // (la phrase du signalement, sans sujet façon note de version, reste à trancher).
+  ["Ne vend pas ta voiture.", "vend", "vends"],
+  ["Ne répond pas au téléphone.", "répond", "réponds"],
+  ["Il ne prend pas en compte les thèmes.", null, null],
+  ["Prends ton manteau.", null, null],
 ];

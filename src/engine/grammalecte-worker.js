@@ -526,6 +526,8 @@ function checkParagraph(paragraph) {
     // "T’es en forme toi !": after "en", "la", "ta"…, "forme" is a noun, not "forme-toi".
     if (/imp_union/.test(m.ruleId) &&
         /(^|[^\p{L}])(en|de|la|le|les|une|un|ta|ma|sa|ton|mon|son|cette|ce|bonne|pleine|super|grande|belle)\s+$/iu.test(paragraph.slice(Math.max(0, err.nStart - 20), err.nStart))) continue;
+    // "Ne vend pas ta voiture" -> vends, the imperative the message asks for, not "vendent".
+    if (/imp_verbe/.test(m.ruleId) && m.replacements.length) m.replacements.only = [...m.replacements];
     // Optional commas ("passée chez toi, mais") are style, for picky mode.
     if (!picky && /virgules_manquantes/.test(m.ruleId)) continue;
     // "Elle s’est fait mal", "elle s’est fait opérer": "fait" stays invariable.
