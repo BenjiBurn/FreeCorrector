@@ -209,4 +209,10 @@ module.exports = [
   ["Ce modèle n’est qu’un utilitaire rebadgé.", null, null],
   ["Les constructeurs aiment rebadger leurs modèles.", null, null],
   ["Il a rebandé son arc.", null, null],
+  // Signalé depuis l'extension (1.2.8) : « a » souligné (« à ») après « ça n’ », où c'est le verbe
+  // (la vraie faute, « pour » -> « pourquoi », n'est pas détectée).
+  ["Quand tu vois la gueule de la bande annonce, on comprend pour ça n’a pas fonctionné.", null, null],
+  ["On comprend pourquoi ça n’a pas fonctionné.", null, null],
+  ["Ça n’a aucun sens, on ne m’a rien dit.", null, null],
+  ["Il pense a son avenir.", "a", "à"],
 ];

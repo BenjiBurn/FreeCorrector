@@ -1,5 +1,11 @@
 # Notes de version à coller dans les stores
 
+## 1.2.9 (prochaine version, pas encore publiée)
+
+Brouillon, à compléter jusqu’à la sortie.
+
+- « ça n’a pas fonctionné » : le « a » après « n’ » n’est plus souligné (« à ») ; signalé par un utilisateur.
+
 ## 1.2.8
 
 **Français** (Firefox : « Notes de version » ; Thunderbird : « Notes de version » ; Chrome : rien à saisir ; Opera : « Changelog ») :
