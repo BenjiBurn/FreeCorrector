@@ -7,6 +7,8 @@ Brouillon, à compléter jusqu’à la sortie.
 - « ça n’a pas fonctionné » : le « a » après « n’ » n’est plus souligné (« à ») ; signalé par un utilisateur.
 - « les notes individuels » : seul « individuels » est souligné (→ « individuelles »), plus « notes » → « notés » ; signalé par un utilisateur.
 - Impératif sans « s » (« Ne vend pas ta voiture ») : « vends » est proposé, plus « vendent » en premier ; vu grâce à un signalement.
+- « on comprend pour ça n’a pas marché » → « pourquoi » (question indirecte après comprendre, savoir, se demander…) ; signalé par un utilisateur.
+- « coeur », « soeur », « oeuf » : « œ » est proposé en suggestion de style (bleu), « oe » reste accepté ; en mode exigeant, la ligature est la seule suggestion (plus « sueur » pour « soeur ») ; signalé par un utilisateur.
 
 ## 1.2.8
 

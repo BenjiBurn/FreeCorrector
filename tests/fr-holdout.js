@@ -210,8 +210,15 @@ module.exports = [
   ["Les constructeurs aiment rebadger leurs modèles.", null, null],
   ["Il a rebandé son arc.", null, null],
   // Signalé depuis l'extension (1.2.8) : « a » souligné (« à ») après « ça n’ », où c'est le verbe
-  // (la vraie faute, « pour » -> « pourquoi », n'est pas détectée).
-  ["Quand tu vois la gueule de la bande annonce, on comprend pour ça n’a pas fonctionné.", null, null],
+  // et la vraie faute, « pour » -> « pourquoi ».
+  ["Quand tu vois la gueule de la bande annonce, on comprend pour ça n’a pas fonctionné.", "pour", "pourquoi"],
+  ["Je comprends pas pour il est parti si vite.", "pour", "pourquoi"],
+  ["Je me demande pour elle a dit ça.", "pour", "pourquoi"],
+  ["Je comprends pour ça, pas de souci.", null, null],
+  ["Je me demande pour elle si c’est une bonne idée.", null, null],
+  ["Il explique pour nous les règles du jeu.", null, null],
+  ["Je vois pour ça demain avec lui.", null, null],
+  ["Je sais pour ta mère, je suis désolé.", null, null],
   ["On comprend pourquoi ça n’a pas fonctionné.", null, null],
   ["Ça n’a aucun sens, on ne m’a rien dit.", null, null],
   ["Il pense a son avenir.", "a", "à"],
@@ -226,4 +233,9 @@ module.exports = [
   ["Ne répond pas au téléphone.", "répond", "réponds"],
   ["Il ne prend pas en compte les thèmes.", null, null],
   ["Prends ton manteau.", null, null],
+  // Signalé depuis l'extension (1.2.8) : « coeur » non souligné ; « œ » proposé en suggestion de style.
+  ["Ça fait mal au coeur.", "coeur", "cœur"],
+  ["Un oeuf et deux boeufs.", "oeuf", "œuf"],
+  ["Ils sont arrivés ex aequo.", null, null],
+  ["Ça fait mal au cœur.", null, null],
 ];

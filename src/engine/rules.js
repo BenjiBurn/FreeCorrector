@@ -2168,6 +2168,22 @@ function fcRoundFourRules(tokens, i, { add, morph, apo, paragraph, spellChecker 
       (isBoundary(next) || /^(tout|toute|demain|ce|cet|cette|dans|vers|jusqu’|jusqu|avant|après|à|pour|depuis|aussi|ce|ici|bientôt)$/.test(R1))) {
     add(t, "là", "« Là » (l’endroit) prend un accent grave.", true);
   }
+  // "on comprend pour ça n’a pas fonctionné" -> pourquoi: a verb of knowing, then "pour",
+  // a subject and its conjugated verb. ("Je comprends pour ça", "je me demande pour elle si…",
+  // "c’est pour ça que": no conjugated verb of that person right after the subject.)
+  if (t.lower === "pour" && next && next2) {
+    const PERSON = { "ça": "3s", ca: "3s", il: "3s", elle: "3s", on: "3s", ils: "3p", elles: "3p", tu: "2s", je: "1s", "j’": "1s", nous: "1p", vous: "2p" };
+    const person = PERSON[R1];
+    let k = i - 1;
+    while (k > i - 4 && tokens[k] && /^(pas|plus|mieux|bien|enfin|maintenant|toujours|vraiment|jamais|vite|tout|de|suite)$/.test(tokens[k].lower)) k--;
+    const knowing = tokens[k] && /^(compren\p{L}*|compris|sais|sait|savons|savez|savent|savais|savait|savoir|su|demande|demandes|demandait|demandais|demander|demandé|explique|expliques|expliquer|expliqué|capte|captes|pige|piges|devine|devines|deviner|ignore|ignores|vois|voit|voyez|voir|vu)$/u.test(tokens[k].lower);
+    let v = i + 2;
+    while (tokens[v] && v < i + 5 && /^(ne|n’|me|m’|te|t’|se|s’|y|en|lui|nous|vous)$/.test(tokens[v].lower) && tokens[v].lower !== R1) v++;
+    if (person && knowing && tokens[v] && fcHas(morph(tokens[v]), new RegExp(`:V[^/]*:(Ip|Iq|Is|If|K)(:\\w+)*:${person}`)) &&
+        !fcHas(morph(tokens[v]), /:D/) && !(v === i + 2 && /^(nous|vous)$/.test(R1) && fcHas(morph(next2), /:A/))) {
+      add(t, "pourquoi", "Pour une question indirecte : « pourquoi » (on comprend pourquoi ça n’a pas marché).", true);
+    }
+  }
   // "Ça me parait normal" -> paraît, as a style hint: the 1990 spelling is correct too,
   // the traditional one is offered (asked by a user). One message for every word, so
   // that turning the hint off turns it off everywhere (fcRuleKey).

@@ -28,7 +28,7 @@ module.exports = [
   ["C’est quoi ton numéro ?", null, null],
   ["Je vous est envoyé le contrat.", "est", "ai"],
   ["Je n’ai jamais vu sa.", "sa", "ça"],
-  ["Ma soeur habite à Bordeaux.", null, null],
+  ["Ma soeur habite à Bordeaux.", "soeur", "sœur"],
   ["Je vais chercher les enfants à l’école.", null, null],
   ["Je suis vraiment désoler.", "désoler", "désolé"],
   ["On s’est bien amusé hier soir.", null, null],

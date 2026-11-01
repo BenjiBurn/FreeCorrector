@@ -411,7 +411,7 @@ function checkParagraph(paragraph) {
   const cached = paragraphCache.get(paragraph);
   if (cached) return cached;
 
-  const spelling = [];
+  const spelling = [], ligatures = [];
   let suggested = 0;
   for (const token of spellChecker.parseParagraph(paragraph)) {
     const word = token.sValue;
@@ -422,14 +422,33 @@ function checkParagraph(paragraph) {
     // "dispo", "resto", "mdr": informal on purpose.
     if (self.FC_INFORMAL_WORDS.has(word.toLowerCase())) continue;
     if (insideEnglishQuote(paragraph, token.nStart)) continue;
-    // "soeur", "coeur": most keyboards have no "œ"; a typographic nicety only.
-    if (!picky && /oe|ae/i.test(word) && spellChecker.isValidToken(word.replace(/oe/g, "œ").replace(/OE/g, "Œ").replace(/ae/g, "æ"))) continue;
+    // "soeur", "coeur": most keyboards have no "œ"; a typographic nicety, offered as a
+    // style hint (asked by a user). One message for every word (fcRuleKey).
+    // ("ex aequo", "et caetera" keep their "ae" in usual spelling: accepted, no hint.)
+    const ligature = word.replace(/oe/g, "œ").replace(/O[eE]/g, "Œ");
+    const hasLigature = ligature !== word && spellChecker.isValidToken(ligature);
+    if (!picky && (hasLigature || /ae/i.test(word) && spellChecker.isValidToken(word.replace(/ae/g, "æ")))) {
+      if (hasLigature) ligatures.push({
+        offset: token.nStart,
+        length: token.nEnd - token.nStart,
+        word,
+        message: `Typographie : « ${ligature} » s’écrit avec la ligature (« ${word} » est accepté).`,
+        replacements: [ligature],
+        ruleId: "FC_LIGATURE",
+        category: "style",
+        label: CATEGORY_LABEL.style,
+      });
+      continue;
+    }
+    // Picky mode: "soeur" is "sœur", not "sueur" (the ranking keeps only it).
+    const replacements = hasLigature ? Object.assign([ligature], { only: [ligature] })
+      : suggested++ < MAX_SUGGESTED_WORDS ? spellSuggestions(word, paragraph.slice(Math.max(0, token.nStart - 12), token.nStart)) : [];
     spelling.push({
       offset: token.nStart,
       length: token.nEnd - token.nStart,
       word,
       message: "Mot inconnu du dictionnaire.",
-      replacements: suggested++ < MAX_SUGGESTED_WORDS ? spellSuggestions(word, paragraph.slice(Math.max(0, token.nStart - 12), token.nStart)) : [],
+      replacements,
       ruleId: "SPELLING",
       category: "spelling",
       label: CATEGORY_LABEL.spelling,
@@ -582,7 +601,9 @@ function checkParagraph(paragraph) {
   const maToMa = custom.filter((m) => /^FC_M_AS?$/.test(m.ruleId) && /^ma$/i.test(m.word));
   const afterMa = (m) => /gn_ma_ta_sa/.test(m.ruleId) && maToMa.some((o) => /^ma\s+$/i.test(paragraph.slice(o.offset, m.offset)));
   const notOverridden = (m) => !overriding.some((o) => overlaps(o, m)) && !afterOnt(m) && !afterMa(m);
-  const found = [...spelling.filter(notOverridden), ...grammar.filter(notOverridden), ...custom]
+  const reports = [...spelling.filter(notOverridden), ...grammar.filter(notOverridden), ...custom];
+  // The "œ" hints come last: any other report on the word wins.
+  const found = [...reports, ...ligatures.filter((l) => !reports.some((m) => overlaps(m, l)))]
     .filter((m) => !urls.some(([a, b]) => m.offset < b && a < m.offset + m.length))
     .sort((a, b) => a.offset - b.offset);
   const result = rankParagraph(paragraph, 0, found);
