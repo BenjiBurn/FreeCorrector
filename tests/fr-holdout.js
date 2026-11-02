@@ -243,4 +243,9 @@ module.exports = [
   ["T'en peux plus ?", null, null],
   ["Dis-moi si t’en veux.", null, null],
   ["Pierre t'en veux pas.", "veux", "veut"],
+  // Signalé depuis l'extension (1.2.8) : « spottées » (repérées, jeux et photo d'avions) soulignait et proposait « spittées ».
+  ["Félicitations à @filouty qui gagne avec 5 Wind spottées !", null, null],
+  ["Il a spotté un A380 hier à Roissy.", null, null],
+  ["On va spotter des trains ce week-end.", null, null],
+  ["Les spotteurs étaient nombreux.", null, null],
 ];
