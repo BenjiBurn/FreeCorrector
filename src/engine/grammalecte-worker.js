@@ -495,6 +495,10 @@ function checkParagraph(paragraph) {
     if (/conf_soi_soit/.test(m.ruleId) && /^soit$/i.test(m.word) && /(^|[^\p{L}])en\s+$/iu.test(paragraph.slice(0, err.nStart))) continue;
     // "pour ça n’a pas fonctionné": after "n’", "a" is the verb ("n’à" does not exist).
     if (/conf_à_a/.test(m.ruleId) && /^a$/i.test(m.word) && /(^|[^\p{L}])n['’]$/iu.test(paragraph.slice(0, err.nStart))) continue;
+    // "Combien t'en veux ?": the informal "t'" of "tu" ("t'en penses quoi"), not the
+    // object of "Pierre t'en veut", when nothing but a clause start comes before it.
+    if (/peux_veux_vaux.*sans_sujet/.test(m.ruleId) && /^(peux|veux)$/i.test(m.word) &&
+        /(^|[.!?…,;:«(]\s*|(^|[^\p{L}])(combien|si|que|quand|pourquoi|comment|où|mais|et|ou|alors|donc|puis|lorsque|puisque)\s+)t['’]\s*((en|y)\s+)?$/iu.test(paragraph.slice(0, err.nStart))) continue;
     // Holidays ("le 14 Juillet", "le 8 Mai") and titles ("Germinal") keep their capital.
     if (/maj_mois/.test(m.ruleId) && (/^(vendémiaire|brumaire|frimaire|nivôse|pluviôse|ventôse|germinal|floréal|prairial|messidor|thermidor|fructidor)$/i.test(m.word) ||
         /(^|\s)(14|1er|8|11|15)\s+$/.test(paragraph.slice(0, err.nStart)))) continue;

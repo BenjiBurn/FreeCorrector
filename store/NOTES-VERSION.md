@@ -14,6 +14,7 @@ Brouillon, à compléter jusqu’à la sortie.
 - Nouveau raccourci Ctrl+Maj+1 : active ou coupe la vérification sur la page ouverte, jusqu’à ce qu’on la quitte, même sur un site exclu (affiché dans les options, modifiable dans le navigateur) ; demandé par un utilisateur.
 - Barres de recherche (leboncoin…) : la pastille ne se pose plus sur le bouton du site, elle se place juste avant ; les barres de recherche sont mieux reconnues et n’y demandent plus de majuscule (« ford capri ») ; signalé par un utilisateur.
 - « coeur », « soeur », « oeuf » : « œ » est proposé en suggestion de style (bleu), « oe » reste accepté ; en mode exigeant, la ligature est la seule suggestion (plus « sueur » pour « soeur ») ; signalé par un utilisateur.
+- « Combien t’en veux ? », « T’en peux plus ? » (« t’ » familier pour « tu ») ne proposent plus « veut », « peut » ; « Pierre t’en veux » reste souligné ; signalé par un utilisateur.
 
 ## 1.2.8
 

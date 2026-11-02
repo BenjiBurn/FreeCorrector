@@ -238,4 +238,9 @@ module.exports = [
   ["Un oeuf et deux boeufs.", "oeuf", "œuf"],
   ["Ils sont arrivés ex aequo.", null, null],
   ["Ça fait mal au cœur.", null, null],
+  // Signalé depuis l'extension (1.2.8) : « Combien t'en veux ? » (t' = tu, familier) proposait « veut ».
+  ["Combien t'en veux ?", null, null],
+  ["T'en peux plus ?", null, null],
+  ["Dis-moi si t’en veux.", null, null],
+  ["Pierre t'en veux pas.", "veux", "veut"],
 ];
