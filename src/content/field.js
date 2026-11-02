@@ -115,14 +115,39 @@ class FcFieldBase {
       for (let n = el; n; n = n.parentNode ?? n.host) if (n === a) return true;
       return false;
     };
-    const y = Math.min(Math.max(r.top + Math.min(r.height / 2, 16), 0), window.innerHeight - 1);
-    for (const x of [r.left + 8, r.left + r.width / 2, r.right - 8]) {
+    // Tested on the part a scrolling box shows: a long prompt scrolled down hides its top.
+    const v = this.visibleRect(r);
+    if (v.right - v.left <= 0 || v.bottom - v.top <= 0) return false;
+    const y = Math.min(v.top + Math.min((v.bottom - v.top) / 2, 16), window.innerHeight - 1);
+    for (const x of [v.left + 8, (v.left + v.right) / 2, v.right - 8]) {
       if (x < 0 || x >= window.innerWidth) continue;
       const top = document.elementsFromPoint(x, y).find((e) => e !== this.ui.host);
       if (!top || top === el || el.contains(top) || isAncestor(top) || top.control === el ||
           top.closest?.("label")?.control === el) return true;
     }
     return false;
+  }
+
+  // `r` (the field's viewport rectangle) cut to the boxes of the page that
+  // scroll or clip it, and to the viewport.
+  visibleRect(r) {
+    let left = Math.max(r.left, 0), top = Math.max(r.top, 0);
+    let right = Math.min(r.right, window.innerWidth), bottom = Math.min(r.bottom, window.innerHeight);
+    // (Nothing above a fixed box clips it.)
+    let fixed = getComputedStyle(this.el).position === "fixed";
+    for (let n = this.el.parentNode ?? this.el.host; n && !fixed && n !== document.documentElement && n !== document.body;
+      n = n.parentNode ?? n.host) {
+      if (n.nodeType !== Node.ELEMENT_NODE) continue;
+      const cs = getComputedStyle(n);
+      fixed = cs.position === "fixed";
+      if (cs.overflowX === "visible" && cs.overflowY === "visible") continue;
+      // Its padding box, without its scrollbars.
+      const b = n.getBoundingClientRect();
+      const bl = b.left + n.clientLeft, bt = b.top + n.clientTop;
+      if (cs.overflowX !== "visible") { left = Math.max(left, bl); right = Math.min(right, bl + n.clientWidth); }
+      if (cs.overflowY !== "visible") { top = Math.max(top, bt); bottom = Math.min(bottom, bt + n.clientHeight); }
+    }
+    return { left, top, right: Math.max(left, right), bottom: Math.max(top, bottom) };
   }
 
   layout(_hostRect) {}
@@ -136,13 +161,56 @@ class FcFieldBase {
   // ---------- Badge ----------
 
   // Places the badge at the bottom right of `box` (viewport coordinates of the
-  // area text is drawn in), or vertically centered on single-line fields.
+  // area text is drawn in), or vertically centered on single-line fields. When
+  // that hides the text (typed up to the edge: "c'est un peu chiant" on X), it
+  // goes out of the way: right of the field, on its top right corner or under
+  // it, where the page has nothing to click.
   placeBadge(box, hostRect, centered) {
+    const S = FC_BADGE_SIZE;
+    const top = centered || box.height < S + 12 ? box.top + (box.height - S) / 2 : box.bottom - S - 4;
+    const spots = [
+      { left: box.right - S - 4, top },
+      { left: box.right + 6, top },
+      { left: box.right - S + 6, top: box.top - S + 6 },
+      { left: box.right - S - 4, top: box.bottom + 6 },
+    ];
+    let rects = null;
+    const coversText = (s) => {
+      // (Only the text shown: what a scrolling box hides does not count.)
+      rects ??= [...this.textRects()].map((r) => ({
+        left: Math.max(r.left, box.left), right: Math.min(r.right, box.right),
+        top: Math.max(r.top, box.top), bottom: Math.min(r.bottom, box.bottom),
+      }));
+      return rects.some((r) => r.right > r.left && r.bottom > r.top &&
+        r.left < s.left + S + 1 && s.left - 1 < r.right && r.top < s.top + S + 1 && s.top - 1 < r.bottom);
+    };
+    const spot = spots.find((s, i) => (i === 0 || this.isFreeSpot(s)) && !coversText(s)) ?? spots[0];
     const bs = this.badge.style;
-    bs.left = `${box.right - hostRect.left - FC_BADGE_SIZE - 4}px`;
-    bs.top = centered || box.height < FC_BADGE_SIZE + 12
-      ? `${box.top - hostRect.top + (box.height - FC_BADGE_SIZE) / 2}px`
-      : `${box.bottom - hostRect.top - FC_BADGE_SIZE - 4}px`;
+    bs.left = `${spot.left - hostRect.left}px`;
+    bs.top = `${spot.top - hostRect.top}px`;
+  }
+
+  // Viewport rectangles of the field's text, for the badge to keep off it.
+  textRects() { return []; }
+
+  // Whether the badge at `s` (viewport) is on screen and covers nothing of the
+  // page's to click or type in.
+  isFreeSpot(s) {
+    const S = FC_BADGE_SIZE;
+    if (s.left < 0 || s.top < 0 || s.left + S > window.innerWidth || s.top + S > window.innerHeight) return false;
+    for (const [x, y] of [[s.left + S / 2, s.top + S / 2], [s.left + 1, s.top + 1], [s.left + S - 1, s.top + 1], [s.left + 1, s.top + S - 1], [s.left + S - 1, s.top + S - 1]]) {
+      const top = document.elementsFromPoint(x, y).find((e) => e !== this.ui.host);
+      if (top?.closest?.("a, button, input, select, textarea, label, [role=button], [role=link], [role=textbox], [contenteditable=''], [contenteditable=true]") &&
+          top !== this.el && !this.el.contains(top)) return false;
+      // A scrollbar (ChatGPT's prompt) is to click too.
+      if (!top?.getBoundingClientRect) continue;
+      const b = top.getBoundingClientRect();
+      const barX = top.offsetWidth - top.clientWidth - 2 * top.clientLeft;
+      const barY = top.offsetHeight - top.clientHeight - 2 * top.clientTop;
+      if (barX > 4 && x > b.left + top.clientLeft + top.clientWidth && x < b.right - top.clientLeft ||
+          barY > 4 && y > b.top + top.clientTop + top.clientHeight && y < b.bottom - top.clientTop) return false;
+    }
+    return true;
   }
 
   renderBadge() {
@@ -386,6 +454,14 @@ class FcTextField extends FcFieldBase {
     return this.el.value;
   }
 
+  // The mirror's text sits exactly over the field's (very long texts: not looked at).
+  textRects() {
+    if (this.text.length > 5000) return [];
+    const range = document.createRange();
+    range.selectNodeContents(this.inner);
+    return range.getClientRects();
+  }
+
   caretOffset() {
     return this.el.selectionEnd;
   }
@@ -444,6 +520,9 @@ class FcTextField extends FcFieldBase {
     ms.width = `${box.width}px`;
     ms.height = `${box.height}px`;
     this.inner.style.transform = `translate(${-el.scrollLeft}px, ${-el.scrollTop}px)`;
+    // What a scrolling box of the page hides of the field stays hidden.
+    const v = this.visibleRect({ left, top, right: left + box.width, bottom: top + box.height });
+    ms.clipPath = `inset(${v.top - top}px ${left + box.width - v.right}px ${top + box.height - v.bottom}px ${v.left - left}px)`;
 
     // A wide right padding keeps room for the site's own buttons (leboncoin's
     // "Rechercher"): the badge goes before it.

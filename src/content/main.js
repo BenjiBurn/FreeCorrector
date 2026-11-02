@@ -10,8 +10,10 @@
   // frames it shows from other hosts (sign-in boxes, comment widgets…).
   const site = (await Promise.resolve(fcApi.runtime.sendMessage({ type: "siteHost" })).catch(() => "")) || location.hostname;
 
+  // The "toggle page" shortcut overrides the settings until the page is left.
+  let pageOverride = null;
   const isActive = () =>
-    settings.enabled && !settings.disabledSites.includes(site);
+    pageOverride ?? (settings.enabled && !settings.disabledSites.includes(site));
 
   // Code editors are contenteditable too, but their text is not prose.
   const CODE_EDITORS = ".CodeMirror, .cm-editor, .monaco-editor, .ace_editor, .code-editor, [data-language]";
@@ -68,6 +70,9 @@
 
   // composedPath()[0] reaches fields inside open shadow roots (web components).
   document.addEventListener("focusin", (e) => attach(e.composedPath()[0]), true);
+  // Typing also attaches: some fields only become editable after they get the
+  // focus (X's messages: the badge showed only after the text was retyped).
+  document.addEventListener("input", (e) => attach(e.composedPath()[0]), true);
 
   function deepActiveElement() {
     let el = document.activeElement;
@@ -79,6 +84,16 @@
   // The "fix all" keyboard shortcut (lib/commands.js), sent to every frame of
   // the tab: only the frame where the user is typing acts.
   fcApi.runtime.onMessage.addListener((msg) => {
+    // Every frame follows, like the settings do.
+    if (msg?.type === "togglePage") {
+      pageOverride = !isActive();
+      if (pageOverride) attach(deepActiveElement());
+      else {
+        ui?.removeAll();
+        attached = new WeakMap();
+      }
+      return;
+    }
     if (msg?.type !== "fixAll" || !document.hasFocus() || !ui) return;
     const field = [...ui.fields].find((f) => f.isFocused());
     field?.fixAll();

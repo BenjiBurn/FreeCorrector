@@ -22,6 +22,10 @@
     "fix-all": {
       "suggested_key": { "default": "Ctrl+Shift+F", "mac": "MacCtrl+Shift+F" },
       "description": "__MSG_cmdFixAll__"
+    },
+    "toggle-page": {
+      "suggested_key": { "default": "Alt+Shift+F" },
+      "description": "__MSG_cmdTogglePage__"
     }
   },
   "background": {

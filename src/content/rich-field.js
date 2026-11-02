@@ -132,6 +132,19 @@ class FcRichField extends FcFieldBase {
     return range;
   }
 
+  // (Long documents: not looked at.)
+  textRects() {
+    if (this.segments.length > 400) return [];
+    const range = document.createRange();
+    const rects = [];
+    for (const { node } of this.segments) {
+      if (!node.isConnected || !/\S/.test(node.data)) continue;
+      range.selectNodeContents(node);
+      rects.push(...range.getClientRects());
+    }
+    return rects;
+  }
+
   caretOffset() {
     const sel = getSelection();
     if (!sel || !sel.rangeCount) return null;
@@ -163,15 +176,18 @@ class FcRichField extends FcFieldBase {
     this.root.hidden = !visible;
     if (!visible) return;
 
-    // Clip to the editor and to the viewport: tall editors (an e-mail body)
-    // scroll inside the page.
-    const top = Math.max(r.top, 0);
-    const bottom = Math.min(r.bottom, window.innerHeight);
+    // Clip to the part of the editor the page shows: tall editors scroll inside
+    // a box of the page (ChatGPT's prompt, an e-mail body) or the viewport.
+    const v = this.visibleRect(r);
+    const top = v.top;
+    const bottom = v.bottom;
     const cs = this.clip.style;
     cs.left = `${r.left - hostRect.left}px`;
     cs.top = `${r.top - hostRect.top}px`;
     cs.width = `${r.width}px`;
     cs.height = `${r.height}px`;
+    // (Marks stay placed from the editor's corner; the clip-path hides what the page hides.)
+    cs.clipPath = `inset(${Math.max(0, v.top - r.top)}px ${Math.max(0, r.right - v.right)}px ${Math.max(0, r.bottom - v.bottom)}px ${Math.max(0, v.left - r.left)}px)`;
 
     for (const mark of this.marks) {
       const range = this.rangeFor(mark.match.offset, mark.match.length);
@@ -194,9 +210,10 @@ class FcRichField extends FcFieldBase {
       mark.rects = rects;
     }
 
-    const area = { left: r.left, top, right: r.right, bottom, height: bottom - top };
+    const area = { left: v.left, top, right: v.right, bottom, height: bottom - top };
     this.placeBadge(area, hostRect, r.height < FC_BADGE_SIZE + 12);
   }
+
 
   matchAt(x, y) {
     for (const mark of this.marks) {

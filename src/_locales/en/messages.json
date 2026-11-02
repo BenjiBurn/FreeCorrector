@@ -56,6 +56,8 @@
   "optDonate": { "message": "Support FreeCorrector with a donation" },
   "cmdFixAll": { "message": "Fix every mistake in the field" },
   "optShortcut": { "message": "Keyboard shortcut to fix every mistake in the field you are typing in: $KEYS$. To change it: $WHERE$." , "placeholders": { "keys": { "content": "$1" }, "where": { "content": "$2" } } },
+  "cmdTogglePage": { "message": "Turn checking on or off on this page" },
+  "optShortcutToggle": { "message": "Shortcut to turn checking on or off on the open page until you leave it (even on an excluded site): $KEYS$.", "placeholders": { "keys": { "content": "$1" } } },
   "optShortcutNone": { "message": "none" },
   "optShortcutWhereChrome": { "message": "the chrome://extensions/shortcuts page" },
   "optShortcutWhereFirefox": { "message": "about:addons, gear icon, “Manage Extension Shortcuts”" },
