@@ -11,7 +11,7 @@ Brouillon, à compléter jusqu’à la sortie.
 - La pastille ne cache plus le texte : quand on écrit jusqu’au bord (X, petits champs), elle se pousse à droite du champ, sur son coin ou en dessous, là où la page n’a rien à cliquer ; signalé par un utilisateur.
 - Zones de saisie qui défilent (ChatGPT…) : les soulignements des lignes cachées ne débordent plus hors de la zone, la pastille reste dans la partie visible, et une zone défilée n’est plus prise pour cachée ; signalé par un utilisateur.
 - Champs qui ne deviennent modifiables qu’après avoir reçu le focus (messages privés de X) : la vérification démarre dès la première frappe ; signalé par un utilisateur.
-- Nouveau raccourci Alt+Maj+F : active ou coupe la vérification sur la page ouverte, jusqu’à ce qu’on la quitte, même sur un site exclu (affiché dans les options, modifiable dans le navigateur) ; demandé par un utilisateur.
+- Nouveau raccourci Ctrl+Maj+1 : active ou coupe la vérification sur la page ouverte, jusqu’à ce qu’on la quitte, même sur un site exclu (affiché dans les options, modifiable dans le navigateur) ; demandé par un utilisateur.
 - Barres de recherche (leboncoin…) : la pastille ne se pose plus sur le bouton du site, elle se place juste avant ; les barres de recherche sont mieux reconnues et n’y demandent plus de majuscule (« ford capri ») ; signalé par un utilisateur.
 - « coeur », « soeur », « oeuf » : « œ » est proposé en suggestion de style (bleu), « oe » reste accepté ; en mode exigeant, la ligature est la seule suggestion (plus « sueur » pour « soeur ») ; signalé par un utilisateur.
 
