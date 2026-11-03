@@ -6,7 +6,6 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Windows;
 using UIA = Interop.UIAutomationClient;
 
 namespace FreeCorrector
@@ -19,12 +18,9 @@ namespace FreeCorrector
     {
         const int MaxChars = 20000;
         const int MaxMarks = 80;
-        const int TextPatternId = 10014, ValuePatternId = 10002, IsTextPatternAvailableId = 30040;
+        const int TextPatternId = 10014, ValuePatternId = 10002, IsTextPatternAvailableId = 30040, ClassNameId = 30012;
         const int EditType = 50004, DocumentType = 50030;
         const string FinalPunctRule = "FC_FINAL_PUNCT";
-        const UIA.TextPatternRangeEndpoint RangeStart = UIA.TextPatternRangeEndpoint.TextPatternRangeEndpoint_Start;
-        const UIA.TextPatternRangeEndpoint RangeEnd = UIA.TextPatternRangeEndpoint.TextPatternRangeEndpoint_End;
-        const UIA.TextUnit Character = UIA.TextUnit.TextUnit_Character;
         // Browsers and Thunderbird have the extension; terminals, the shell and
         // code editors are not prose.
         static readonly HashSet<string> Skipped = new(StringComparer.OrdinalIgnoreCase)
@@ -46,14 +42,14 @@ namespace FreeCorrector
 
         UIA.IUIAutomation uia = null!;
         UIA.IUIAutomationElement? element;
-        UIA.IUIAutomationTextPattern? pattern;
+        IField? field;
         string? text;
         DateTime changedAt;
         string? asked;
         bool fresh;
         (string Text, List<Match> Found)? answer;
         List<Match> matches = new();
-        List<UIA.IUIAutomationTextRange?> ranges = new();
+        List<IAnchor?> anchors = new();
         string? lastSignature = "";
 
         // `check` runs the engines on a normalized text (it is called from this
@@ -100,12 +96,12 @@ namespace FreeCorrector
         void Reset(UIA.IUIAutomationElement? el)
         {
             element = el;
-            pattern = null;
+            field = null;
             text = null;
             asked = null;
             fresh = false;
             matches = new();
-            ranges = new();
+            anchors = new();
             Publish(new());
         }
 
@@ -119,12 +115,12 @@ namespace FreeCorrector
             if (element == null || uia.CompareElements(focused, element) == 0)
             {
                 Reset(focused);
-                pattern = Usable(focused, pid);
-                if (pattern != null) Log.Write($"field: {ProcessName(pid)} / type {focused.CurrentControlType} / {focused.CurrentFrameworkId}");
+                field = Usable(focused, pid);
+                if (field != null) Log.Write($"field: {ProcessName(pid)} / type {focused.CurrentControlType} / {focused.CurrentFrameworkId} / {field.GetType().Name}");
             }
-            if (pattern == null) return;
+            if (field == null) return;
 
-            var raw = pattern.DocumentRange.GetText(MaxChars);
+            var raw = field.Text(MaxChars);
             if (raw != text)
             {
                 if (text != null) Shift(text, raw);
@@ -151,22 +147,22 @@ namespace FreeCorrector
                     if (a.Text == text)
                     {
                         matches = a.Found.Take(MaxMarks).ToList();
-                        ranges = matches.Select(m => RangeFor(m, text)).ToList();
+                        anchors = matches.Select(m => field.Locate(m, text)).ToList();
                         fresh = true;
-                        Log.Write($"check: {text.Length} characters, {matches.Count} matches, {ranges.Count(r => r == null)} not placed");
+                        Log.Write($"check: {text.Length} characters, {matches.Count} matches, {anchors.Count(r => r == null)} not placed");
                     }
                 }
             }
 
             // The boxes follow scrolling, resizing and window moves.
-            var bounds = Bounds(element!);
+            var bounds = field.Bounds();
             var marks = new List<Mark>();
             for (var i = 0; i < matches.Count; i++)
             {
-                if (ranges[i] is not { } range) continue;
+                if (anchors[i] is not { } anchor) continue;
                 // No final period asked for while the user is still writing the sentence.
-                if (matches[i].RuleId == FinalPunctRule && !CaretBefore(range)) continue;
-                var boxes = Boxes(range).Where(b => b.IntersectsWith(bounds)).ToArray();
+                if (matches[i].RuleId == FinalPunctRule && !field.CaretBefore(anchor)) continue;
+                var boxes = anchor.Boxes().Where(b => b.IntersectsWith(bounds)).ToArray();
                 if (boxes.Length > 0) marks.Add(new Mark(matches[i], boxes));
             }
             Publish(marks);
@@ -185,35 +181,26 @@ namespace FreeCorrector
             var delta = now.Length - before.Length;
 
             var keptMatches = new List<Match>();
-            var keptRanges = new List<UIA.IUIAutomationTextRange?>();
+            var keptAnchors = new List<IAnchor?>();
             for (var i = 0; i < matches.Count; i++)
             {
                 var m = matches[i];
                 var end = m.Offset + m.Length;
                 if (end < prefix || (end == prefix && !IsWordChar(now, prefix)))
                 {
-                    // Before the edit: the same range, if the application kept it in place.
-                    var range = ranges[i] != null && ranges[i]!.GetText(m.Length + 1) == m.Word ? ranges[i] : RangeFor(m, now);
+                    // Before the edit: the same anchor, if the application kept it in place.
                     keptMatches.Add(m);
-                    keptRanges.Add(range);
+                    keptAnchors.Add(anchors[i] != null && anchors[i]!.Holds(m) ? anchors[i] : field!.Locate(m, now));
                 }
                 else if (m.Offset > editEnd || (m.Offset == editEnd && !IsWordChar(now, m.Offset + delta - 1)))
                 {
                     m.Offset += delta;
                     keptMatches.Add(m);
-                    keptRanges.Add(RangeFor(m, now));
+                    keptAnchors.Add(field!.Locate(m, now));
                 }
             }
             matches = keptMatches;
-            ranges = keptRanges;
-        }
-
-        // The caret is before the end of the range (as content/field.js does it).
-        bool CaretBefore(UIA.IUIAutomationTextRange range)
-        {
-            var selection = pattern!.GetSelection();
-            if (selection == null || selection.Length == 0) return false;
-            return selection.GetElement(0).CompareEndpoints(RangeStart, range, RangeEnd) < 0;
+            anchors = keptAnchors;
         }
 
         static bool IsWordChar(string s, int i) => i >= 0 && i < s.Length && (char.IsLetterOrDigit(s[i]) || s[i] == '-' || s[i] == (char)0x2019 || s[i] == '\'');
@@ -223,7 +210,7 @@ namespace FreeCorrector
             var i = matches.IndexOf(match);
             if (i < 0) return;
             matches.RemoveAt(i);
-            ranges.RemoveAt(i);
+            anchors.RemoveAt(i);
             lastSignature = null;
         }
 
@@ -235,30 +222,16 @@ namespace FreeCorrector
             publish(marks);
         }
 
-        // The text pattern of an editable prose field, or null.
-        UIA.IUIAutomationTextPattern? Usable(UIA.IUIAutomationElement el, int pid)
+        // The editable prose field behind an element, or null.
+        IField? Usable(UIA.IUIAutomationElement el, int pid)
         {
             if (Skipped.Contains(ProcessName(pid))) return null;
             if (el.CurrentIsPassword != 0) return null;
             var type = el.CurrentControlType;
             if (type != EditType && type != DocumentType) return null;
             if (el.GetCurrentPattern(ValuePatternId) is UIA.IUIAutomationValuePattern value && value.CurrentIsReadOnly != 0) return null;
-            return el.GetCurrentPattern(TextPatternId) as UIA.IUIAutomationTextPattern;
-        }
-
-        static Rect Bounds(UIA.IUIAutomationElement el)
-        {
-            var r = el.CurrentBoundingRectangle;
-            return new Rect(r.left, r.top, Math.Max(0, r.right - r.left), Math.Max(0, r.bottom - r.top));
-        }
-
-        static Rect[] Boxes(UIA.IUIAutomationTextRange range)
-        {
-            var a = range.GetBoundingRectangles() as double[];
-            var boxes = new List<Rect>();
-            for (var k = 0; a != null && k + 3 < a.Length; k += 4)
-                if (a[k + 2] > 0 && a[k + 3] > 0) boxes.Add(new Rect(a[k], a[k + 1], a[k + 2], a[k + 3]));
-            return boxes.ToArray();
+            if (el.GetCurrentPattern(TextPatternId) is UIA.IUIAutomationTextPattern pattern) return new UiaField(el, pattern);
+            return EditField.For(el);
         }
 
         string ProcessName(int pid)
@@ -283,43 +256,15 @@ namespace FreeCorrector
             return new string(chars);
         }
 
-        // The range of a match. Applications do not all count characters the
-        // same way (some count a line break of two characters as one), so the
-        // text of the range is checked and a few other starts are tried.
-        UIA.IUIAutomationTextRange? RangeFor(Match m, string raw)
-        {
-            var crlf = 0;
-            for (var i = raw.IndexOf("\r\n", StringComparison.Ordinal); i >= 0 && i < m.Offset; i = raw.IndexOf("\r\n", i + 2, StringComparison.Ordinal)) crlf++;
-            foreach (var start in crlf > 0 ? new[] { m.Offset, m.Offset - crlf } : new[] { m.Offset })
-            {
-                var range = RangeAt(start, m.Length);
-                if (range != null && range.GetText(m.Length + 1) == m.Word) return range;
-            }
-            // Last resort: the word, searched from a little before.
-            var from = RangeAt(Math.Max(0, m.Offset - crlf - 20), 0);
-            if (from == null) return null;
-            from.MoveEndpointByRange(RangeEnd, pattern!.DocumentRange, RangeEnd);
-            return from.FindText(m.Word, 0, 0);
-        }
-
-        UIA.IUIAutomationTextRange? RangeAt(int start, int length)
-        {
-            if (start < 0) return null;
-            var range = pattern!.DocumentRange.Clone();
-            if (range.MoveEndpointByUnit(RangeStart, Character, start) != start) return null;
-            range.MoveEndpointByRange(RangeEnd, range, RangeStart);
-            range.MoveEndpointByUnit(RangeEnd, Character, length);
-            return range;
-        }
-
         // Selects the word in the application and types the replacement.
         void DoReplace(Match match, string replacement)
         {
             var i = matches.IndexOf(match);
-            if (i < 0 || ranges[i] is not { } range) return;
+            if (i < 0 || anchors[i] is not { } anchor) return;
             // The text may have changed under the mark since the last tick.
-            if (range.GetText(match.Length + 1) != match.Word) return;
-            range.Select();
+            field?.Text(MaxChars);
+            if (!anchor.Holds(match)) return;
+            anchor.Select();
             Thread.Sleep(60);
             Native.Type(replacement);
         }
@@ -329,17 +274,19 @@ namespace FreeCorrector
         public void Probe(IntPtr hwnd)
         {
             uia = new UIA.CUIAutomation();
-            var el = uia.ElementFromHandle(hwnd).FindFirst(UIA.TreeScope.TreeScope_Subtree, uia.CreatePropertyCondition(IsTextPatternAvailableId, true));
+            var window = uia.ElementFromHandle(hwnd);
+            var el = window.FindFirst(UIA.TreeScope.TreeScope_Subtree, uia.CreatePropertyCondition(IsTextPatternAvailableId, true))
+                ?? window.FindFirst(UIA.TreeScope.TreeScope_Subtree, uia.CreatePropertyCondition(ClassNameId, "Edit"));
             if (el == null) { Log.Write("probe: no text field"); return; }
-            pattern = Usable(el, el.CurrentProcessId);
-            Log.Write($"probe: {ProcessName(el.CurrentProcessId)} / type {el.CurrentControlType}" + (pattern != null ? " -> checked" : " -> skipped"));
-            if (pattern == null) return;
-            var raw = pattern.DocumentRange.GetText(MaxChars);
+            field = Usable(el, el.CurrentProcessId);
+            Log.Write($"probe: {ProcessName(el.CurrentProcessId)} / type {el.CurrentControlType} / " + (field?.GetType().Name ?? "skipped"));
+            if (field == null) return;
+            var raw = field.Text(MaxChars);
             var found = check(Normalize(raw)).GetAwaiter().GetResult() ?? new();
             foreach (var m in found)
             {
-                var range = RangeFor(m, raw);
-                Log.Write($"probe: {m.Category} \"{m.Word}\" at {m.Offset} -> " + (range == null ? "not placed" : string.Join(" ", Boxes(range))));
+                var anchor = field.Locate(m, raw);
+                Log.Write($"probe: {m.Category} \"{m.Word}\" at {m.Offset} -> " + (anchor == null ? "not placed" : string.Join(" ", anchor.Boxes())));
             }
         }
     }
