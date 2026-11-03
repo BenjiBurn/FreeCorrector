@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <!-- 100% local: nothing but the app's own files. -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; connect-src 'self'; worker-src 'self'; style-src 'self'; img-src 'self'">
+  <title>FreeCorrector engines</title>
+</head>
+<body>
+  <script src="web/messages.js"></script>
+  <script src="web/fc-web.js"></script>
+  <script src="lib/settings.js"></script>
+  <script src="engine/language.js"></script>
+  <script src="engine/host.js"></script>
+  <script src="bridge.js"></script>
+</body>
+</html>
