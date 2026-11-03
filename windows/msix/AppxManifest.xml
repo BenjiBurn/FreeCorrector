@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- FreeCorrector for Windows, as an MSIX package for the Microsoft Store.
+     windows/package.ps1 fills in the identity (identity.json) and the version. -->
+<Package
+  xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
+  xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
+  xmlns:desktop="http://schemas.microsoft.com/appx/manifest/desktop/windows10"
+  xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
+  IgnorableNamespaces="uap desktop rescap">
+
+  <Identity Name="{IdentityName}" Publisher="{Publisher}" Version="{Version}" ProcessorArchitecture="x64" />
+
+  <Properties>
+    <DisplayName>FreeCorrector</DisplayName>
+    <PublisherDisplayName>{PublisherDisplayName}</PublisherDisplayName>
+    <Logo>assets\StoreLogo.png</Logo>
+    <Description>Correcteur d'orthographe et de grammaire, français et anglais, 100 % local.</Description>
+  </Properties>
+
+  <Dependencies>
+    <TargetDeviceFamily Name="Windows.Desktop" MinVersion="10.0.19041.0" MaxVersionTested="10.0.26100.0" />
+  </Dependencies>
+
+  <Resources>
+    <Resource Language="fr-FR" />
+    <Resource Language="en-US" />
+  </Resources>
+
+  <Applications>
+    <Application Id="FreeCorrector" Executable="FreeCorrector.exe" EntryPoint="Windows.FullTrustApplication">
+      <uap:VisualElements
+        DisplayName="FreeCorrector"
+        Description="Correcteur d'orthographe et de grammaire, français et anglais, 100 % local."
+        BackgroundColor="transparent"
+        Square150x150Logo="assets\Square150x150Logo.png"
+        Square44x44Logo="assets\Square44x44Logo.png">
+        <uap:DefaultTile Wide310x150Logo="assets\Wide310x150Logo.png" />
+      </uap:VisualElements>
+      <Extensions>
+        <!-- Starts with Windows; the user can turn it off in the app's menu or in Windows' settings. -->
+        <desktop:Extension Category="windows.startupTask" Executable="FreeCorrector.exe" EntryPoint="Windows.FullTrustApplication">
+          <desktop:StartupTask TaskId="FreeCorrectorStartup" Enabled="true" DisplayName="FreeCorrector" />
+        </desktop:Extension>
+      </Extensions>
+    </Application>
+  </Applications>
+
+  <Capabilities>
+    <!-- A desktop app: it reads the text fields of other applications through UI Automation. -->
+    <rescap:Capability Name="runFullTrust" />
+  </Capabilities>
+</Package>

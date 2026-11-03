@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Only restored, never built: brings Microsoft's packaging tools (makeappx.exe)
+       into the NuGet cache for windows/package.ps1, without the Windows SDK. -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.26100.1742" ExcludeAssets="all" />
+  </ItemGroup>
+</Project>

@@ -156,8 +156,9 @@ namespace FreeCorrector
             menu.Items.Add(picky);
             menu.Items.Add(L.T("Réglages…", "Settings…"), null, (_, _) => SettingsWindow.Show(engine));
             menu.Items.Add(new Forms.ToolStripSeparator());
-            var startup = new Forms.ToolStripMenuItem(L.T("Lancer au démarrage de Windows", "Start with Windows")) { Checked = Startup.IsOn, CheckOnClick = true };
-            startup.Click += (_, _) => Startup.Set(startup.Checked);
+            var startup = new Forms.ToolStripMenuItem(L.T("Lancer au démarrage de Windows", "Start with Windows")) { CheckOnClick = true };
+            menu.Opening += async (_, _) => startup.Checked = await Startup.IsOnAsync();
+            startup.Click += async (_, _) => startup.Checked = await Startup.SetAsync(startup.Checked);
             menu.Items.Add(startup);
             menu.Items.Add(L.T("Quitter", "Quit"), null, (_, _) => app.Shutdown());
 
