@@ -495,6 +495,11 @@ function checkParagraph(paragraph) {
     if (/conf_soi_soit/.test(m.ruleId) && /^soit$/i.test(m.word) && /(^|[^\p{L}])en\s+$/iu.test(paragraph.slice(0, err.nStart))) continue;
     // "pour ça n’a pas fonctionné": after "n’", "a" is the verb ("n’à" does not exist).
     if (/conf_à_a/.test(m.ruleId) && /^a$/i.test(m.word) && /(^|[^\p{L}])n['’]$/iu.test(paragraph.slice(0, err.nStart))) continue;
+    // "j'ai deux extensions d'activées", "il y en a trois de cassés": the familiar "avoir
+    // + noun + de + agreed participle", not "de" + infinitive ("elle vient de terminée").
+    if (/infi_de_verbe/.test(m.ruleId) &&
+        spellChecker.getMorph(m.word.toLowerCase()).some((x) => /:Q(:A)?:(.:[pi]|f:s)/.test(x)) &&
+        /(^|[^\p{L}])(ai|as|a|avons|avez|ont|avais|avait|avions|aviez|avaient|aurai|auras|aura|aurons|aurez|auront|aurais|aurait|aurions|auriez|auraient|avoir)\s+[^.!?;:]*[\p{L}\d]\s+d(e\s+|['’])$/iu.test(paragraph.slice(Math.max(0, err.nStart - 80), err.nStart))) continue;
     // "Combien t'en veux ?": the informal "t'" of "tu" ("t'en penses quoi"), not the
     // object of "Pierre t'en veut", when nothing but a clause start comes before it.
     if (/peux_veux_vaux.*sans_sujet/.test(m.ruleId) && /^(peux|veux)$/i.test(m.word) &&

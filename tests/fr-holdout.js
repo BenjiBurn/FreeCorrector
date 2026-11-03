@@ -248,4 +248,9 @@ module.exports = [
   ["Il a spotté un A380 hier à Roissy.", null, null],
   ["On va spotter des trains ce week-end.", null, null],
   ["Les spotteurs étaient nombreux.", null, null],
+  // Signalé depuis l'extension (1.2.8) : « j'ai Wanteeed et Adblock Plus d'activés » proposait « d'activer ».
+  ["En extensions, j'ai Wanteeed et Adblock Plus d'activés.", null, null],
+  ["J'ai deux extensions d'activées.", null, null],
+  ["Il y en a trois de cassés.", null, null],
+  ["Elle vient de terminée.", "terminée", "terminer"],
 ];

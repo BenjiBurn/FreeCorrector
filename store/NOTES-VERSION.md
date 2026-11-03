@@ -16,6 +16,7 @@ Brouillon, à compléter jusqu’à la sortie.
 - « coeur », « soeur », « oeuf » : « œ » est proposé en suggestion de style (bleu), « oe » reste accepté ; en mode exigeant, la ligature est la seule suggestion (plus « sueur » pour « soeur ») ; signalé par un utilisateur.
 - « Combien t’en veux ? », « T’en peux plus ? » (« t’ » familier pour « tu ») ne proposent plus « veut », « peut » ; « Pierre t’en veux » reste souligné ; signalé par un utilisateur.
 - « spotter », « spotté », « spottées » (repérer, dans les jeux ou la photo d’avions) ne sont plus soulignés ; signalé par un utilisateur.
+- « J’ai deux extensions d’activées », « il y en a trois de cassés » (tournure familière) ne proposent plus l’infinitif (« d’activer ») ; « elle vient de terminée » reste souligné ; signalé par un utilisateur.
 
 ## 1.2.8
 
