@@ -21,13 +21,14 @@ namespace FreeCorrector
         static void Main(string[] args)
         {
             // FreeCorrector.exe --probe <window handle>: see Watcher.Probe.
+            // FreeCorrector.exe --settings: opens the settings window too.
             var probe = args.Length == 2 && args[0] == "--probe" ? new IntPtr(long.Parse(args[1])) : IntPtr.Zero;
             using var mutex = new Mutex(true, "FreeCorrector.Windows", out var first);
             if (!first && probe == IntPtr.Zero) return;
             var app = new Application { ShutdownMode = ShutdownMode.OnExplicitShutdown };
             app.Startup += async (_, _) =>
             {
-                try { await StartAsync(app, probe); }
+                try { await StartAsync(app, probe, args.Contains("--settings")); }
                 catch (WebView2RuntimeNotFoundException)
                 {
                     MessageBox.Show(L.T("FreeCorrector a besoin de Microsoft Edge WebView2, présent sur Windows 10 et 11 à jour.",
@@ -43,7 +44,7 @@ namespace FreeCorrector
             app.Run();
         }
 
-        static async Task StartAsync(Application app, IntPtr probe)
+        static async Task StartAsync(Application app, IntPtr probe, bool settingsAtStart)
         {
             Log.Write($"FreeCorrector {Version} started");
             // WebView2 needs a window to belong to: one that is never shown.
@@ -80,9 +81,12 @@ namespace FreeCorrector
             card.Ignore = match => watcher.Ignore(match);
             card.AddWord = async match => { await engine.AddWordAsync(match.Word); watcher.Recheck(); };
             card.DisableRule = async match => { await engine.DisableRuleAsync(match); watcher.Recheck(); };
+            var settings = await engine.GetSettingsAsync();
+            watcher.Enabled = settings.GetProperty("enabled").GetBoolean();
             watcher.Start();
             FollowMouse(card, () => marks);
-            var tray = Tray(app, engine, watcher, await engine.GetSettingsAsync());
+            var tray = Tray(app, engine, watcher, settings);
+            if (settingsAtStart) SettingsWindow.Show(engine);
             app.Exit += (_, _) =>
             {
                 tray.Visible = false;
@@ -129,13 +133,32 @@ namespace FreeCorrector
             var menu = new Forms.ContextMenuStrip();
             menu.Items.Add(new Forms.ToolStripMenuItem($"FreeCorrector {Version} · " + L.T("Créé par BenjiBurn", "Created by BenjiBurn")) { Enabled = false });
             menu.Items.Add(new Forms.ToolStripSeparator());
-            var enabled = new Forms.ToolStripMenuItem(L.T("Correction activée", "Checking on")) { Checked = true, CheckOnClick = true };
-            enabled.CheckedChanged += (_, _) => watcher.Enabled = enabled.Checked;
+            // The switches write the same settings as the settings window.
+            var enabled = new Forms.ToolStripMenuItem(L.T("Correction activée", "Checking on")) { CheckOnClick = true };
+            var picky = new Forms.ToolStripMenuItem(L.T("Mode exigeant", "Picky mode")) { CheckOnClick = true };
+            void Show(JsonElement s)
+            {
+                enabled.Checked = s.GetProperty("enabled").GetBoolean();
+                picky.Checked = s.GetProperty("picky").GetBoolean();
+                watcher.Enabled = enabled.Checked;
+            }
+            Show(settings);
+            enabled.Click += async (_, _) => { watcher.Enabled = enabled.Checked; await engine.SetSettingsAsync(new { enabled = enabled.Checked }); };
+            picky.Click += async (_, _) => { await engine.SetSettingsAsync(new { picky = picky.Checked }); watcher.Recheck(); };
+            engine.SettingsChanged += async () =>
+            {
+                var now = await engine.GetSettingsAsync();
+                Log.Write($"settings changed: enabled {now.GetProperty("enabled")}, picky {now.GetProperty("picky")}");
+                Show(now);
+                watcher.Recheck();
+            };
             menu.Items.Add(enabled);
-            var picky = new Forms.ToolStripMenuItem(L.T("Mode exigeant", "Picky mode")) { Checked = settings.GetProperty("picky").GetBoolean(), CheckOnClick = true };
-            picky.CheckedChanged += async (_, _) => { await engine.SetSettingsAsync(new { picky = picky.Checked }); watcher.Recheck(); };
             menu.Items.Add(picky);
+            menu.Items.Add(L.T("Réglages…", "Settings…"), null, (_, _) => SettingsWindow.Show(engine));
             menu.Items.Add(new Forms.ToolStripSeparator());
+            var startup = new Forms.ToolStripMenuItem(L.T("Lancer au démarrage de Windows", "Start with Windows")) { Checked = Startup.IsOn, CheckOnClick = true };
+            startup.Click += (_, _) => Startup.Set(startup.Checked);
+            menu.Items.Add(startup);
             menu.Items.Add(L.T("Quitter", "Quit"), null, (_, _) => app.Shutdown());
 
             var tray = new Forms.NotifyIcon
@@ -145,6 +168,7 @@ namespace FreeCorrector
                 ContextMenuStrip = menu,
                 Visible = true,
             };
+            tray.DoubleClick += (_, _) => SettingsWindow.Show(engine);
             return tray;
         }
 

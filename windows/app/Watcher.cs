@@ -21,6 +21,7 @@ namespace FreeCorrector
         const int MaxMarks = 80;
         const int TextPatternId = 10014, ValuePatternId = 10002, IsTextPatternAvailableId = 30040;
         const int EditType = 50004, DocumentType = 50030;
+        const string FinalPunctRule = "FC_FINAL_PUNCT";
         const UIA.TextPatternRangeEndpoint RangeStart = UIA.TextPatternRangeEndpoint.TextPatternRangeEndpoint_Start;
         const UIA.TextPatternRangeEndpoint RangeEnd = UIA.TextPatternRangeEndpoint.TextPatternRangeEndpoint_End;
         const UIA.TextUnit Character = UIA.TextUnit.TextUnit_Character;
@@ -163,6 +164,8 @@ namespace FreeCorrector
             for (var i = 0; i < matches.Count; i++)
             {
                 if (ranges[i] is not { } range) continue;
+                // No final period asked for while the user is still writing the sentence.
+                if (matches[i].RuleId == FinalPunctRule && !CaretBefore(range)) continue;
                 var boxes = Boxes(range).Where(b => b.IntersectsWith(bounds)).ToArray();
                 if (boxes.Length > 0) marks.Add(new Mark(matches[i], boxes));
             }
@@ -203,6 +206,14 @@ namespace FreeCorrector
             }
             matches = keptMatches;
             ranges = keptRanges;
+        }
+
+        // The caret is before the end of the range (as content/field.js does it).
+        bool CaretBefore(UIA.IUIAutomationTextRange range)
+        {
+            var selection = pattern!.GetSelection();
+            if (selection == null || selection.Length == 0) return false;
+            return selection.GetElement(0).CompareEndpoints(RangeStart, range, RangeEnd) < 0;
         }
 
         static bool IsWordChar(string s, int i) => i >= 0 && i < s.Length && (char.IsLetterOrDigit(s[i]) || s[i] == '-' || s[i] == (char)0x2019 || s[i] == '\'');

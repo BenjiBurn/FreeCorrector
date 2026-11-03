@@ -7,6 +7,8 @@ $env:DOTNET_CLI_TELEMETRY_OPTOUT = '1'
 $root = Split-Path $PSScriptRoot
 & $Node (Join-Path $root 'scripts\build.js') web
 if ($LASTEXITCODE) { throw "build.js web: $LASTEXITCODE" }
+& $Node (Join-Path $PSScriptRoot 'app\tools\settings-page.js')
+if ($LASTEXITCODE) { throw "settings-page.js: $LASTEXITCODE" }
 $dotnet = (Get-Command dotnet -ErrorAction SilentlyContinue).Source
 if (-not $dotnet) { $dotnet = "$env:ProgramFiles\dotnet\dotnet.exe" }
 & $dotnet build (Join-Path $PSScriptRoot 'app\FreeCorrector.csproj') -c $Configuration --nologo -v minimal

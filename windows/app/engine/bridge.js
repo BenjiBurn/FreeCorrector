@@ -1,16 +1,24 @@
 // The engines of the Windows app: those of the online proofreader
 // (web/fc-web.js standing in for the extension APIs, engine/host.js running
 // the workers), in a hidden WebView2 page. The app posts { id, type, … } and
-// gets { id, … } back; the settings live in this page's localStorage.
+// gets { id, … } back; the settings live in this origin's localStorage,
+// shared with the settings window (options/options.html).
 
 /* global fcEngineCheck, fcEngineWarmup, fcGetSettings, fcSetSettings, fcRuleKey */
 
 (() => {
+  // engine/sentence-rules.js: shown only when the setting is on (the
+  // extension filters them in its content scripts, content/field.js).
+  const SENTENCE_RULES = new Set(["FC_CAPITAL_START", "FC_FINAL_PUNCT"]);
+
   const handlers = {
     // → { matches } or { error }
     check: async ({ text }) => {
       try {
-        return await fcEngineCheck(String(text ?? ""), await fcGetSettings());
+        const settings = await fcGetSettings();
+        const answer = await fcEngineCheck(String(text ?? ""), settings);
+        if (answer.matches && !settings.sentenceRules) answer.matches = answer.matches.filter((m) => !SENTENCE_RULES.has(m.ruleId));
+        return answer;
       } catch (err) {
         return { error: String(err?.message ?? err) };
       }
@@ -40,6 +48,11 @@
     const handler = handlers[data?.type];
     const answer = handler ? await handler(data) : { error: `unknown request ${data?.type}` };
     chrome.webview.postMessage({ id: data.id, ...answer });
+  });
+
+  // The settings window wrote something: the app checks again.
+  addEventListener("storage", (event) => {
+    if (event.key?.startsWith("freecorrector:")) chrome.webview.postMessage({ type: "settings" });
   });
 
   // Both engines, so the first check does not wait for them (the files are

@@ -21,37 +21,51 @@ namespace FreeCorrector
         CoreWebView2? web;
         int nextId;
 
+        public CoreWebView2Environment Environment { get; private set; } = null!;
+
+        // The settings window changed something.
+        public event Action? SettingsChanged;
+
         public async Task StartAsync(IntPtr parent)
         {
-            var env = await CoreWebView2Environment.CreateAsync(null, Path.Combine(Log.Folder, "WebView2"));
-            var controller = await env.CreateCoreWebView2ControllerAsync(parent);
+            Environment = await CoreWebView2Environment.CreateAsync(null, Path.Combine(Log.Folder, "WebView2"));
+            var controller = await Environment.CreateCoreWebView2ControllerAsync(parent);
             controller.IsVisible = false;
             web = controller.CoreWebView2;
-            web.Settings.AreDevToolsEnabled = false;
-            web.Settings.AreDefaultContextMenusEnabled = false;
-            web.Settings.IsStatusBarEnabled = false;
-            web.SetVirtualHostNameToFolderMapping(Host, Path.Combine(AppContext.BaseDirectory, "engine"), CoreWebView2HostResourceAccessKind.Deny);
-            // 100% local: the page only ever gets the app's own files (its
-            // Content-Security-Policy says the same).
-            web.AddWebResourceRequestedFilter("*", CoreWebView2WebResourceContext.All);
-            web.WebResourceRequested += (_, e) =>
-            {
-                if (!e.Request.Uri.StartsWith($"https://{Host}/", StringComparison.OrdinalIgnoreCase))
-                    e.Response = env.CreateWebResourceResponse(null, 403, "Blocked", "");
-            };
+            Secure(web);
             web.WebMessageReceived += OnMessage;
             web.Navigate($"https://{Host}/engine.html");
             await ready.Task;
-            Log.Write("engines ready, WebView2 " + env.BrowserVersionString);
+            Log.Write("engines ready, WebView2 " + Environment.BrowserVersionString);
+        }
+
+        public static string Url(string path) => $"https://{Host}/{path}";
+
+        // The app's pages, for the engines and the settings window: the app's own
+        // files and nothing else, so that everything stays on the computer.
+        public void Secure(CoreWebView2 view)
+        {
+            view.Settings.AreDevToolsEnabled = false;
+            view.Settings.AreDefaultContextMenusEnabled = false;
+            view.Settings.IsStatusBarEnabled = false;
+            view.Settings.IsZoomControlEnabled = false;
+            view.SetVirtualHostNameToFolderMapping(Host, Path.Combine(AppContext.BaseDirectory, "engine"), CoreWebView2HostResourceAccessKind.Deny);
+            view.AddWebResourceRequestedFilter("*", CoreWebView2WebResourceContext.All);
+            view.WebResourceRequested += (_, e) =>
+            {
+                if (!new Uri(e.Request.Uri).Host.Equals(Host, StringComparison.OrdinalIgnoreCase))
+                    e.Response = Environment.CreateWebResourceResponse(null, 403, "Blocked", "");
+            };
         }
 
         void OnMessage(object? sender, CoreWebView2WebMessageReceivedEventArgs e)
         {
             using var doc = JsonDocument.Parse(e.WebMessageAsJson);
             var root = doc.RootElement;
-            if (root.TryGetProperty("type", out var type) && type.GetString() == "ready")
+            if (root.TryGetProperty("type", out var type))
             {
-                ready.TrySetResult();
+                if (type.GetString() == "ready") ready.TrySetResult();
+                else if (type.GetString() == "settings") SettingsChanged?.Invoke();
                 return;
             }
             if (root.TryGetProperty("id", out var id) && waiting.Remove(id.GetInt32(), out var answer))
