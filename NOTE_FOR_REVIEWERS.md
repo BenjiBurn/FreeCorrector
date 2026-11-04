@@ -1,4 +1,4 @@
-# Note for reviewers — FreeCorrector 1.2.8
+# Note for reviewers — FreeCorrector 1.2.9
 
 FreeCorrector is a free, open-source (GPL-3.0) spelling and grammar checker for French and
 English. All checking happens locally in the browser: the extension makes **no network
@@ -18,9 +18,9 @@ To rebuild from the source archive (Node.js 18 or later, no dependencies to inst
 
 ```sh
 node scripts/build.js firefox
-# -> dist/firefox/ and dist/freecorrector-1.2.8-firefox.zip
+# -> dist/firefox/ and dist/freecorrector-1.2.9-firefox.zip
 node scripts/build.js thunderbird
-# -> dist/thunderbird/ and dist/freecorrector-1.2.8-thunderbird.zip
+# -> dist/thunderbird/ and dist/freecorrector-1.2.9-thunderbird.zip
 ```
 
 ## Third-party code (unmodified copies)
@@ -52,7 +52,9 @@ it:
 - `content/`: content scripts that draw underlines over text fields. The UI lives in a closed
   shadow root, and text is edited through `execCommand("insertText")` so that undo works.
 - `engine/`: the checking engines, run in Web Workers started by the background page.
-  - `host.js`: routes each paragraph to the French or English engine.
+  - `host.js`: routes each paragraph to the French or English engine. Since 1.2.9 it terminates
+    the workers after 3 minutes without a check, to give their memory back (on Chromium the
+    offscreen document is closed too); the next focused text field starts them again.
   - `rules.js`, `english-rules.js`, `suggestions.js`, `sentence-rules.js`: our own rules and the
     ranking of suggestions.
 - `data/fr-freq.txt`, `data/en-freq.txt`: word frequency lists from the FrequencyWords project

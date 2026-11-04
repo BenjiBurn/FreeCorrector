@@ -1,8 +1,40 @@
 # Notes de version à coller dans les stores
 
-## 1.2.9 (prochaine version, pas encore publiée)
+## 1.2.9
 
-Brouillon, à compléter jusqu’à la sortie.
+**Français** (Firefox : « Notes de version » ; Thunderbird : « Notes de version » ; Chrome : rien à saisir ; Opera : « Changelog ») :
+
+```text
+• Plus léger : après 3 minutes sans écrire, FreeCorrector libère sa mémoire (environ 45 Mo au repos au lieu de 300) et ne charge plus que le moteur de la langue de la page.
+• Bien plus de fautes trouvées dans les textes soignés (devoirs, lettres de motivation, courriers, critiques, recettes) : « ma permis », « il serait dont », « ils ont demandés que », « laisser mijotez »…, et en anglais (« to sad », « was build », « assist to the meeting »…).
+• La pastille ne cache plus le texte et ne se pose plus sur le bouton des barres de recherche ; les zones qui défilent (ChatGPT) et les messages privés de X sont mieux gérés.
+• Nouveau raccourci Ctrl+Maj+1 : activer ou couper FreeCorrector sur la page ouverte.
+• De nombreuses corrections suite à vos signalements, merci à vous !
+```
+
+**English** (Opera "Changelog", Firefox and Thunderbird if an English field is offered):
+
+```text
+• Lighter: after 3 minutes without typing, FreeCorrector frees its memory (about 45 MB at rest instead of 300) and only loads the engine for the page's language.
+• Many more mistakes found in careful writing (essays, cover letters, letters, reviews, recipes) in English ("to sad", "was build", "assist to the meeting"…) and in French.
+• The badge no longer covers the text or a search bar's button; scrolling boxes (ChatGPT) and X direct messages work better.
+• New shortcut Ctrl+Shift+1: turn FreeCorrector on or off for the open page.
+• Many fixes thanks to your reports. Thank you!
+```
+
+**Notes aux testeurs** (Firefox et Thunderbird, en anglais) :
+
+```text
+No account or login is needed. Everything runs locally (CSP connect-src 'self'): no network requests, no data collected, no remote code. Our own code is neither minified nor bundled; the engines in vendor/ are unmodified copies of Grammalecte 2.3.0 and harper.js 2.10.0 (see NOTE_FOR_REVIEWERS.md).
+
+1.2.9 stops the checking Web Workers after 3 minutes without a check to give their memory back (src/engine/host.js), adds a "toggle-page" keyboard command (Ctrl+Shift+1, manifest "commands"), and otherwise changes checking rules (src/engine/) and the content script's badge placement; no new permission.
+
+Build: download https://github.com/BenjiBurn/FreeCorrector/archive/refs/tags/v1.2.9.zip, run "node scripts/build.js firefox" (or "thunderbird"; Node.js 18+, no dependencies), output in dist/freecorrector-1.2.9-firefox.zip (or -thunderbird.zip).
+
+To test: type "je suis aller au marché" or "The ending was to sad." in any text field (in Thunderbird: in the body of a new message).
+```
+
+**Détail des changements** (pour nous) :
 
 - « ça n’a pas fonctionné » : le « a » après « n’ » n’est plus souligné (« à ») ; signalé par un utilisateur.
 - « les notes individuels » : seul « individuels » est souligné (→ « individuelles »), plus « notes » → « notés » ; signalé par un utilisateur.
