@@ -52,4 +52,9 @@ module.exports = [
   ["It took some time, but a fix has been delivered.", null, null],
   ["He took his tools and left.", null, null],
   ["She got a new car.", null, null],
+  // Signalé depuis l'extension (1.2.8) : « Yann @Helpdesk » soulignait le prénom (→ « Yang ») ; un nom à côté d'un @pseudo.
+  ["Yann @Helpdesk", null, null],
+  ["Yann (@yann)", null, null],
+  ["Hello Yann @Helpdesk", null, null],
+  ["Thnaks @John for the help.", "Thnaks", "Thanks"],
 ];

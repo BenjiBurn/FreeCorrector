@@ -294,6 +294,8 @@ function looksLikeName(text, start, word, replacements = []) {
   if (before !== "" && !/[.!?…:"“(\n]$/.test(before)) return true;
   // At the start of a sentence: "Mrs. García", "José made…", "Priya, Diego and Mei".
   if (HONORIFIC.test(before)) return true;
+  // "Yann @Helpdesk": a display name next to a handle, alone on its line.
+  if (/(^|\n)\s*$/.test(text.slice(0, start)) && /^\s+\(?@[\w.-]+\)?\s*(\n|$)/.test(text.slice(start + word.length))) return true;
   // Contractions and split words are typos, not names ("Dont", "Alot", "Im").
   if (contractionFor(word) || replacements.some((r) => r.replace(/[\s'’]/g, "").toLowerCase() === word.toLowerCase())) return false;
   if (FOREIGN_LETTERS.test(word)) return true;
