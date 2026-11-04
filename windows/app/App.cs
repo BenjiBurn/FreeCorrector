@@ -16,6 +16,8 @@ namespace FreeCorrector
     static class Program
     {
         public static readonly string Version = typeof(Program).Assembly.GetName().Version!.ToString(3);
+        public static bool Probing { get; private set; }
+        const string ShowSettingsEvent = "FreeCorrector.Windows.ShowSettings";
 
         [STAThread]
         static void Main(string[] args)
@@ -23,8 +25,18 @@ namespace FreeCorrector
             // FreeCorrector.exe --probe <window handle>: see Watcher.Probe.
             // FreeCorrector.exe --settings: opens the settings window too.
             var probe = args.Length == 2 && args[0] == "--probe" ? new IntPtr(long.Parse(args[1])) : IntPtr.Zero;
+            Probing = probe != IntPtr.Zero;
             using var mutex = new Mutex(true, "FreeCorrector.Windows", out var first);
-            if (!first && probe == IntPtr.Zero) return;
+            if (!first && probe == IntPtr.Zero)
+            {
+                // Started again (from the Start menu…): the running app shows its settings.
+                if (EventWaitHandle.TryOpenExisting(ShowSettingsEvent, out var show))
+                {
+                    Native.AllowSetForegroundWindow(-1);
+                    show.Set();
+                }
+                return;
+            }
             var app = new Application { ShutdownMode = ShutdownMode.OnExplicitShutdown };
             app.Startup += async (_, _) =>
             {
@@ -87,6 +99,8 @@ namespace FreeCorrector
             FollowMouse(card, () => marks);
             var tray = Tray(app, engine, watcher, settings);
             if (settingsAtStart) SettingsWindow.Show(engine);
+            var showSettings = new EventWaitHandle(false, EventResetMode.AutoReset, ShowSettingsEvent);
+            ThreadPool.RegisterWaitForSingleObject(showSettings, (_, _) => app.Dispatcher.BeginInvoke(() => SettingsWindow.Show(engine)), null, -1, false);
             app.Exit += (_, _) =>
             {
                 tray.Visible = false;

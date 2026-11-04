@@ -16,9 +16,13 @@ namespace FreeCorrector
         const string Host = "engine.freecorrector";
         static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
 
-        readonly Dictionary<int, TaskCompletionSource<JsonElement>> waiting = new();
-        readonly TaskCompletionSource ready = new();
+        // The questions not answered yet, kept to be asked again if the engines restart.
+        readonly Dictionary<int, (string Message, TaskCompletionSource<JsonElement> Answer)> waiting = new();
+        TaskCompletionSource ready = new();
+        IntPtr parent;
+        CoreWebView2Controller? controller;
         CoreWebView2? web;
+        DateTime restartedAt = DateTime.MinValue;
         int nextId;
 
         public CoreWebView2Environment Environment { get; private set; } = null!;
@@ -28,15 +32,55 @@ namespace FreeCorrector
 
         public async Task StartAsync(IntPtr parent)
         {
-            Environment = await CoreWebView2Environment.CreateAsync(null, Path.Combine(Log.Folder, "WebView2"));
-            var controller = await Environment.CreateCoreWebView2ControllerAsync(parent);
+            this.parent = parent;
+            Environment = await CreateEnvironmentAsync();
+            await LoadAsync();
+            Log.Write("engines ready, WebView2 " + Environment.BrowserVersionString);
+        }
+
+        // --probe gets its own folder: two processes sharing one also share
+        // WebView2's processes, and the probe's exit would stop the app's engines.
+        static Task<CoreWebView2Environment> CreateEnvironmentAsync() =>
+            CoreWebView2Environment.CreateAsync(null, Path.Combine(Log.Folder, Program.Probing ? "WebView2-probe" : "WebView2"));
+
+        async Task LoadAsync()
+        {
+            ready = new();
+            controller = await Environment.CreateCoreWebView2ControllerAsync(parent);
             controller.IsVisible = false;
             web = controller.CoreWebView2;
             Secure(web);
             web.WebMessageReceived += OnMessage;
+            web.ProcessFailed += OnProcessFailed;
             web.Navigate($"https://{Host}/engine.html");
             await ready.Task;
-            Log.Write("engines ready, WebView2 " + Environment.BrowserVersionString);
+            foreach (var (message, _) in waiting.Values) web.PostWebMessageAsJson(message);
+        }
+
+        // WebView2's processes can stop (a crash, a WebView2 update…): the
+        // engines restart and the questions in flight are asked again. Once only
+        // within half a minute, so a page that keeps failing does not loop.
+        async void OnProcessFailed(object? sender, CoreWebView2ProcessFailedEventArgs e)
+        {
+            var kind = e.ProcessFailedKind;
+            Log.Write("engine process failed: " + kind);
+            if (kind != CoreWebView2ProcessFailedKind.BrowserProcessExited && kind != CoreWebView2ProcessFailedKind.RenderProcessExited) return;
+            if (web == null || sender != web) return;
+            web.WebMessageReceived -= OnMessage;
+            web.ProcessFailed -= OnProcessFailed;
+            web = null;
+            try { controller?.Close(); } catch (Exception) { }
+            controller = null;
+            if (DateTime.UtcNow - restartedAt < TimeSpan.FromSeconds(30)) { Log.Write("engines failed again: not restarted"); return; }
+            restartedAt = DateTime.UtcNow;
+            try
+            {
+                await Task.Delay(1000);
+                if (kind == CoreWebView2ProcessFailedKind.BrowserProcessExited) Environment = await CreateEnvironmentAsync();
+                await LoadAsync();
+                Log.Write("engines restarted");
+            }
+            catch (Exception ex) { Log.Write("engine restart: " + ex.Message); }
         }
 
         public static string Url(string path) => $"https://{Host}/{path}";
@@ -68,19 +112,20 @@ namespace FreeCorrector
                 else if (type.GetString() == "settings") SettingsChanged?.Invoke();
                 return;
             }
-            if (root.TryGetProperty("id", out var id) && waiting.Remove(id.GetInt32(), out var answer))
-                answer.SetResult(root.Clone());
+            if (root.TryGetProperty("id", out var id) && waiting.Remove(id.GetInt32(), out var question))
+                question.Answer.SetResult(root.Clone());
         }
 
+        // While the engines restart, the question waits for them.
         Task<JsonElement> Ask(string type, object payload)
         {
             var id = ++nextId;
             var answer = new TaskCompletionSource<JsonElement>();
-            waiting[id] = answer;
             var message = JsonSerializer.SerializeToNode(payload, Json)!.AsObject();
             message["id"] = id;
             message["type"] = type;
-            web!.PostWebMessageAsJson(message.ToJsonString());
+            waiting[id] = (message.ToJsonString(), answer);
+            if (web != null && ready.Task.IsCompleted) web.PostWebMessageAsJson(waiting[id].Message);
             return answer.Task;
         }
 

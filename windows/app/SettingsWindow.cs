@@ -22,6 +22,9 @@ namespace FreeCorrector
                 open.Show();
             }
             if (open.WindowState == WindowState.Minimized) open.WindowState = WindowState.Normal;
+            // In front even when Windows refuses the focus to a background app.
+            open.Topmost = true;
+            open.Topmost = false;
             open.Activate();
         }
 

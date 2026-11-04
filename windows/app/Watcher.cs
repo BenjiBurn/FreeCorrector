@@ -110,8 +110,11 @@ namespace FreeCorrector
             var focused = uia.GetFocusedElement();
             if (focused == null) { if (element != null) Reset(null); return; }
             var pid = focused.CurrentProcessId;
-            // Our own windows (the suggestion card) never take the focus away.
-            if (pid == ownPid) return;
+            // The card never takes the focus; the settings window does, and is not
+            // to be underlined (nor covered by the marks of the field before). Its
+            // fields belong to a WebView2 process: the window in front tells.
+            Native.GetWindowThreadProcessId(Native.GetForegroundWindow(), out var front);
+            if (pid == ownPid || front == ownPid) { if (element != null) Reset(null); return; }
             if (element == null || uia.CompareElements(focused, element) == 0)
             {
                 Reset(focused);
