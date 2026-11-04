@@ -493,6 +493,19 @@ function checkParagraph(paragraph) {
     if (/ppas_adj_accord_il/.test(m.ruleId) && !/(^|[^\p{L}])ils?(?![\p{L}'’])/iu.test(paragraph.slice(0, err.nStart))) continue;
     // "en soit": our rule tells "en soi" from the verb ("ou en soit elle-même victime").
     if (/conf_soi_soit/.test(m.ruleId) && /^soit$/i.test(m.word) && /(^|[^\p{L}])en\s+$/iu.test(paragraph.slice(0, err.nStart))) continue;
+    // "un thé à la menthe délicieux": the adjective agrees with the noun before
+    // "à la menthe", "de la maison"…, as written.
+    if (/__gn_/.test(m.ruleId)) {
+      const head = /(\p{L}+)\s+(?:(?:à|de|en)\s+|d['’])(?:la\s+|le\s+|l['’]|les\s+)?\p{L}+\s+$/iu.exec(paragraph.slice(0, err.nStart));
+      const pairs = (word, kind) => spellChecker.getMorph(word.toLowerCase()).flatMap((x) => {
+        const g = new RegExp(`:${kind}[^/]*?:([mfe]):([spi])`).exec(x);
+        return g ? [[g[1], g[2]]] : [];
+      });
+      if (head) {
+        const noun = pairs(head[1], "N"), adj = pairs(m.word, "[AQ]");
+        if (noun.some(([g, n]) => adj.some(([h, p]) => (g === h || g === "e" || h === "e") && (n === p || n === "i" || p === "i")))) continue;
+      }
+    }
     // "pour ça n’a pas fonctionné": after "n’", "a" is the verb ("n’à" does not exist).
     if (/conf_à_a/.test(m.ruleId) && /^a$/i.test(m.word) && /(^|[^\p{L}])n['’]$/iu.test(paragraph.slice(0, err.nStart))) continue;
     // "j'ai deux extensions d'activées", "il y en a trois de cassés": the familiar "avoir

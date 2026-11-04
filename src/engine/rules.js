@@ -2184,6 +2184,123 @@ function fcRoundFourRules(tokens, i, { add, morph, apo, paragraph, spellChecker 
       add(t, "pourquoi", "Pour une question indirecte : « pourquoi » (on comprend pourquoi ça n’a pas marché).", true);
     }
   }
+  // ---------- Tenth blind round (2026-11-04): essays, letters, reviews, recipes, cards ----------
+  const AVOIR = /^(ai|as|a|avons|avez|ont|avais|avait|avions|aviez|avaient|aura|auront|aurait|auraient|eu)$/;
+  const DET = /^(le|la|l’|les|un|une|des|du|au|aux|ce|cet|cette|ces|mon|ma|mes|ton|ta|tes|son|sa|ses|notre|votre|nos|vos|leur|leurs)$/;
+  // "il a perdu tous ce qu’il aimait" -> tout ce
+  // ("raconter à tous ce qu’elle avait vu": after a preposition, « tous » is everyone.)
+  if (t.lower === "tous" && R1 === "ce" && /^(qu’|que|qui|dont)$/.test(R2) && !/^(à|pour|avec|de|chez|par|entre|parmi|sur|devant|envers)$/.test(L1)) {
+    add(t, "tout", "« Tout ce que » : « tout » au singulier.", true);
+  }
+  // "Ce texte et court, mais…", "l’intrigue et bien construite" -> est (a subject, then its adjective)
+  if (t.lower === "et" && prev && fcHas(morph(prev), /:N/) && !fcHas(morph(prev), /:A/) && prev2 && fcHas(morph(prev2), /:D/) && (i - 2 === s || isBoundary(prev3) ||
+      /^(que|qu’|tellement|car|mais|quand|si|parce|comme|puisque)$/.test(L3))) {
+    const adj = /^(très|bien|trop|plutôt|assez|vraiment|si|peu|tellement|vite|mal)$/.test(R1) ? next2 : next;
+    const after = tokens[tokens.indexOf(adj) + 1];
+    if (adj && fcHas(morph(adj), /:A|:Q/) && !fcHas(morph(adj), /:[DR]/) && (isBoundary(after) || /^(mais|pour|et|à)$/.test(after.lower))) {
+      add(t, "est", "Le verbe « être » : « ce texte est court » ; « et » relie deux mots.", true);
+    }
+  }
+  // "il serait dont intéressant" -> donc (« dont » follows a noun or a pronoun, never a verb)
+  if (t.lower === "dont" && prev && fcHas(morph(prev), /:V[^/]*:(Ip|Iq|If|K)/) && !fcHas(morph(prev), /:[NAD]|:O/) && next && !fcHas(morph(next), /:V[^/]*:(Ip|Iq|If|K)/)) {
+    add(t, "donc", "« Donc » (par conséquent) ; « dont » remplace « de qui, de quoi ».", true);
+  }
+  // "je saurais m’adapter … si vous retenez ma candidature" -> saurai (si + present: the future)
+  if (/rais$/.test(t.lower) && fcHas(morph(t), /:K[^/]*:1s/) && /^(je|j’)$/.test(tokens.slice(s, i).reverse().find((x) => !/^(ne|n’|me|m’|vous|te|t’|lui|leur|le|la|les|l’|en|y)$/.test(x.lower))?.lower ?? "")) {
+    // (Not a polite conditional, "j’aimerais", "je voudrais"; not "savoir si", an indirect question.)
+    const lemma = morph(t).map((m) => m.match(/^>(\S+?)\//)?.[1]).find(Boolean) ?? "";
+    const si = tokens.slice(i + 1, e + 1).findIndex((x, k, a) => /^(si|s’)$/.test(x.lower) && /^(vous|tu|nous|on|il|elle|ils|elles)$/.test(a[k + 1]?.lower ?? "") &&
+      !/^(savoir|sais|sait|demander|demande|dire|voir|vérifier|indiquer|préciser|confirmer|me|nous|lui|leur)$/.test((a[k - 1] ?? t).lower));
+    const verb = si >= 0 ? tokens[i + 1 + si + 2] : null;
+    if (verb && !/^(aimer|adorer|vouloir|souhaiter|pouvoir|devoir|préférer|être|avoir|falloir|valoir|dire|penser|croire|apprécier)$/.test(lemma) &&
+        fcHas(morph(verb), /:V[^/]*:Ip/) && !fcHas(morph(verb), /:V[^/]*:Iq/)) {
+      const fut = t.lower.replace(/rais$/, "rai");
+      if (fcHas(morph({ text: fut }), /:If/)) add(t, fut, "Avec « si » + présent, le futur : « je saurai » (le conditionnel va avec « si » + imparfait).", true);
+    }
+  }
+  // "Les parents ont demandés que…" -> demandé (nothing placed before « avoir » to agree with)
+  if (AVOIR.test(L1) && /(és|ées|ée)$/.test(t.lower) && isPpOnly(t) && next && /^(que|qu’|de|d’|à|si|le|la|les|un|une|des|du|au|aux|leur|son|sa|ses|mon|ma|mes|ce|cette|ces|notre|votre|nos|vos)$/.test(R1) &&
+      !/^(l’|les|la|nous|vous|me|m’|te|t’|que|qu’|en)$/.test(L2) && !tokens.slice(s, i - 1).some((x) => /^(que|qu’|combien|quel|quels|quelle|quelles)$/.test(x.lower))) {
+    const masc = t.lower.replace(/(ées|és|ée)$/, "é");
+    if (masc !== t.lower && fcHas(fcMorph(spellChecker, masc), /:Q/)) add(t, masc, "Avec « avoir », le participe ne s’accorde pas quand rien ne le précède : « ils ont demandé que ».", true);
+  }
+  // "Ce stage ma permis de confirmer", "Il ma dit que" -> m’a
+  if (t.lower === "ma" && next && (isPpOnly(next) || R1 === "permis") && /^(de|d’|à|que|qu’|le|la|les|un|une|des|du|beaucoup|énormément|bien|tout|rien)$/.test(R2) &&
+      !(R1 === "permis" && /^(de|d’)$/.test(R2) && /^(conduire|construire|séjour|chasse|pêche|travail)$/.test(tokens[i + 3]?.lower ?? ""))) {
+    add(t, apo("m’a"), "« M’a » (me + avoir) devant un participe : « ce stage m’a permis ».", true);
+  }
+  // "des réunions ou les responsables discutaient", "un quartier ou les ruelles sont" -> où
+  // (a noun of place or time, then a clause: a subject and its verb)
+  if (t.lower === "ou" && nounOnly(prev) && /^(réunion|réunions|quartier|quartiers|endroit|endroits|ville|villes|pays|lieu|lieux|maison|pièce|salle|région|village|restaurant|hôtel|rue|plage|moment|jour|époque|période|année|soirée|pays|monde|entreprise|école|bureau|chambre|cuisine|jardin|parc|club|famille|situation|cas|site|page|magasin|boutique)$/.test(L1) &&
+      next && /^(les|le|la|l’|des|un|une|nous|vous|on|il|elle|ils|elles|je|j’|tu)$/.test(R1)) {
+    const verbAt = /^(nous|vous|on|il|elle|ils|elles|je|j’|tu)$/.test(R1) ? next2 : tokens[i + 3];
+    // A main clause before ("j’ai participé à des réunions ou…"), not two subjects ("Un hôtel ou un gîte sont…").
+    const mainVerb = tokens.slice(s, i - 1).some((x) => fcHas(morph(x), /:V[^/]*:(Ip|Iq|If|K)/) && !fcHas(morph(x), /:[NDA]/));
+    if (mainVerb && verbAt && fcHas(morph(verbAt), /:V[^/]*:(Ip|Iq|If|K)/) && !fcHas(morph(verbAt), /:[NA]/)) {
+      add(t, "où", "« Où » (le lieu, le moment) prend un accent grave ; « ou » marque un choix.", true);
+    }
+  }
+  // "Quelqu’un sait-il ou je peux…" -> où
+  if (t.lower === "ou" && /^(sai[st]|savez|savent|savons|savais|savait)-(il|elle|on|vous|tu|ils|elles)$/.test(L1)) {
+    add(t, "où", "« Où » (le lieu) prend un accent grave.", true);
+  }
+  // "on ne voit pas le temps passé" -> passer
+  if (t.lower === "passé" && L1 === "temps" && L2 === "le" &&
+      tokens.slice(Math.max(0, i - 5), i - 2).some((x) => /^(voit|vois|voyons|voyez|voient|vu|voir|sens|sent|sentir|senti)$/.test(x.lower))) {
+    add(t, "passer", "« Voir le temps passer » : l’infinitif.", true);
+  }
+  // "plus meilleurs", "plus pire" -> meilleurs, pire (already comparatives)
+  if (t.lower === "plus" && /^(meilleur|meilleure|meilleurs|meilleures|pire|pires)$/.test(R1) && L1 !== "le" && L1 !== "la" && L1 !== "les") {
+    add(span(t, next), next.text, "« Meilleur » est déjà un comparatif : pas de « plus ».", true);
+  }
+  // "laisser mijotez", "faites cuirez" -> mijoter, cuire (an infinitive after laisser, faire)
+  if (/ez$/.test(t.lower) && /^(laisser|laissez|laisse|faire|faites|fais|laissons)$/.test(L1) && fcHas(morph(t), /:V[^/]*:(Ip|E)[^/]*:2p/)) {
+    const lemma = morph(t).map((m) => m.match(/^>(\S+?)\//)?.[1]).find(Boolean);
+    if (lemma && /(er|ir|re)$/.test(lemma)) add(t, lemma, `Après « ${prev.text} », l’infinitif : « ${lemma} ».`, true);
+  }
+  // "les pommes de terre cuitent", "recouvertent d’un film" -> cuites, recouvertes (a participle, not a verb)
+  if (/ent$/.test(t.lower) && prev && (L1 === "," || fcHas(morph(prev), /:N[^/]*:[fe]/)) &&
+      (isBoundary(next) || /^(de|d’|à|dans|avec|par|au|aux|sur|sous|en)$/.test(R1))) {
+    const pp = t.lower.replace(/ent$/, "es");
+    // (Frequencies are on a log scale: the participle must be far more common than the verb form.)
+    const freq = (w) => (typeof fcFrequency === "function" ? fcFrequency(w) : 0);
+    if (fcHas(fcMorph(spellChecker, pp), /:Q[^/]*:f:p/) && (!morph(t).length || freq(pp) >= freq(t.lower) + 1.5)) {
+      add(t, pp, `Un participe passé au féminin pluriel : « ${pp} ».`, true);
+    }
+  }
+  // "un moule à manqué", "facile à utilisé" -> manquer, utiliser (« à » + infinitive)
+  if (L1 === "à" && /é$/.test(t.lower) && isPpOnly(t) && prev2 && (fcHas(morph(prev2), /:N/) && !fcHas(morph(prev2), /:V[^/]*:Q/) || /^(facile|difficile|simple|prêt|prête|prêts|prêtes|agréable|lourd|long|dur)$/.test(L2))) {
+    const inf = t.lower.replace(/é$/, "er");
+    if (fcHas(fcMorph(spellChecker, inf), /:Y/)) add(t, inf, `Après « à », l’infinitif : « ${inf} ».`, true);
+  }
+  // "Notre chien nous a quitté" -> quittés (« nous », placed before « avoir », is the object)
+  if (L1 === "a" || L1 === "ont" || L1 === "avait" || L1 === "avaient") {
+    // (Not when a direct object follows: "nous ont laissé un souvenir", « nous » is then indirect.)
+    if (L2 === "nous" && prev3 && !/^(nous|on)$/.test(L3) && !(next && (DET.test(R1) || /^(de|d’|que|qu’)$/.test(R1))) &&
+        /^(quitté|invité|aidé|accueilli|appelé|laissé|vu|rejoint|oublié|prévenu|remercié|contacté|reçu|attendu|emmené|ramené|déposé|réveillé|surpris|accompagné|soutenu|encouragé|félicité|choisi|convaincu|rassuré|informé)$/.test(t.lower)) {
+      const pl = fcAgreeParticiple(spellChecker, t.lower, "m", "p");
+      if (pl && pl !== t.lower) add(t, pl, `« Nous », placé avant « avoir », est le complément : « nous a ${pl} ».`, true);
+    }
+  }
+  // "Venez nombreux a notre loto", "Pensez a vous inscrire" -> à
+  if (t.lower === "a" && next && (/^(nombreux|nombreuses)$/.test(L1) || /ez$/.test(L1) && fcHas(morph(prev), /:E[^/]*:2p/) && !fcHas(morph(prev), /:Ip/)) &&
+      (DET.test(R1) || fcHas(morph(next), /:Y/) || /^(vous|nous)$/.test(R1))) {
+    add(t, "à", "La préposition « à » : « venez nombreux à notre loto ».", true);
+  }
+  // "les entraînements son le mercredi" -> sont (after a plural subject, before a determiner)
+  if (t.lower === "son" && prev && (/^\p{L}+[sx]$/u.test(prev.text) && nounOnly(prev) || /^(ils|elles)$/.test(L1)) &&
+      /^(le|la|les|l’|un|une|des|du|au|aux|à|en|très|trop|tous|toutes|déjà|toujours|encore|pas|plus|bien|mal|là|ici|prêts|prêtes|partis|parties|arrivés|arrivées)$/.test(R1)) {
+    add(t, "sont", "Le verbe « être » au pluriel : « sont » ; « son » est un possessif.", true);
+  }
+  // "Il faut monter en haut", "descendre en bas", "a d’abord commencé" (pleonasms, a style hint)
+  if (/^(monter|monte|montes|montent|montez|montons|monté|montée|montés|montées|descendre|descends|descend|descendent|descendez|descendu|descendue)$/.test(t.lower) &&
+      R1 === "en" && (R2 === "haut" && /^mont/.test(t.lower) || R2 === "bas" && /^desc/.test(t.lower))) {
+    add(span(t, next2), t.text, `Pléonasme : « ${t.lower} » dit déjà où l’on va.`, false, false, "style");
+  }
+  if (t.lower === "d’" && R1 === "abord" && next2 && /^(commencé|commence|commencer|commencez|commençons|commencent|débuté|débute|débuter)$/.test(R2)) {
+    add(span(t, next2), next2.text, "Pléonasme : « commencer » dit déjà « d’abord ».", false, false, "style");
+  }
+
   // "Ça me parait normal" -> paraît, as a style hint: the 1990 spelling is correct too,
   // the traditional one is offered (asked by a user). One message for every word, so
   // that turning the hint off turns it off everywhere (fcRuleKey).

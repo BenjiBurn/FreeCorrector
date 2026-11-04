@@ -19,8 +19,15 @@ self.fcMaskCode = (text) => {
     .replace(/(?<![\p{L}\p{N}_@\/.-])(?:[\w-]+\.)+\p{L}{2,6}\/[^\s<>"«»]*/giu, blank)
     // domain names without "http": fr.fifa.com, www.gutenberg.org/ebooks (the whole host: not "maps.app" of "maps.app.goo.gl")
     .replace(/(?<![\p{L}\p{N}_@])(?:[\w-]+\.)+(?:com|fr|org|net|io|eu|be|ch|ca|uk|de|es|it|gov|edu|info|dev|app|co|ly|me|tv|ai|us|gl|gg|to)(?:\/[^\s]*)?(?![\p{L}\p{N}_]|\.[\p{L}\p{N}])/giu, blank)
-    // file names and paths: config.json, docker-compose.yml, src/app.js, .env.example
-    .replace(/(?<![\p{L}\p{N}_])((?:[\w.-]+\/)*[\w-]*\.(?:json|js|mjs|cjs|ts|tsx|jsx|yaml|yml|md|txt|env|example|html|css|scss|py|sh|toml|ini|xml|csv|lock|cfg|conf|log|sql|rs|java|kt|rb|php|cpp|vue|svelte|zip|tar|gz|exe|dll|dmg|apk)(?:\.[\w]+)*)(?![\p{L}\p{N}_])/giu, blank)
+    // file names and paths: config.json, docker-compose.yml, src/app.js, .env.example, rapport_final_v2.docx
+    .replace(/(?<![\p{L}\p{N}_])((?:[\w.-]+\/)*[\w-]*\.(?:json|js|mjs|cjs|ts|tsx|jsx|yaml|yml|md|txt|env|example|html|css|scss|py|sh|toml|ini|xml|csv|lock|cfg|conf|log|sql|rs|java|kt|rb|php|cpp|vue|svelte|zip|tar|gz|exe|dll|dmg|apk|docx|xlsx|pptx|odt|ods|odp|pdf|rtf|png|jpe?g|gif|svg|webp|heic|mp3|mp4|mov|wav)(?:\.[\w]+)*)(?![\p{L}\p{N}_])/giu, blank)
+    // spreadsheet formulas: =SOMME(B2:B31), =VLOOKUP(A2;Sheet2!A:B;2)
+    .replace(/(?<![\p{L}\p{N}_])=\p{Lu}[\p{Lu}.]*\([^)\n]*\)/gu, blank)
+    // a variable in a formula: "(r = 0.42)", "p < 0,05"
+    .replace(/(?<![\p{L}\p{N}_])\p{L}(?=\s?[=<>≤≥]\s?-?\d)/gu, blank)
+    // reference numbers: "HX-4587-22" (letters become digits, like "H2O" below); not
+    // model names such as "T-800", which French agrees with like a noun
+    .replace(/(?<![\p{L}\p{N}_-])\p{Lu}{1,5}(?:-\d+){2,}(?![\p{L}\p{N}_])/gu, (m) => m.replace(/\p{L}/gu, "0"))
     // identifiers: camelCase ("fetchUser", "macOS"), snake_case, calls "parse()"
     .replace(/(?<![\p{L}\p{N}_])(\p{Ll}+\p{Lu}[\p{L}\p{N}]*|[\p{L}\p{N}]+_[\p{L}\p{N}_]+|[\p{L}\p{N}_.]+\(\w*\))(?![\p{L}\p{N}_])/gu, blank)
     // PascalCase: "TypeError", "JavaScript", "McDonald's"
