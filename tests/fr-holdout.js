@@ -253,4 +253,6 @@ module.exports = [
   ["J'ai deux extensions d'activées.", null, null],
   ["Il y en a trois de cassés.", null, null],
   ["Elle vient de terminée.", "terminée", "terminer"],
+  ["Ils ont fini de mangés.", "mangés", "manger"],
+  ["J'ai envie de mangée.", "mangée", "manger"],
 ];

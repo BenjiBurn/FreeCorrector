@@ -57,4 +57,5 @@ module.exports = [
   ["Yann (@yann)", null, null],
   ["Hello Yann @Helpdesk", null, null],
   ["Thnaks @John for the help.", "Thnaks", "Thanks"],
+  ["Teh @admin", "Teh", "The"],
 ];

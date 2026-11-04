@@ -497,9 +497,15 @@ function checkParagraph(paragraph) {
     if (/conf_à_a/.test(m.ruleId) && /^a$/i.test(m.word) && /(^|[^\p{L}])n['’]$/iu.test(paragraph.slice(0, err.nStart))) continue;
     // "j'ai deux extensions d'activées", "il y en a trois de cassés": the familiar "avoir
     // + noun + de + agreed participle", not "de" + infinitive ("elle vient de terminée").
+    // Plural participles only, after a noun or a number: "ils ont fini de mangés" (a
+    // participle before "de") and "j'ai envie de mangée" (a locution) stay underlined.
     if (/infi_de_verbe/.test(m.ruleId) &&
-        spellChecker.getMorph(m.word.toLowerCase()).some((x) => /:Q(:A)?:(.:[pi]|f:s)/.test(x)) &&
-        /(^|[^\p{L}])(ai|as|a|avons|avez|ont|avais|avait|avions|aviez|avaient|aurai|auras|aura|aurons|aurez|auront|aurais|aurait|aurions|auriez|auraient|avoir)\s+[^.!?;:]*[\p{L}\d]\s+d(e\s+|['’])$/iu.test(paragraph.slice(Math.max(0, err.nStart - 80), err.nStart))) continue;
+        spellChecker.getMorph(m.word.toLowerCase()).some((x) => /:Q(:A)?:.:p/.test(x))) {
+      const lead = /(^|[^\p{L}])(ai|as|a|avons|avez|ont|avais|avait|avions|aviez|avaient|aurai|auras|aura|aurons|aurez|auront|aurais|aurait|aurions|auriez|auraient|avoir)\s+[^.!?;:]*?([\p{L}\d]+)\s+d(e\s+|['’])$/iu
+        .exec(paragraph.slice(Math.max(0, err.nStart - 80), err.nStart));
+      if (lead && !/^(envie|besoin|peur|hâte|honte|horreur|raison|tort|intention|habitude|temps|droit|occasion|mal|soin|coutume)$/i.test(lead[3]) &&
+          !spellChecker.getMorph(lead[3].toLowerCase()).some((x) => /:Q/.test(x))) continue;
+    }
     // "Combien t'en veux ?": the informal "t'" of "tu" ("t'en penses quoi"), not the
     // object of "Pierre t'en veut", when nothing but a clause start comes before it.
     if (/peux_veux_vaux.*sans_sujet/.test(m.ruleId) && /^(peux|veux)$/i.test(m.word) &&
