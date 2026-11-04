@@ -8,61 +8,102 @@ Cette première soumission se fait à la main. Les suivantes partent avec
 `node windows/publish-store.js` (voir l'en-tête du script) ; elles reprennent tout ce qui est
 saisi ici et ne changent que le paquet et les notes de version.
 
+Chaque page a son propre bouton « Enregistrer » (« Save » sur Packages) : enregistrer avant de
+changer de page, sinon la saisie est perdue. La vue d'ensemble passe alors la section à « Terminé ».
+
 ## 1. Tarification et disponibilité
 
 | Champ | Valeur |
 |---|---|
-| Marchés | Tous les marchés |
-| Visibilité | Public (visible et téléchargeable dans le Store) |
-| Calendrier | Publier dès la certification |
-| Tarification | Gratuit |
-| Familles d'appareils | Windows 10/11 Desktop seulement |
+| Marchés | Tous les marchés internationaux, plus « Rendez mon produit disponible sur tous les nouveaux marchés » |
+| Visibilité | Public non privé ; « disponible et détectable dans le Microsoft Store » |
+| Planifier | Sortie : dès que possible ; Arrêter l'acquisition : jamais |
+| Tarification | Groupe de marchés « Default » : USD, prix de détail **0** (gratuit) |
+| Essai gratuit, prix de vente | Rien |
 
 ## 2. Propriétés
 
 | Champ | Valeur |
 |---|---|
-| Catégorie | Productivité (pas de sous-catégorie) |
-| URL de politique de confidentialité | https://lapigeonnerie.fr/freecorrector-confidentialite |
-| Site web | https://lapigeonnerie.fr/freecorrector |
-| Coordonnées du support | https://github.com/BenjiBurn/FreeCorrector/issues |
-| Configuration système | Clavier : recommandé ; Souris : recommandé ; le reste : rien |
-| Déclarations du produit | Ne rien cocher, sauf « Cette app peut être installée sur un autre lecteur… » si c'est coché par défaut |
+| Catégorie | Productivité (pas de sous-catégorie ni de catégorie secondaire) |
+| Politique de confidentialité | Liste : « Oui, mon produit utilise des informations personnelles », puis « Fournir l'URL » : https://lapigeonnerie.fr/freecorrector-confidentialite |
+| Support info › Site Web | https://lapigeonnerie.fr/freecorrector |
+| Support info › Infos de contact du support technique | https://github.com/BenjiBurn/FreeCorrector/issues |
+| Téléphone, adresse | Vides (facultatifs, et pas d'adresse postale en public) |
+| Mode d'affichage (Mixed Reality) | Rien |
+| Déclarations de produit | Laisser les trois cochées par défaut (autres disques, sauvegardes OneDrive, enregistrement de clips) ; ne pas cocher accessibilité testée, achats hors Store, stylet, ni IA générative |
+| Configuration requise | Colonne « Matériel recommandé » : Clavier et Souris ; rien d'autre, ni en minimum |
 
-« Cette app accède-t-elle à des informations personnelles, les collecte ou les transmet ? » : **Oui**
-(elle lit le texte des champs pour le corriger, en local). C'est pour ça que l'URL de confidentialité
-est obligatoire ; la page explique que rien n'est enregistré ni envoyé.
+« Oui » pour les informations personnelles parce que l'app lit le texte des champs pour le corriger
+(en local) ; c'est ce qui rend l'URL de confidentialité obligatoire. La page explique que rien
+n'est enregistré ni envoyé.
 
-## 3. Classifications par âge
+## 3. Évaluation de l'âge
 
-Questionnaire IARC. Catégorie : **« Utilitaire, productivité, communication ou autre »**
-(pas jeu, pas réseau social). Répondre **Non** à toutes les questions : pas de contenu violent ou
-sexuel, pas d'échange entre utilisateurs, pas de partage de position, pas d'achats, pas d'accès
-libre à Internet (ce n'est pas un navigateur). Résultat attendu : 3+ / Tout public.
+« Je suis prêt à répondre au questionnaire de l'IARC ». Type d'application : **« Tous les autres
+types d'applications »** (ni jeu, ni social). Répondre **Non** aux neuf questions qui s'affichent
+(contenu sensible, échanges entre utilisateurs, contenu en ligne, produits soumis à l'âge, position,
+achats numériques, récompenses, navigateur ou moteur de recherche, actualité ou éducation) et à
+« évaluations obtenues d'un organisme / support physique ».
 
-## 4. Paquets
+« Aperçu des évaluations » donne 3+ partout (IARC 3+, PEGI 3, ESRB Tout le monde, USK, Brésil,
+Chili, Russie). Cocher l'acceptation des conditions de l'IARC (à faire soi-même : c'est un
+engagement de l'éditeur), puis « Enregistrer ». Microsoft transmet le nom d'éditeur et l'e-mail
+du compte à l'IARC, qui envoie un e-mail de confirmation après la publication.
 
-Fichier à envoyer : `dist/freecorrector-0.1.0-windows-x64.msix` (construit par `windows/package.ps1`).
-Familles d'appareils : cocher **Windows 10/11 Desktop** seulement.
+## 4. Packages
 
-Le Store demande pourquoi l'app utilise la fonctionnalité restreinte **runFullTrust**. Champ
-« Pourquoi avez-vous besoin de la fonctionnalité runFullTrust ? » :
+Déposer `dist/freecorrector-0.1.0-windows-x64.msix` (construit par `windows/package.ps1`) ;
+l'analyse prend environ une minute. Résultat attendu : v0.1.0.0, X64, Windows.Desktop
+min version 10.0.19041.0, avec l'avertissement « runFullTrust nécessite une approbation » (normal,
+la justification se donne dans les options de soumission).
+
+Device family availability : **Windows 10/11 Desktop** seul coché ; décocher « Let Microsoft
+decide whether to make this app available to any future device families ». Puis « Save ».
+
+## 5. Options de soumission
+
+Options de blocage de publication : « Publiez cette soumission dès qu'elle passe la
+certification ».
+
+Fonctionnalités restreintes, champ « Pourquoi avez-vous besoin de la runFullTrust fonctionnalité
+et comment sera-t-elle utilisée dans votre produit ? » :
 
 ```text
 FreeCorrector is a spelling and grammar checker that works in any application. It is a desktop (WPF) app: it uses the Windows UI Automation API to read the text of the focused editable field in other applications (Outlook, Word, WordPad, Notepad...), draws click-through underlines over the mistakes and, when the user picks a suggestion, replaces the word by selecting it and typing the correction. It never reads password or read-only fields. All checking runs locally, in a WebView2 page bundled with the app; the app makes no network connection and collects no data. Source code: https://github.com/BenjiBurn/FreeCorrector
 ```
 
-## 5. Descriptions dans le Store
+Puis « Enregistrer ».
 
-Ajouter deux langues : **Français (France)** et **Anglais (États-Unis)**.
+Les notes pour la certification ne sont pas sur cette page : lien « Informations supplémentaires
+sur les tests » (page Additional Testing Info), champ Description, bouton « Save description ».
+Texte en section 7.
 
-| Champ | Fichier |
+## 6. Descriptions dans le Store
+
+Les langues viennent du paquet : **Français (France)** et **Anglais (États-Unis)** apparaissent
+d'elles-mêmes sous « Langues prises en charge dans les packages » ; ouvrir chacune.
+
+| Champ | Valeur |
 |---|---|
-| Captures d'écran (Bureau), français | `store/windows/capture-1-wordpad-fr.png`, `capture-2-outlook-fr.png` |
-| Captures d'écran (Bureau), anglais | `store/windows/capture-3-wordpad-en.png`, puis `capture-2-outlook-fr.png` |
-| Logos du Store, 1:1 300×300 (facultatif) | `store/edge/logo-300.png` |
+| Description | Bloc ci-dessous |
+| Nouveautés de cette version | Vide pour la première soumission (ensuite : `windows/NOTES-VERSION.md`) |
+| Fonctionnalités du produit | Une par case ; « Ajouter d'autres éléments » pour les cases 2 à 6 |
+| Captures d'écran › Bureau, français | `store/windows/capture-1-wordpad-fr.png`, puis `capture-2-outlook-fr.png` |
+| Captures d'écran › Bureau, anglais | `store/windows/capture-3-wordpad-en.png`, puis `capture-2-outlook-fr.png` |
+| Icône de vignette d'application 1:1 300×300 | `store/edge/logo-300.png` |
+| Images d'affiche 9:16, de zone 1:1, bandes-annonces, images Xbox | Rien (facultatif) |
+| Champs supplémentaires › Titre court, Titre voix | Vides |
+| Champs supplémentaires › Description courte | Bloc ci-dessous |
+| Informations supplémentaires › Mots clés | Les 7 termes ci-dessous, un par un (taper puis Entrée) ; ignorer les suggestions de l'IA |
+| Infos de copyright et marque commerciale | © 2026 BenjiBurn |
+| Termes de la licence supplémentaires | GNU GPL v3 : https://github.com/BenjiBurn/FreeCorrector/blob/main/LICENSE |
+| Développé par | BenjiBurn |
 
-Légendes des captures (champ sous chaque image) :
+Une capture déposée sur une capture existante la remplace : déposer la suivante dans la case vide
+d'après. La légende s'écrit par « Ajouter un sous-titre à l'image » sous chaque capture, puis OK.
+
+Légendes des captures :
 
 | Capture | Français | English |
 |---|---|---|
@@ -178,15 +219,10 @@ proofreading
 free
 ```
 
-### Champs communs aux deux langues
+## 7. Notes pour la certification
 
-| Champ | Valeur |
-|---|---|
-| Copyright et marque | © 2026 BenjiBurn |
-| Termes de licence supplémentaires | GNU GPL v3 : https://github.com/BenjiBurn/FreeCorrector/blob/main/LICENSE |
-| Développé par | BenjiBurn |
-
-## 6. Options de soumission › Notes pour la certification
+Page « Informations supplémentaires sur les tests » (lien depuis les options de soumission),
+champ Description, puis « Save description ». Aucun identifiant à fournir.
 
 ```text
 No account or login is needed. After installation, FreeCorrector starts and shows an icon in the notification area (next to the clock); it starts again with Windows unless turned off in that icon's menu. To test: open WordPad or Notepad and type "Je suis aller au marché" or "Thanks for you're help": the mistakes are underlined after a short pause; hover an underlined word and click a suggestion to replace it. Settings: double-click the tray icon. Everything runs locally (the checking engines run in a bundled WebView2 page, every other host is blocked): no network requests, no data collected. runFullTrust is needed for the UI Automation API, which reads the focused text field of other applications. Source code: https://github.com/BenjiBurn/FreeCorrector (windows/ folder; windows/package.ps1 builds the package).
