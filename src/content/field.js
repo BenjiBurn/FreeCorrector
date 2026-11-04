@@ -1,4 +1,4 @@
-/* exported FcFieldBase, FcTextField, FC_RULE_CAPITAL, FC_RULE_FINAL_PUNCT */
+/* exported FcFieldBase, FcTextField, FC_RULE_CAPITAL, FC_RULE_FINAL_PUNCT, fcWarmup */
 /* global fcApi, fcT, fcPlural, fcCountFixes */
 
 // A checker attached to one editable element. FcFieldBase holds what every
@@ -16,6 +16,13 @@ const FC_SVG_NS = "http://www.w3.org/2000/svg";
 // Rule ids of the sentence rules from engine/sentence-rules.js.
 const FC_RULE_CAPITAL = "FC_CAPITAL_START";
 const FC_RULE_FINAL_PUNCT = "FC_FINAL_PUNCT";
+
+// Asks the background to start the engines; the page's language tells which
+// one to start first in "auto" mode.
+function fcWarmup() {
+  const pageLang = (document.documentElement.lang || "").slice(0, 2).toLowerCase();
+  Promise.resolve(fcApi.runtime.sendMessage({ type: "warmup", pageLang })).catch(() => {});
+}
 
 class FcFieldBase {
   constructor(el, ui) {
@@ -48,7 +55,7 @@ class FcFieldBase {
       this.renderBadge();
       // The background may have gone idle and stopped the engines: restart
       // them before the user's next check (no cost when they are running).
-      if (event?.type === "focus") Promise.resolve(fcApi.runtime.sendMessage({ type: "warmup" })).catch(() => {});
+      if (event?.type === "focus") fcWarmup();
     };
     this.onCaretMove = () => this.refreshVisible();
     this.listen(el, "input", this.onInput);

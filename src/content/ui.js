@@ -1,5 +1,5 @@
 /* exported FcUi, FC_COMPOSE_WINDOW */
-/* global FC_CSS, fcApi, fcGetSettings, fcSetSettings, fcRuleKey, fcT, fcPlural, fcUiLang */
+/* global FC_CSS, fcApi, fcGetSettings, fcSetSettings, fcRuleKey, fcT, fcPlural, fcUiLang, fcWarmup */
 
 // Owns FreeCorrector's single shadow root on the page: the per-field layers,
 // the suggestion card and the error-list panel.
@@ -51,7 +51,7 @@ class FcUi {
 
     // The first field of the page just got focus: start the engines now,
     // while the user is still typing.
-    Promise.resolve(fcApi.runtime.sendMessage({ type: "warmup" })).catch(() => {});
+    fcWarmup();
   }
 
   get panelField() {

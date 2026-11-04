@@ -18,6 +18,7 @@ Brouillon, à compléter jusqu’à la sortie.
 - « spotter », « spotté », « spottées » (repérer, dans les jeux ou la photo d’avions) ne sont plus soulignés ; signalé par un utilisateur.
 - « J’ai deux extensions d’activées », « il y en a trois de cassés » (tournure familière) ne proposent plus l’infinitif (« d’activer ») ; « elle vient de terminée » reste souligné ; signalé par un utilisateur.
 - Anglais : un prénom seul sur sa ligne à côté d’un @pseudo (« Yann @Helpdesk ») n’est plus souligné comme une faute ; signalé par un utilisateur.
+- Mémoire : après 3 minutes sans vérification, les moteurs s’arrêtent et rendent leur mémoire (dans Edge, l’extension passe d’environ 290 Mo à 45 Mo au repos) ; ils redémarrent au clic suivant dans un champ. En mode automatique, seul le moteur de la langue de la page est préchargé (environ 140 Mo au lieu de 350 pour un texte en français) ; signalé par un utilisateur.
 
 ## 1.2.8
 

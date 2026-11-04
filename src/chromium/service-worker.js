@@ -10,8 +10,10 @@ importScripts("../lib/settings.js", "../lib/i18n.js", "../lib/menus.js", "../lib
 
 const FC_OFFSCREEN_URL = "chromium/offscreen.html";
 let fcCreating = null;
+let fcClosing = null;
 
 async function fcEnsureOffscreen() {
+  await fcClosing;
   const url = fcApi.runtime.getURL(FC_OFFSCREEN_URL);
   const contexts = await fcApi.runtime.getContexts({ contextTypes: ["OFFSCREEN_DOCUMENT"], documentUrls: [url] });
   if (contexts.length) return;
@@ -28,13 +30,14 @@ async function fcEnsureOffscreen() {
   await fcCreating;
 }
 
-async function fcForward(type, text = "") {
+async function fcForward(type, text = "", pageLang = "") {
   const settings = await fcGetSettings();
   await fcEnsureOffscreen();
   return fcApi.runtime.sendMessage({
     target: "fc-offscreen",
     type,
     text,
+    pageLang,
     settings: {
       language: settings.language,
       englishDialect: settings.englishDialect,
@@ -62,7 +65,15 @@ fcApi.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   }
   // A field got focus: have the engines ready before the first check.
   if (msg?.type === "warmup") {
-    fcForward("warmup").catch(() => {});
+    fcForward("warmup", "", String(msg.pageLang ?? "")).catch(() => {});
+    return false;
+  }
+  // The offscreen document stopped its idle engines: close it to free its memory;
+  // the next check opens a new one.
+  if (msg?.type === "offscreenIdle") {
+    fcClosing ??= fcApi.offscreen.closeDocument().catch(() => {}).finally(() => {
+      fcClosing = null;
+    });
     return false;
   }
   if (msg?.type !== "check") return false;

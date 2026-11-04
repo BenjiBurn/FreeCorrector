@@ -22,7 +22,7 @@ fcApi.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     return false;
   }
   if (msg?.type === "warmup") {
-    fcGetSettings().then(fcEngineWarmup, () => {});
+    fcGetSettings().then((settings) => fcEngineWarmup(settings, String(msg.pageLang ?? "")), () => {});
     return false;
   }
   if (msg?.type !== "check") return false;

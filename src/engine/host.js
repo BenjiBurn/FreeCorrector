@@ -10,10 +10,13 @@
 // language (language.js).
 
 /* global fcApi, fcParagraphLanguages, fcSplitQuotes, fcRuleKey, fcLexiconReady, FC_LANGUAGES */
-/* exported fcEngineCheck, fcEngineWarmup */
+/* exported fcEngineCheck, fcEngineWarmup, fcOnEnginesIdle */
 
 const FC_MAX_TEXT_LENGTH = 50000;
 const FC_RESULT_CACHE_SIZE = 50;
+// Engines left without work this long are stopped to give their memory back
+// (a few hundred MB with both loaded); the next field focus starts them again.
+const FC_IDLE_MS = 3 * 60 * 1000;
 
 // Extra Grammalecte rules turned on by the "picky" setting.
 const FC_PICKY_OPTIONS = ["apos", "num", "esp", "unit", "poncfin", "neg", "redon1", "redon2"];
@@ -80,6 +83,16 @@ class FcWorkerClient {
     await this.ensure(options);
     return this.call("check", { text });
   }
+
+  stop() {
+    if (!this.worker) return;
+    this.worker.terminate();
+    for (const p of this.pending.values()) p.reject(new Error("engine stopped"));
+    this.pending.clear();
+    this.worker = null;
+    this.ready = null;
+    this.options = null;
+  }
 }
 
 const fcEngines = {
@@ -88,6 +101,20 @@ const fcEngines = {
 };
 
 const fcResultCache = new Map();
+
+// Called once the engines have been stopped for being idle (the Chromium
+// offscreen document then asks to be closed as well).
+let fcOnEnginesIdle = null;
+let fcIdleTimer = null;
+
+function fcKeepEnginesAwake() {
+  clearTimeout(fcIdleTimer);
+  fcIdleTimer = setTimeout(() => {
+    for (const engine of Object.values(fcEngines)) engine.stop();
+    fcResultCache.clear();
+    fcOnEnginesIdle?.();
+  }, FC_IDLE_MS);
+}
 
 function fcEngineOptions(lang, settings) {
   if (lang === "en") return { dialect: settings.englishDialect ?? "us", picky: !!settings.picky };
@@ -128,10 +155,13 @@ function fcFilterDisabledRules(matches, disabledRules) {
 
 // Starts and initialises the engines a check will need, so the first
 // underlines do not wait for them (loading Harper takes about a second).
-// Called when a text field gets focus, before anything is typed.
-function fcEngineWarmup(settings) {
+// Called when a text field gets focus, before anything is typed. With the
+// "auto" language, `pageLang` (the page's lang attribute) picks the one engine
+// to start; the other starts with the first paragraph written in its language.
+function fcEngineWarmup(settings, pageLang) {
+  fcKeepEnginesAwake();
   const wanted = settings.language ?? "auto";
-  const langs = wanted === "auto" ? FC_LANGUAGES : [wanted];
+  const langs = wanted !== "auto" ? [wanted] : FC_LANGUAGES.includes(pageLang) ? [pageLang] : FC_LANGUAGES;
   for (const lang of langs) {
     fcEngines[lang]?.ensure(fcEngineOptions(lang, settings)).catch(() => {});
   }
@@ -140,6 +170,7 @@ function fcEngineWarmup(settings) {
 // `settings`: { language: "auto" | "fr" | "en", picky, dictionary, englishDialect }.
 // Returns { matches } or { error }.
 async function fcEngineCheck(text, settings) {
+  fcKeepEnginesAwake();
   if (text.length > FC_MAX_TEXT_LENGTH) return { error: "too-long" };
   const paragraphs = text.split("\n");
   const wanted = settings.language ?? "auto";
