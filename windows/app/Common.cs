@@ -24,10 +24,11 @@ namespace FreeCorrector
     // A match as shown: its boxes are in screen pixels, one per line.
     sealed record Mark(Match Match, Rect[] Boxes);
 
-    // The interface follows Windows' language: French, or English for anything else.
+    // The interface follows Windows' language: French, or English for anything
+    // else. FREECORRECTOR_LANG=fr or en chooses (the Store's screenshots).
     static class L
     {
-        public static readonly bool French = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "fr";
+        public static readonly bool French = (Environment.GetEnvironmentVariable("FREECORRECTOR_LANG") ?? CultureInfo.CurrentUICulture.TwoLetterISOLanguageName) == "fr";
         public static string T(string french, string english) => French ? french : english;
     }
 

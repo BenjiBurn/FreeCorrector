@@ -94,19 +94,82 @@ namespace FreeCorrector
 
         sealed class Anchor : IAnchor
         {
+            const int BeforeParagraphSpacingId = 40042, AfterParagraphSpacingId = 40041;
+            const UIA.TextUnit Paragraph = UIA.TextUnit.TextUnit_Paragraph;
+
             public readonly UIA.IUIAutomationTextRange Range;
+            // Per box, how much of its height the text takes, for the heights it was measured with.
+            double[] textShare = Array.Empty<double>();
+            string measuredFor = "";
+
             public Anchor(UIA.IUIAutomationTextRange range) => Range = range;
 
             public bool Holds(Match match) => Range.GetText(match.Length + 1) == match.Word;
 
             public Rect[] Boxes()
             {
-                var a = Range.GetBoundingRectangles() as double[];
+                var boxes = Rects(Range);
+                var heights = string.Join(";", boxes.ConvertAll(b => b.Height));
+                if (heights != measuredFor)
+                {
+                    measuredFor = heights;
+                    textShare = TextShare(boxes);
+                }
+                for (var i = 0; i < boxes.Count; i++)
+                    if (textShare[i] < 1) boxes[i] = new Rect(boxes[i].X, boxes[i].Y, boxes[i].Width, boxes[i].Height * textShare[i]);
+                return boxes.ToArray();
+            }
+
+            static List<Rect> Rects(UIA.IUIAutomationTextRange range)
+            {
+                var a = range.GetBoundingRectangles() as double[];
                 var boxes = new List<Rect>();
                 for (var k = 0; a != null && k + 3 < a.Length; k += 4)
                     if (a[k + 2] > 0 && a[k + 3] > 0) boxes.Add(new Rect(a[k], a[k + 1], a[k + 2], a[k + 3]));
-                return boxes.ToArray();
+                return boxes;
             }
+
+            // Rich edit controls (WordPad, Word…) count the space after a paragraph
+            // in the height of its last line: drawn at the bottom of that box, the
+            // underline would fall between the lines. The text's own height is the
+            // one of the other lines, of the paragraph or of the ones around it.
+            double[] TextShare(List<Rect> boxes)
+            {
+                var share = new double[boxes.Count];
+                Array.Fill(share, 1.0);
+                try
+                {
+                    var paragraph = Range.Clone();
+                    paragraph.ExpandToEnclosingUnit(Paragraph);
+                    var lines = Rects(paragraph);
+                    var around = paragraph.Clone();
+                    around.MoveEndpointByUnit(Start, Paragraph, -1);
+                    around.MoveEndpointByUnit(End, Paragraph, 1);
+                    var near = Rects(around);
+                    double before = Points(paragraph.GetAttributeValue(BeforeParagraphSpacingId)), after = Points(paragraph.GetAttributeValue(AfterParagraphSpacingId));
+                    for (var i = 0; i < boxes.Count; i++)
+                    {
+                        var line = lines.FindIndex(l => Math.Abs(l.Top - boxes[i].Top) < 3);
+                        // Only the last line has the space after.
+                        if (line < 0 || line != lines.Count - 1) continue;
+                        var h = boxes[i].Height;
+                        var others = lines.Count > 1 ? lines.GetRange(0, lines.Count - 1) : near;
+                        var text = double.MaxValue;
+                        foreach (var o in others)
+                            if (o.Height >= h * 0.55 && o.Height < text) text = o.Height;
+                        if (text >= h * 0.95) continue;
+                        // A one-line paragraph may also have the space before, at the top.
+                        var extra = h - text;
+                        if (line == 0 && before > 0) extra *= after > 0 ? after / (before + after) : 0;
+                        share[i] = (h - extra) / h;
+                    }
+                }
+                catch (COMException) { }
+                return share;
+            }
+
+            // A spacing in points, or 0 when the application does not tell.
+            static double Points(object value) => value is double d && d > 0 ? d : value is float f && f > 0 ? f : 0;
 
             public void Select() => Range.Select();
         }
