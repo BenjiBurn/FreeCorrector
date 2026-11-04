@@ -1,6 +1,6 @@
 {
   "_comment": "Partner Center > FreeCorrector > Gestion du produit > Identité du produit. The Store signs the package with this identity: the three values must be copied exactly.",
-  "name": "ToFill.FreeCorrector",
-  "publisher": "CN=ToFill",
+  "name": "LaPigeonnerie.FreeCorrector",
+  "publisher": "CN=7C509448-87BA-4D97-8FE6-0C9719D778FC",
   "publisherDisplayName": "LaPigeonnerie"
 }
