@@ -58,4 +58,9 @@ module.exports = [
   ["Hello Yann @Helpdesk", null, null],
   ["Thnaks @John for the help.", "Thnaks", "Thanks"],
   ["Teh @admin", "Teh", "The"],
+  // Signalé depuis l'extension (1.2.9) : « profils » (orthographe française) proposait « profits » avant « profiles ».
+  ["Can administrate applications, permissions and profils", "profils", "profiles"],
+  ["I updated my profil yesterday.", "profil", "profile"],
+  ["Our profits went up this year.", null, null],
+  ["Please update your profile.", null, null],
 ];

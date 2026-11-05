@@ -241,6 +241,9 @@ async function rankSpelling(paragraph, m) {
     // But a past form takes no -s: "it tooks" -> "took", not "tools".
     if (m.word.toLowerCase() === `${c.toLowerCase()}s` && EN_IRREGULAR_PAST.test(c)) cost -= 1;
     else if (/[^s's]s$/i.test(m.word) && !/s$/i.test(c)) cost += 1;
+    // French spellings drop the final "e" of "-ile": "profils" -> "profiles", not "profits".
+    if (/il$/i.test(m.word) ? c.toLowerCase() === `${m.word.toLowerCase()}e` :
+        /ils$/i.test(m.word) && c.toLowerCase() === `${m.word.toLowerCase().slice(0, -1)}es`) cost -= 1;
     return { c, cost, errors: 0 };
   }).sort((a, b) => a.cost - b.cost);
 
