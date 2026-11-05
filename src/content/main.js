@@ -14,6 +14,12 @@
   let pageOverride = null;
   const isActive = () =>
     pageOverride ?? (settings.enabled && !settings.disabledSites.includes(site));
+  // The toolbar icon goes grey when checking is off here (lib/action-icon.js).
+  // Every frame follows the same state: only the top one tells.
+  const topFrame = window === window.top;
+  const tellState = () => {
+    if (topFrame) Promise.resolve(fcApi.runtime.sendMessage({ type: "pageState", active: isActive() })).catch(() => {});
+  };
 
   // Code editors are contenteditable too, but their text is not prose.
   const CODE_EDITORS = ".CodeMirror, .cm-editor, .monaco-editor, .ace_editor, .code-editor, [data-language]";
@@ -80,10 +86,16 @@
     return el;
   }
   attach(deepActiveElement());
+  if (!isActive()) tellState();
 
   // The "fix all" keyboard shortcut (lib/commands.js), sent to every frame of
   // the tab: only the frame where the user is typing acts.
-  fcApi.runtime.onMessage.addListener((msg) => {
+  fcApi.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
+    // The background asks, once a page has loaded (sent to the top frame only).
+    if (msg?.type === "pageState") {
+      sendResponse(isActive());
+      return false;
+    }
     // Every frame follows, like the settings do.
     if (msg?.type === "togglePage") {
       pageOverride = !isActive();
@@ -92,6 +104,7 @@
         ui?.removeAll();
         attached = new WeakMap();
       }
+      tellState();
       return;
     }
     if (msg?.type !== "fixAll" || !document.hasFocus() || !ui) return;
@@ -106,8 +119,10 @@
     if (wasActive && !isActive()) {
       ui?.removeAll();
       attached = new WeakMap();
+      tellState();
     } else if (!wasActive && isActive()) {
       attach(deepActiveElement());
+      tellState();
     } else if (["dictionary", "disabledRules", "picky", "language", "englishDialect"].some((k) => k in changes)) {
       ui?.recheckAll();
     }

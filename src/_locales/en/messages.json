@@ -5,6 +5,7 @@
   "popupTagline": { "message": "French and English · 100% local" },
   "popupEnabled": { "message": "Checking on" },
   "popupSiteEnabled": { "message": "On for" },
+  "actionTitleOff": { "message": "FreeCorrector (off on this page)" },
   "popupOpenEditor": { "message": "Open the proofreader" },
   "popupOptions": { "message": "Options and dictionary" },
   "popupDemo": { "message": "Test page" },

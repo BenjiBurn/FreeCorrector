@@ -5,6 +5,7 @@
   "popupTagline": { "message": "Français et anglais · 100 % local" },
   "popupEnabled": { "message": "Correction activée" },
   "popupSiteEnabled": { "message": "Activé sur" },
+  "actionTitleOff": { "message": "FreeCorrector (désactivé sur cette page)" },
   "popupOpenEditor": { "message": "Ouvrir le correcteur" },
   "popupOptions": { "message": "Options et dictionnaire" },
   "popupDemo": { "message": "Page de test" },

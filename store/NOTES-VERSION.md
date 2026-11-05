@@ -4,6 +4,8 @@
 
 Brouillon, à compléter jusqu’à la sortie (numéro à confirmer).
 
+- L’icône de FreeCorrector devient grise sur une page où la correction est coupée (site désactivé, correction coupée partout ou raccourci Ctrl+Maj+1) ; idée d’un utilisateur.
+
 - « mais vas-y fais rouler » : l’impératif après « vas-y », « allez-y », « viens »… n’est plus souligné (« fait ») ; signalé par un utilisateur.
 - « une idée à la con », « à la papa » : le « la » de ces locutions n’est plus souligné (« le ») ; signalé par un utilisateur.
 - « un ordre du jour pour la réunion de demain que j’ai rédigé » : le participe n’est plus accordé d’office avec le dernier nom (« rédigée ») quand un nom plus haut s’accorde déjà avec lui ; signalé par un utilisateur.

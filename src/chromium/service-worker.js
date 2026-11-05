@@ -4,9 +4,9 @@
 // offscreen document (offscreen.html). This worker reads the settings, makes
 // sure the document exists and forwards each check to it.
 
-/* global fcApi, fcGetSettings, fcHostOf */
+/* global fcApi, fcGetSettings, fcHostOf, fcSetActionIcon */
 
-importScripts("../lib/settings.js", "../lib/i18n.js", "../lib/menus.js", "../lib/commands.js", "../lib/welcome.js");
+importScripts("../lib/settings.js", "../lib/i18n.js", "../lib/menus.js", "../lib/commands.js", "../lib/welcome.js", "../lib/action-icon.js");
 
 const FC_OFFSCREEN_URL = "chromium/offscreen.html";
 let fcCreating = null;
@@ -61,6 +61,11 @@ fcApi.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   // The host name of the tab, for content/main.js.
   if (msg?.type === "siteHost") {
     sendResponse(fcHostOf(sender.tab?.url ?? ""));
+    return false;
+  }
+  // Checking on or off in the tab: the toolbar icon follows (lib/action-icon.js).
+  if (msg?.type === "pageState") {
+    fcSetActionIcon(sender.tab?.id, msg.active !== false);
     return false;
   }
   // A field got focus: have the engines ready before the first check.

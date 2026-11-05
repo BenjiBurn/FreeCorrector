@@ -35,6 +35,7 @@
       "lib/menus.js",
       "lib/commands.js",
       "lib/welcome.js",
+      "lib/action-icon.js",
       "engine/language.js",
       "engine/host.js",
       "background.js"

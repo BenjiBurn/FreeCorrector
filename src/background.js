@@ -5,7 +5,7 @@
 // name of the tab (see content/main.js). Everything runs locally: no text
 // ever leaves the browser.
 
-/* global fcApi, fcGetSettings, fcEngineCheck, fcEngineWarmup, fcHostOf */
+/* global fcApi, fcGetSettings, fcEngineCheck, fcEngineWarmup, fcHostOf, fcSetActionIcon */
 
 fcApi.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   // "Report" in the bubble: the website's report page (content scripts cannot
@@ -19,6 +19,11 @@ fcApi.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   }
   if (msg?.type === "siteHost") {
     sendResponse(fcHostOf(sender.tab?.url ?? ""));
+    return false;
+  }
+  // Checking on or off in the tab: the toolbar icon follows (lib/action-icon.js).
+  if (msg?.type === "pageState") {
+    fcSetActionIcon(sender.tab?.id, msg.active !== false);
     return false;
   }
   if (msg?.type === "warmup") {
