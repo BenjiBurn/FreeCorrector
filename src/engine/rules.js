@@ -1483,8 +1483,9 @@ function fcRoundThreeRules(tokens, i, { add, morph, apo, paragraph, spellChecker
     if (t.lower === "cette" && masc && /^[aeiouyéèêâîôûœh]/.test(R1)) add(t, "cet", "Devant un nom masculin : « cet » (cet été).", true);
     if (t.lower === "cet" && fem) add(t, "cette", "Devant un nom féminin : « cette ».", true);
   }
-  // "La musée" -> Le ; "le voiture" -> la
-  if (/^(le|la|un|une)$/.test(t.lower) && next && /^\p{Ll}+$/u.test(next.text) && !(prev && /^(je|tu|il|elle|on|nous|vous|ils|elles|ne|n’)$/.test(L1))) {
+  // "La musée" -> Le ; "le voiture" -> la ("une idée à la con", "à la papa": set phrases, "à la manière")
+  if (/^(le|la|un|une)$/.test(t.lower) && next && /^\p{Ll}+$/u.test(next.text) && !(prev && /^(je|tu|il|elle|on|nous|vous|ils|elles|ne|n’)$/.test(L1)) &&
+      !(t.lower === "la" && L1 === "à" && /^(con|papa)$/.test(R1))) {
     const all = morph(next);
     const nouns = all.filter((m) => /:N/.test(m));
     // A singular noun only: "le maisons" is a number mistake ("les"), not a gender one.

@@ -5,6 +5,7 @@
 Brouillon, à compléter jusqu’à la sortie (numéro à confirmer).
 
 - « mais vas-y fais rouler » : l’impératif après « vas-y », « allez-y », « viens »… n’est plus souligné (« fait ») ; signalé par un utilisateur.
+- « une idée à la con », « à la papa » : le « la » de ces locutions n’est plus souligné (« le ») ; signalé par un utilisateur.
 
 ## 1.2.9
 

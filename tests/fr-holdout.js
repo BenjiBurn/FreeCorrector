@@ -260,4 +260,8 @@ module.exports = [
   ["Bon vas-y fais voir.", null, null],
   ["Et allez-y prenez votre temps.", null, null],
   ["Allez, viens mange avec nous.", null, null],
+  // Signalé depuis l'extension (1.2.8) : « à la con » (locution, « à la manière ») proposait « le ».
+  ["Pas tous vos grille-pain à la con 🤢", null, null],
+  ["C'est vraiment une idée à la con.", null, null],
+  ["Il conduit à la papa sur l'autoroute.", null, null],
 ];
