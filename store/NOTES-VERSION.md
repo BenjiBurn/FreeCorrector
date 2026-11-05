@@ -1,5 +1,11 @@
 # Notes de version à coller dans les stores
 
+## 1.2.10 (prochaine version, pas encore publiée)
+
+Brouillon, à compléter jusqu’à la sortie (numéro à confirmer).
+
+- « mais vas-y fais rouler » : l’impératif après « vas-y », « allez-y », « viens »… n’est plus souligné (« fait ») ; signalé par un utilisateur.
+
 ## 1.2.9
 
 **Français** (Firefox : « Notes de version » ; Thunderbird : « Notes de version » ; Chrome : rien à saisir ; Opera : « Changelog ») :

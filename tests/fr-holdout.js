@@ -255,4 +255,9 @@ module.exports = [
   ["Elle vient de terminée.", "terminée", "terminer"],
   ["Ils ont fini de mangés.", "mangés", "manger"],
   ["J'ai envie de mangée.", "mangée", "manger"],
+  // Signalé depuis l'extension (1.2.8) : « mais vas-y fais rouler » proposait « fait » (« vas-y » sert d'interjection).
+  ["Peut-être mais vas-y fais rouler la maison de @Nicorvette !", null, null],
+  ["Bon vas-y fais voir.", null, null],
+  ["Et allez-y prenez votre temps.", null, null],
+  ["Allez, viens mange avec nous.", null, null],
 ];
