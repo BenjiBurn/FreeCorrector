@@ -270,6 +270,15 @@ module.exports = [
   ["Voici le compte rendu de la réunion que j'ai rédigé.", null, null],
   ["Je vous envoie le plan de la maison que j'ai dessiné.", null, null],
   ["Voici les fiches de la séance que j'ai préparé.", "préparé", "préparée"],
+  // Une quantité ou un genre avant « de » laisse l'accord au nom qui suit.
+  ["Voici le reste des photos que j'ai pris.", "pris", "prises"],
+  ["C'est le genre de filles que j'ai rencontré hier.", "rencontré", "rencontrées"],
+  ["Voici un tas de lettres que j'ai reçu.", "reçu", "reçues"],
+  ["C'est le type de questions que j'ai posé.", "posé", "posées"],
+  ["Il a mangé une part de la tarte que j'ai fait.", "fait", "faite"],
+  ["Voici le morceau de musique que j'ai composé.", null, null],
+  ["C'est le compte rendu de la réunion que j'ai rédigé.", null, null],
+  ["J'ai retrouvé le carnet de notes que j'ai rempli.", null, null],
   // Signalé depuis l'extension (1.2.9) : « Il faudrait que vous nous confirmer » n'était pas souligné (→ « confirmiez »).
   ["Il faudrait que vous nous confirmer la date exacte de la prochaine intervention.", "confirmer", "confirmiez"],
   ["Il faut que tu manger avant de partir.", "manger", "manges"],

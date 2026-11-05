@@ -1383,6 +1383,8 @@ function fcNearestNoun(tokens, k, morph, wantNumber) {
 // "un ordre du jour pour la réunion de demain que j’ai rédigé": "que" may stand for an
 // earlier noun of the chain ("ordre"), not only the last one. True when a noun linked
 // to it by "de", "pour", "sur"… agrees with the participle as written.
+const FC_QUANTITY_HEAD = /^(reste|restes|genre|genres|type|types|sorte|sortes|espèce|espèces|style|tas|nombre|part|parts|partie|parties|moitié|plupart|majorité|minorité|totalité|ensemble|série|dizaine|douzaine|vingtaine|trentaine|quinzaine|centaine|millier|milliers|million|millions|quantité|foule|poignée|tiers|quart|peu)$/;
+
 function fcEarlierNounAgrees(spellChecker, before, participle) {
   const pairs = (word, kind) => fcMorph(spellChecker, word).flatMap((x) => {
     const g = new RegExp(`:${kind}[^/]*?:([mfe]):([spi])`).exec(x);
@@ -1395,14 +1397,18 @@ function fcEarlierNounAgrees(spellChecker, before, participle) {
     const tok = tokens[k];
     if (!/\p{L}/u.test(tok.text) || /^(je|j’|tu|il|elle|on|nous|vous|ils|elles|qui|que|qu’|dont|où|et|ou|mais)$/.test(tok.lower)) break;
     const ms = fcMorph(spellChecker, tok.text);
-    // A noun has its determiner ("un ordre", "le compte rendu"): "a" in "il a" is the verb.
-    const det = k > 0 && (/^(l’|d’)$/.test(tokens[k - 1].lower) || fcHas(fcMorph(spellChecker, tokens[k - 1].text), /:D/)) ||
+    // A noun has its determiner ("un ordre", "le compte rendu"): "a" in "il a", "est" in "c’est" are verbs.
+    const det = k > 0 && tokens[k - 1].lower !== "c’" && (/^(l’|d’)$/.test(tokens[k - 1].lower) || fcHas(fcMorph(spellChecker, tokens[k - 1].text), /:D/)) ||
       (k > 0 && fcHas(fcMorph(spellChecker, tokens[k - 1].text), /:N/) && fcHas(ms, /:N/) && !fcHas(ms, /:V[^/]*:(Ip|Iq|Is|If|K|Sp)/));
     if (fcHas(ms, /:V/) && !det && !fcHas(ms, /:A/)) break;
     // ("de demain", "de samedi": a time, not a noun the participle could agree with.)
     if (det && fcHas(ms, /:N/) && !fcHas(ms, /:[GW]/)) {
+      const nouns = pairs(tok.text, "N");
       if (!first) first = true;
-      else if (linked && pairs(tok.text, "N").some(([g, n]) => pp.some(([h, p]) => (g === h || g === "e" || h === "e") && (n === p || n === "i" || p === "i")))) return true;
+      // "le reste des photos que j’ai pris", "le genre de filles": a quantity or a kind before
+      // "de" leaves the agreement to the noun after it. Every reading must agree ("une part", "un part").
+      else if (linked && !FC_QUANTITY_HEAD.test(tok.lower) && nouns.length &&
+          nouns.every(([g, n]) => pp.some(([h, p]) => (g === h || g === "e" || h === "e") && (n === p || n === "i" || p === "i")))) return true;
     }
     if (first && /^(de|d’|du|des|pour|sur|avec|contre|sans)$/.test(tok.lower)) linked = true;
   }
