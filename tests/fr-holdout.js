@@ -264,6 +264,12 @@ module.exports = [
   ["Pas tous vos grille-pain à la con 🤢", null, null],
   ["C'est vraiment une idée à la con.", null, null],
   ["Il conduit à la papa sur l'autoroute.", null, null],
+  // Signalé depuis l'extension (1.2.8) : « un ordre du jour pour la réunion de demain que j'ai rédigé » proposait « rédigée » (le COD est « ordre du jour »).
+  ["Je me permets de vous transmettre un ordre du jour  pour la réunion de demain que j'ai rédigé.", null, null],
+  ["Voici un ordre du jour pour la réunion que j'ai rédigé.", null, null],
+  ["Voici le compte rendu de la réunion que j'ai rédigé.", null, null],
+  ["Je vous envoie le plan de la maison que j'ai dessiné.", null, null],
+  ["Voici les fiches de la séance que j'ai préparé.", "préparé", "préparée"],
   // Signalé depuis l'extension (1.2.9) : « Il faudrait que vous nous confirmer » n'était pas souligné (→ « confirmiez »).
   ["Il faudrait que vous nous confirmer la date exacte de la prochaine intervention.", "confirmer", "confirmiez"],
   ["Il faut que tu manger avant de partir.", "manger", "manges"],

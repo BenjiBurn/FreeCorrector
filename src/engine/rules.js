@@ -598,7 +598,8 @@ function fcCustomRules(paragraph, spellChecker, existing) {
       const noun = morph(antecedent).find((m) => /:N:[mfe]:[spi]/.test(m));
       const gender = noun?.match(/:N:([mfe]):([spi])/);
       // ("la première fois que le prof a parlé": "fois" is never the object.)
-      if (gender && (gender[1] === "f" || gender[2] === "p") && !/^fois$/i.test(antecedent.text)) {
+      if (gender && (gender[1] === "f" || gender[2] === "p") && !/^fois$/i.test(antecedent.text) &&
+          (exclamative || !fcEarlierNounAgrees(spellChecker, paragraph.slice(0, tokens[s - 1].start), t.text))) {
         const want = `:${gender[1] === "f" ? "f" : "m"}:${gender[2] === "p" ? "p" : "s"}`;
         const form = String(suggVerbPpas(t.lower, want) || "").split("|").filter(Boolean)[0];
         if (form && form !== t.lower) add(t, form, `Le participe passé s’accorde avec « ${antecedent.text} », complément placé avant avoir.`);
@@ -1379,6 +1380,35 @@ function fcNearestNoun(tokens, k, morph, wantNumber) {
   return null;
 }
 
+// "un ordre du jour pour la réunion de demain que j’ai rédigé": "que" may stand for an
+// earlier noun of the chain ("ordre"), not only the last one. True when a noun linked
+// to it by "de", "pour", "sur"… agrees with the participle as written.
+function fcEarlierNounAgrees(spellChecker, before, participle) {
+  const pairs = (word, kind) => fcMorph(spellChecker, word).flatMap((x) => {
+    const g = new RegExp(`:${kind}[^/]*?:([mfe]):([spi])`).exec(x);
+    return g ? [[g[1], g[2]]] : [];
+  });
+  const pp = pairs(participle, "Q");
+  const tokens = fcTokens(before);
+  let first = false, linked = false;
+  for (let k = tokens.length - 1; k >= 0 && k >= tokens.length - 14; k--) {
+    const tok = tokens[k];
+    if (!/\p{L}/u.test(tok.text) || /^(je|j’|tu|il|elle|on|nous|vous|ils|elles|qui|que|qu’|dont|où|et|ou|mais)$/.test(tok.lower)) break;
+    const ms = fcMorph(spellChecker, tok.text);
+    // A noun has its determiner ("un ordre", "le compte rendu"): "a" in "il a" is the verb.
+    const det = k > 0 && (/^(l’|d’)$/.test(tokens[k - 1].lower) || fcHas(fcMorph(spellChecker, tokens[k - 1].text), /:D/)) ||
+      (k > 0 && fcHas(fcMorph(spellChecker, tokens[k - 1].text), /:N/) && fcHas(ms, /:N/) && !fcHas(ms, /:V[^/]*:(Ip|Iq|Is|If|K|Sp)/));
+    if (fcHas(ms, /:V/) && !det && !fcHas(ms, /:A/)) break;
+    // ("de demain", "de samedi": a time, not a noun the participle could agree with.)
+    if (det && fcHas(ms, /:N/) && !fcHas(ms, /:[GW]/)) {
+      if (!first) first = true;
+      else if (linked && pairs(tok.text, "N").some(([g, n]) => pp.some(([h, p]) => (g === h || g === "e" || h === "e") && (n === p || n === "i" || p === "i")))) return true;
+    }
+    if (first && /^(de|d’|du|des|pour|sur|avec|contre|sans)$/.test(tok.lower)) linked = true;
+  }
+  return false;
+}
+
 function fcRoundThreeRules(tokens, i, { add, morph, apo, paragraph, spellChecker }) {
   const t = tokens[i];
   const prev = tokens[i - 1], prev2 = tokens[i - 2], prev3 = tokens[i - 3], prev4 = tokens[i - 4];
@@ -1430,6 +1460,7 @@ function fcRoundThreeRules(tokens, i, { add, morph, apo, paragraph, spellChecker
           // ("que le roi a accepté les changements": the object follows, "que" is a conjunction.)
           !/^(les|le|la|l’|un|une|des|du|ses|son|sa|leur|leurs|ce|cet|cette|ces|mon|ma|mes|ton|ta|tes|notre|votre|nos|vos)$/.test(R1)) {
         agree = fcNearestNoun(tokens, qi, morph, null);
+        if (fcEarlierNounAgrees(spellChecker, paragraph.slice(0, tokens[qi].start), t.text)) agree = null;
       }
     }
     if (agree && (agree.gender === "f" || agree.number === "p")) {

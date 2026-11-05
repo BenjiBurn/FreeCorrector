@@ -577,6 +577,12 @@ function checkParagraph(paragraph) {
     if (/imp_verbe/.test(m.ruleId) &&
         /(^|[^\p{L}])(vas-y|allez-y|allons-y|va|allez|allons|viens|venez)[\s,]+$/iu.test(paragraph.slice(Math.max(0, err.nStart - 12), err.nStart)) &&
         spellChecker.getMorph(m.word.toLowerCase()).some((x) => /:E/.test(x))) continue;
+    // "un ordre du jour pour la réunion de demain que j'ai rédigé": the rule weighs only the
+    // last noun before "que"; an earlier one of the chain may be the object ("ordre").
+    if (/ppas_det_(sing|plur)_COD_que/.test(m.ruleId)) {
+      const que = [...paragraph.slice(0, err.nStart).matchAll(/(?<![\p{L}])qu(?:e(?![\p{L}])|['’])/giu)].pop();
+      if (que && fcEarlierNounAgrees(spellChecker, paragraph.slice(0, que.index), m.word)) continue;
+    }
     // "Ne vend pas ta voiture" -> vends, the imperative the message asks for, not "vendent".
     if (/imp_verbe/.test(m.ruleId) && m.replacements.length) m.replacements.only = [...m.replacements];
     // Optional commas ("passée chez toi, mais") are style, for picky mode.
