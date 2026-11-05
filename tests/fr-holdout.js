@@ -264,4 +264,10 @@ module.exports = [
   ["Pas tous vos grille-pain à la con 🤢", null, null],
   ["C'est vraiment une idée à la con.", null, null],
   ["Il conduit à la papa sur l'autoroute.", null, null],
+  // Signalé depuis l'extension (1.2.9) : « Il faudrait que vous nous confirmer » n'était pas souligné (→ « confirmiez »).
+  ["Il faudrait que vous nous confirmer la date exacte de la prochaine intervention.", "confirmer", "confirmiez"],
+  ["Il faut que tu manger avant de partir.", "manger", "manges"],
+  ["Il faudrait que vous nous confirmiez la date.", null, null],
+  ["Je ne veux que vous aider.", null, null],
+  ["Je ne demande que vous voir heureux.", null, null],
 ];

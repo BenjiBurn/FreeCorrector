@@ -475,7 +475,10 @@ function fcCustomRules(paragraph, spellChecker, existing) {
       const prevLower = subject.lower;
       const trigger = tokens[subj - 2]?.lower ?? "";
       if (/^(faut|faudrait|faudra|fallait|veux|veut|voulez|voudrais|voudrait|souhaite|souhaites|aimerais|aimerait|pour|avant|afin|sans|bien|attends|attend|préfère|préfères|préférerais|exige|demande|important|nécessaire|essentiel|normal|dommage|possible|peur)$/.test(trigger)) {
-        const ind = morph(t).find((m) => /:V.*:Ip/.test(m) && !/:Sp/.test(m));
+        // "Il faudrait que vous nous confirmer" -> confirmiez: an infinitive in place of the verb
+        // (not "Je ne veux que vous aider", where "ne… que" means "only").
+        const ind = morph(t).find((m) => /:V.*:Ip/.test(m) && !/:Sp/.test(m)) ??
+          (!/^(ne|n’)$/.test(tokens[subj - 3]?.lower ?? "") ? morph(t).find((m) => /:V[^/]*:Y/.test(m)) : undefined);
         const person = nounPerson || { je: "1s", "j’": "1s", tu: "2s", il: "3s", elle: "3s", on: "3s", nous: "1p", vous: "2p", ils: "3p", elles: "3p", ça: "3s", cela: "3s" }[prevLower];
         if (ind && person && !fcHas(morph(t), new RegExp(`:Sp.*:${person}|:${person}.*:Sp`))) {
           const lemma = ind.slice(1, ind.indexOf("/"));
