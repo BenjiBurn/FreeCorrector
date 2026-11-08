@@ -286,4 +286,169 @@ namespace FreeCorrector
             public void Select() => field.Send(EM_SETSEL, Match.Offset, Match.Offset + Match.Length);
         }
     }
+
+    // Scintilla, the editor of Notepad++ (and of SciTE, Notepad2, Notepad3…):
+    // only an empty pane to UI Automation, but its own messages work from
+    // another process. It hands out a pointer to its text, read straight from
+    // the other process's memory. Its positions count bytes (UTF-8, or the code
+    // page of an ANSI document): `map` turns our character offsets into them.
+    sealed class ScintillaField : IField
+    {
+        const int SCI_GETLENGTH = 2006, SCI_GETCURRENTPOS = 2008, SCI_GETCODEPAGE = 2137, SCI_GETREADONLY = 2140, SCI_SETSEL = 2160;
+        const int SCI_POINTXFROMPOSITION = 2164, SCI_POINTYFROMPOSITION = 2165, SCI_LINEFROMPOSITION = 2166, SCI_TEXTHEIGHT = 2279;
+        const int SCI_GETRANGEPOINTER = 2643, SCI_GETLEXER = 4002;
+        const uint SMTO_ABORTIFHUNG = 0x2, PROCESS_VM_READ = 0x10, PROCESS_QUERY_LIMITED_INFORMATION = 0x1000;
+        // Prose only, not code: no lexer, the null one (Notepad++'s "Normal text"),
+        // Markdown, and Notepad++'s user-defined languages (its Markdown is one).
+        static readonly HashSet<long> ProseLexers = new() { 0, 1, 98, 152 };
+
+        [DllImport("user32.dll")] static extern IntPtr SendMessageTimeout(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, uint flags, uint timeout, out IntPtr result);
+        [DllImport("user32.dll")] static extern bool ClientToScreen(IntPtr hwnd, ref Native.POINT point);
+        [DllImport("user32.dll")] static extern bool GetClientRect(IntPtr hwnd, out Native.RECT rect);
+        [DllImport("kernel32.dll")] static extern uint GetACP();
+        [DllImport("kernel32.dll", SetLastError = true)] static extern Microsoft.Win32.SafeHandles.SafeProcessHandle OpenProcess(uint access, bool inherit, int pid);
+        [DllImport("kernel32.dll", SetLastError = true)] static extern bool ReadProcessMemory(Microsoft.Win32.SafeHandles.SafeProcessHandle process, IntPtr address, byte[] buffer, IntPtr size, out IntPtr read);
+
+        static ScintillaField() => Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+
+        readonly IntPtr hwnd;
+        readonly Microsoft.Win32.SafeHandles.SafeProcessHandle process;
+        byte[] bytes = Array.Empty<byte>();
+        long codePage = -1;
+        string text = "";
+        // The byte position of each character of `text`, and of its end.
+        int[] map = { 0 };
+
+        ScintillaField(IntPtr hwnd, Microsoft.Win32.SafeHandles.SafeProcessHandle process)
+        {
+            this.hwnd = hwnd;
+            this.process = process;
+        }
+
+        public static ScintillaField? For(UIA.IUIAutomationElement el, int pid)
+        {
+            if (el.CurrentClassName != "Scintilla") return null;
+            var hwnd = el.CurrentNativeWindowHandle;
+            if (hwnd == IntPtr.Zero) return null;
+            var process = OpenProcess(PROCESS_VM_READ | PROCESS_QUERY_LIMITED_INFORMATION, false, pid);
+            if (process.IsInvalid) return null;
+            return new ScintillaField(hwnd, process);
+        }
+
+        long Send(int msg, long wParam = 0, long lParam = 0) =>
+            SendMessageTimeout(hwnd, msg, new IntPtr(wParam), new IntPtr(lParam), SMTO_ABORTIFHUNG, 200, out var result) == IntPtr.Zero ? -1 : result.ToInt64();
+
+        // Empty for code and read-only documents (the same window shows every tab of Notepad++).
+        public string Text(int max)
+        {
+            if (!ProseLexers.Contains(Send(SCI_GETLEXER)) || Send(SCI_GETREADONLY) != 0) return Keep(Array.Empty<byte>(), 0, max);
+            var length = Send(SCI_GETLENGTH);
+            if (length <= 0) return Keep(Array.Empty<byte>(), 0, max);
+            // Enough bytes for `max` characters (4 at most each). The range pointer
+            // leaves the rest of a long document where it is in memory.
+            var count = (int)Math.Min(length, 4L * max);
+            var pointer = Send(SCI_GETRANGEPOINTER, 0, count);
+            var buffer = new byte[count];
+            if (pointer <= 0 || !ReadProcessMemory(process, new IntPtr(pointer), buffer, new IntPtr(count), out var read) || read.ToInt64() != count)
+                return Keep(Array.Empty<byte>(), 0, max);
+            return Keep(buffer, Send(SCI_GETCODEPAGE), max);
+        }
+
+        // Decodes the bytes once (they are read again at each tick of the watcher),
+        // byte by byte to know where each character starts.
+        string Keep(byte[] now, long page, int max)
+        {
+            if (page == codePage && now.AsSpan().SequenceEqual(bytes)) return text;
+            bytes = now;
+            codePage = page;
+            var decoder = (page == 65001 ? Encoding.UTF8 : Encoding.GetEncoding(page > 0 ? (int)page : (int)GetACP())).GetDecoder();
+            var chars = new char[4];
+            var builder = new StringBuilder(Math.Min(now.Length, max));
+            var starts = new List<int>(Math.Min(now.Length, max) + 1);
+            var start = 0;
+            for (var i = 0; i < now.Length && builder.Length < max; i++)
+            {
+                var n = decoder.GetChars(now, i, 1, chars, 0, false);
+                for (var k = 0; k < n; k++) { builder.Append(chars[k]); starts.Add(start); }
+                if (n > 0) start = i + 1;
+            }
+            if (builder.Length > max) { builder.Length = max; starts.RemoveRange(max, starts.Count - max); }
+            // The end of the last character (a sequence cut at the end of what was read stays out).
+            starts.Add(start);
+            map = starts.ToArray();
+            return text = builder.ToString();
+        }
+
+        public Rect Bounds()
+        {
+            GetClientRect(hwnd, out var r);
+            var p = new Native.POINT();
+            ClientToScreen(hwnd, ref p);
+            return new Rect(p.X, p.Y, r.Right, r.Bottom);
+        }
+
+        public IAnchor? Locate(Match m, string current)
+        {
+            if (current != text || m.Offset < 0 || m.Offset + m.Length >= map.Length) return null;
+            return string.CompareOrdinal(text, m.Offset, m.Word, 0, m.Length) == 0 ? new Anchor(this, m.Offset, m.Length) : null;
+        }
+
+        public bool CaretBefore(IAnchor anchor)
+        {
+            var caret = Send(SCI_GETCURRENTPOS);
+            return caret >= 0 && caret < ((Anchor)anchor).End;
+        }
+
+        Native.POINT Point(int position) =>
+            new() { X = (int)Send(SCI_POINTXFROMPOSITION, 0, position), Y = (int)Send(SCI_POINTYFROMPOSITION, 0, position) };
+
+        sealed class Anchor : IAnchor
+        {
+            readonly ScintillaField field;
+            // In characters of the text it was found in.
+            readonly int offset, length;
+            public readonly int Start, End;
+
+            public Anchor(ScintillaField field, int offset, int length)
+            {
+                this.field = field;
+                this.offset = offset;
+                this.length = length;
+                Start = field.map[offset];
+                End = field.map[offset + length];
+            }
+
+            public bool Holds(Match match) => field.Locate(match, field.text) is Anchor a && a.Start == Start && a.End == End;
+
+            public Rect[] Boxes()
+            {
+                if (offset + length >= field.map.Length) return Array.Empty<Rect>();
+                var origin = new Native.POINT();
+                ClientToScreen(field.hwnd, ref origin);
+                var height = (int)field.Send(SCI_TEXTHEIGHT, field.Send(SCI_LINEFROMPOSITION, Start));
+                Rect Box(Native.POINT from, int right) => new(origin.X + from.X, origin.Y + from.Y, Math.Max(0, right - from.X), height);
+                var a = field.Point(Start);
+                var b = field.Point(End);
+                if (b.Y == a.Y) return new[] { Box(a, b.X) };
+                // A group of words that wraps: one box per line, each up to the
+                // start of its last character (the space where the line breaks).
+                var boxes = new List<Rect>();
+                Native.POINT line = a, previous = a;
+                for (var i = offset + 1; i <= offset + length; i++)
+                {
+                    var p = field.Point(field.map[i]);
+                    if (p.Y != line.Y)
+                    {
+                        if (previous.X > line.X) boxes.Add(Box(line, previous.X));
+                        line = p;
+                    }
+                    else if (i == offset + length) boxes.Add(Box(line, p.X));
+                    previous = p;
+                }
+                return boxes.ToArray();
+            }
+
+            public void Select() => field.Send(SCI_SETSEL, Start, End);
+        }
+    }
 }

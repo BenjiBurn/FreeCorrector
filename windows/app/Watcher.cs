@@ -230,6 +230,8 @@ namespace FreeCorrector
         {
             if (Skipped.Contains(ProcessName(pid))) return null;
             if (el.CurrentIsPassword != 0) return null;
+            // Notepad++ and the other Scintilla editors: a pane to UI Automation.
+            if (ScintillaField.For(el, pid) is { } scintilla) return scintilla;
             var type = el.CurrentControlType;
             if (type != EditType && type != DocumentType) return null;
             if (el.GetCurrentPattern(ValuePatternId) is UIA.IUIAutomationValuePattern value && value.CurrentIsReadOnly != 0) return null;
@@ -279,7 +281,8 @@ namespace FreeCorrector
             uia = new UIA.CUIAutomation();
             var window = uia.ElementFromHandle(hwnd);
             var el = window.FindFirst(UIA.TreeScope.TreeScope_Subtree, uia.CreatePropertyCondition(IsTextPatternAvailableId, true))
-                ?? window.FindFirst(UIA.TreeScope.TreeScope_Subtree, uia.CreatePropertyCondition(ClassNameId, "Edit"));
+                ?? window.FindFirst(UIA.TreeScope.TreeScope_Subtree, uia.CreatePropertyCondition(ClassNameId, "Edit"))
+                ?? window.FindFirst(UIA.TreeScope.TreeScope_Subtree, uia.CreatePropertyCondition(ClassNameId, "Scintilla"));
             if (el == null) { Log.Write("probe: no text field"); return; }
             field = Usable(el, el.CurrentProcessId);
             Log.Write($"probe: {ProcessName(el.CurrentProcessId)} / type {el.CurrentControlType} / " + (field?.GetType().Name ?? "skipped"));
