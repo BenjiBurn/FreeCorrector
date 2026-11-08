@@ -1,10 +1,42 @@
 # Notes de version à coller dans les stores
 
-## 1.3.0 (prochaine version, pas encore publiée)
+## 1.3.0
 
-Brouillon, à compléter jusqu’à la sortie. 1.3.0 et non 1.2.10 : l’icône grise est une nouveauté visible.
+1.3.0 et non 1.2.10 : l’icône grise est une nouveauté visible.
+
+**Français** (Firefox : « Notes de version » ; Thunderbird : « Notes de version » ; Chrome : rien à saisir ; Opera : « Changelog ») :
+
+```text
+• Nouveau : l’icône de FreeCorrector devient grise sur une page où la correction est coupée (site désactivé, correction coupée partout ou raccourci Ctrl+Maj+1). Une idée d’un utilisateur.
+• Encore plus léger : le moteur français et le moteur anglais libèrent chacun leur mémoire dès qu’ils ne servent plus, même si l’autre continue de travailler.
+• De nombreuses corrections suite à vos signalements : « vas-y fais rouler », « une idée à la con », « Il faudrait que vous nous confirmer », « le reste des photos que j’ai pris », « etre » → être, « un excel » → Excel, « lé gens » → les ; en anglais « I think it's time », « profils » → profiles… Merci à vous !
+```
+
+**English** (Opera "Changelog", Firefox and Thunderbird if an English field is offered):
+
+```text
+• New: the FreeCorrector icon turns grey on a page where checking is off (site turned off, checking turned off everywhere, or the Ctrl+Shift+1 shortcut). An idea from a user.
+• Even lighter: the French and English engines each give their memory back as soon as they are not needed, even while the other one keeps working.
+• Many fixes thanks to your reports, in French and in English ("I think it's time" is no longer flagged, "profils" suggests "profiles", "excel" suggests "Excel"…). Thank you!
+```
+
+**Notes aux testeurs** (Firefox et Thunderbird, en anglais) :
+
+```text
+No account or login is needed. Everything runs locally (CSP connect-src 'self'): no network requests, no data collected, no remote code. Our own code is neither minified nor bundled; the engines in vendor/ are unmodified copies of Grammalecte 2.3.0 and harper.js 2.10.0 (see NOTE_FOR_REVIEWERS.md).
+
+1.3.0 turns the toolbar icon grey, per tab, when checking is off on the page (src/lib/action-icon.js: the top frame's content script reports its state, the background calls action.setIcon with the tab id; grey icons in src/icons/icon-off*). src/engine/host.js now also stops each engine's Web Worker on its own after 3 minutes without use. Otherwise checking rules (src/engine/). No new permission.
+
+Build: download https://github.com/BenjiBurn/FreeCorrector/archive/refs/tags/v1.3.0.zip, run "node scripts/build.js firefox" (or "thunderbird"; Node.js 18+, no dependencies), output in dist/freecorrector-1.3.0-firefox.zip (or -thunderbird.zip).
+
+To test: type "je suis aller au marché" or "The ending was to sad." in any text field (in Thunderbird: in the body of a new message). Then press Ctrl+Shift+1: the toolbar icon turns grey and the underlines go away.
+```
+
+**Détail des changements** (pour nous) :
 
 - L’icône de FreeCorrector devient grise sur une page où la correction est coupée (site désactivé, correction coupée partout ou raccourci Ctrl+Maj+1) ; idée d’un utilisateur.
+- Chaque moteur (français, anglais) s’arrête après 3 minutes sans servir, même si l’autre travaille encore : un paragraphe anglais ne garde plus Harper (~200 Mo) chargé toute la journée.
+- « le reste des photos que j’ai pris », « le genre de filles que j’ai vu », « une part de la tarte que j’ai fait » : l’accord du participe avec « que » est de nouveau souligné (suite du signalement #22).
 
 - « mais vas-y fais rouler » : l’impératif après « vas-y », « allez-y », « viens »… n’est plus souligné (« fait ») ; signalé par un utilisateur.
 - « une idée à la con », « à la papa » : le « la » de ces locutions n’est plus souligné (« le ») ; signalé par un utilisateur.

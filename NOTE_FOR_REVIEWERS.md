@@ -1,4 +1,4 @@
-# Note for reviewers — FreeCorrector 1.2.9
+# Note for reviewers — FreeCorrector 1.3.0
 
 FreeCorrector is a free, open-source (GPL-3.0) spelling and grammar checker for French and
 English. All checking happens locally in the browser: the extension makes **no network
@@ -18,9 +18,9 @@ To rebuild from the source archive (Node.js 18 or later, no dependencies to inst
 
 ```sh
 node scripts/build.js firefox
-# -> dist/firefox/ and dist/freecorrector-1.2.9-firefox.zip
+# -> dist/firefox/ and dist/freecorrector-1.3.0-firefox.zip
 node scripts/build.js thunderbird
-# -> dist/thunderbird/ and dist/freecorrector-1.2.9-thunderbird.zip
+# -> dist/thunderbird/ and dist/freecorrector-1.3.0-thunderbird.zip
 ```
 
 ## Third-party code (unmodified copies)
@@ -54,7 +54,9 @@ it:
 - `engine/`: the checking engines, run in Web Workers started by the background page.
   - `host.js`: routes each paragraph to the French or English engine. Since 1.2.9 it terminates
     the workers after 3 minutes without a check, to give their memory back (on Chromium the
-    offscreen document is closed too); the next focused text field starts them again.
+    offscreen document is closed too); the next focused text field starts them again. Since
+    1.3.0 each engine's worker is also stopped on its own after 3 minutes without use, even while
+    the other one keeps working.
   - `rules.js`, `english-rules.js`, `suggestions.js`, `sentence-rules.js`: our own rules and the
     ranking of suggestions.
 - `data/fr-freq.txt`, `data/en-freq.txt`: word frequency lists from the FrequencyWords project
@@ -66,6 +68,10 @@ it:
   - "Check with FreeCorrector" stores the selection in `storage.local` and opens the editor page with it.
   - "Report a missed mistake" (new in 1.2.8) opens the same report page as the bubble's "Report" button
     (see below) with the selection in the URL fragment: no request, nothing sent until the user clicks "Send".
+- `lib/action-icon.js` (new in 1.3.0): the toolbar icon turns grey, per tab, when checking is off
+  on the page. Without the "tabs" permission, the top frame's content script reports its state
+  (`{ type: "pageState" }`) and the background sets the icon with `action.setIcon({ tabId })`;
+  the grey icons are `icons/icon-off*`. No new permission.
 - `welcome/`: a page opened once, on `runtime.onInstalled` with reason `install` (`lib/welcome.js`).
 - "Report" in the bubble (`content/ui.js`, `fcReportUrl`): opens a tab on the author's website,
   `https://lapigeonnerie.fr/freecorrector/report#r=…`, with the sentence, the underlined word and
