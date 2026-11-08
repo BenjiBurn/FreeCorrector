@@ -15,7 +15,9 @@
 const FC_MAX_TEXT_LENGTH = 50000;
 const FC_RESULT_CACHE_SIZE = 50;
 // Engines left without work this long are stopped to give their memory back
-// (a few hundred MB with both loaded); the next field focus starts them again.
+// (Harper alone holds about 200 MB, Grammalecte about 35 MB); the next field
+// focus starts them again. Each engine on its own: one English paragraph in a
+// day of French does not keep Harper loaded.
 const FC_IDLE_MS = 3 * 60 * 1000;
 
 // Extra Grammalecte rules turned on by the "picky" setting.
@@ -31,6 +33,7 @@ class FcWorkerClient {
     this.options = null; // JSON of the options the worker was initialised with
     this.pending = new Map();
     this.nextId = 1;
+    this.idleTimer = null;
   }
 
   call(type, payload) {
@@ -61,6 +64,8 @@ class FcWorkerClient {
 
   // Starts the worker if needed and (re)initialises it when options change.
   async ensure(options) {
+    clearTimeout(this.idleTimer);
+    this.idleTimer = setTimeout(() => this.stop(), FC_IDLE_MS);
     const json = JSON.stringify(options);
     if (!this.worker) {
       this.start();
@@ -85,6 +90,7 @@ class FcWorkerClient {
   }
 
   stop() {
+    clearTimeout(this.idleTimer);
     if (!this.worker) return;
     this.worker.terminate();
     for (const p of this.pending.values()) p.reject(new Error("engine stopped"));

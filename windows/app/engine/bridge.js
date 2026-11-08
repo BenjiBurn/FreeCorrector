@@ -4,7 +4,7 @@
 // gets { id, … } back; the settings live in this origin's localStorage,
 // shared with the settings window (options/options.html).
 
-/* global fcEngineCheck, fcEngineWarmup, fcGetSettings, fcSetSettings, fcRuleKey */
+/* global fcEngineCheck, fcEngineWarmup, fcGetSettings, fcSetSettings, fcRuleKey, fcOnEnginesIdle: writable */
 
 (() => {
   // engine/sentence-rules.js: shown only when the setting is on (the
@@ -55,8 +55,13 @@
     if (event.key?.startsWith("freecorrector:")) chrome.webview.postMessage({ type: "settings" });
   });
 
-  // Both engines, so the first check does not wait for them (the files are
-  // local here, unlike on the website).
-  fcGetSettings().then((settings) => fcEngineWarmup({ ...settings, language: "auto" }));
+  // The engine of the app's language (?lang=, Windows' language), so the first
+  // check does not wait for it. Not both: Harper alone holds about 200 MB, for
+  // nothing to someone who never writes English. With the "auto" language, the
+  // other engine starts with the first paragraph written in its language.
+  const appLang = new URLSearchParams(location.search).get("lang");
+  // Both engines stopped for being idle: the app closes this page, and WebView2 (Engine.cs).
+  fcOnEnginesIdle = () => chrome.webview.postMessage({ type: "idle" });
+  fcGetSettings().then((settings) => fcEngineWarmup(settings, appLang));
   chrome.webview.postMessage({ type: "ready" });
 })();
