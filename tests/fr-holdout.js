@@ -285,4 +285,21 @@ module.exports = [
   ["Il faudrait que vous nous confirmiez la date.", null, null],
   ["Je ne veux que vous aider.", null, null],
   ["Je ne demande que vous voir heureux.", null, null],
+  // Signalé depuis l'extension (1.2.9) : « etre » proposait « êtres » avant « être » (la vraie faute « accepter » à côté).
+  ["La Wind c'est trop spécial pour etre accepter ?", "etre", "être"],
+  ["Il faut etre patient.", "etre", "être"],
+  ["Il appele sa mère tous les jours.", "appele", "appelle"],
+  // Signalé depuis l'extension (1.2.9) : « un excel » proposait « excès » (nom de logiciel en minuscule).
+  ["On a un excel avec le temps estimé.", "excel", "Excel"],
+  ["Envoie-moi le powerpoint.", "powerpoint", "PowerPoint"],
+  ["Je l'ai vu sur youtube.", "youtube", "YouTube"],
+  ["Excel plante encore.", null, null],
+  ["Il excelle en maths.", null, null],
+  // Signalé depuis l'extension (1.2.9) : « Coucou lé gens » n'était pas souligné (→ « les »).
+  ["Coucou lé gens", "lé", "les"],
+  ["J'ai vu mé amis hier.", "mé", "mes"],
+  ["Cé gens sont gentils.", "Cé", "Ces"],
+  ["On pose le lé de papier peint.", null, null],
+  ["Il lance un dé.", null, null],
+  ["Mé bon, on verra.", "Mé", "Mais"],
 ];

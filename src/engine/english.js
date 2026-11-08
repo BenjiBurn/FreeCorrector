@@ -412,6 +412,11 @@ async function lintParagraph(paragraph) {
       if ((kind === "Spelling" || kind === "Typo") && /[^\x00-\x7F’]/.test(word)) continue;
       // Right after a blanked word ("Siobhán and"): not the start of a sentence.
       if (kind === "Capitalization" && forHarper.slice(0, offset).trimEnd().length !== paragraph.slice(0, offset).trimEnd().length) continue;
+      // "I think it's time to go", "I guess it's money well spent": a verb taking a clause, then
+      // "it is" ("I think its color is wrong", with its verb after the noun, stays flagged).
+      if (kind === "Agreement" && /^it['’]s$/i.test(word) && replacements.every((r) => /^its$/i.test(r)) &&
+          /\b(think|thought|guess|guessed|know|knew|hope|hoped|believe|believed|feel|felt|bet|reckon|suppose|figure|figured|say|said|mean|meant|realize|realized|realise|realised|sure|seems|seemed|heard|agree|agreed)\s+$/i.test(paragraph.slice(Math.max(0, offset - 14), offset)) &&
+          !/^\s+\p{L}+\s+(is|was|are|were|has|had|have|will|would|can|could|should|must|might|may|does|did|\p{L}+(ed|es|s))\b/iu.test(paragraph.slice(end))) continue;
       // "one serving", "one building": a count noun in -ing, not a mass noun.
       if (kind === "Agreement" && replacements.length && replacements.every((r) => / piece of /.test(r)) && /ing$/i.test(word)) continue;
       // Guesses with nothing to offer ("You may be missing a preposition").

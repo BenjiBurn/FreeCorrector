@@ -311,10 +311,14 @@ function fcErrorsAfterRepair(sentence, a, b) {
 // Errors of a sentence with a spelling candidate at `a`, minus a missing hyphen
 // right after it: that is a mistake of its own, shown once the word is fixed.
 // "achete toi" -> "achète" (then "achète-toi"), not "acheté" that hides it.
-function fcCountErrorsForWord(sentence, a) {
+function fcErrorsForWord(sentence, a) {
   return fcSentenceErrors(sentence).filter(
     ([x, y, fix]) => !(x === a && fix && / /.test(sentence.slice(x, y)) && fix === sentence.slice(x, y).replace(/ /g, "-"))
-  ).length;
+  );
+}
+
+function fcCountErrorsForWord(sentence, a) {
+  return fcErrorsForWord(sentence, a).length;
 }
 
 function fcHasErrorAt(text, start, length) {
@@ -362,6 +366,7 @@ function fcRankSuggestions(spellChecker, text, start, length, suggestions, isSpe
   const baseline = fcCountErrors(before + word + after);
   const wordKey = fcSoundKey(word);
   const afterSi = !isSpelling && FC_AFTER_SI.test(before);
+  const accentless = /^[a-z]+$/i.test(word);
 
   const scored = candidates.map((c) => {
     const index = suggestions.indexOf(c);
@@ -378,6 +383,11 @@ function fcRankSuggestions(spellChecker, text, start, length, suggestions, isSpe
       errors: isSpelling ? fcCountErrorsForWord(before + c + after, before.length) : fcCountErrors(before + c + after),
       repaired: isSpelling ? null : fcErrorsAfterRepair(before + c + after, before.length, before.length + c.length),
       caseChange: wordIsLower !== (c === c.toLowerCase()) ? 1 : 0,
+      // Only accents missing ("etre" -> "être"): first, even when the right word brings out a
+      // real mistake next to it ("pour être accepter") that a wrong one hides ("êtres").
+      // Not when the word itself is then wrong: "Il appele" -> "appelle", not "appelé".
+      accentOnly: isSpelling && accentless && fcBase(c) === word &&
+        !fcErrorsForWord(before + c + after, before.length).some(([x, y]) => x < before.length + c.length && before.length < y) ? 0 : 1,
       // For grammar errors, sounding the same is the strongest hint:
       // "parlé" -> "parler" rather than "parle".
       // "si" + conditional is a classic: "si j’aurais" -> "si j’avais".
@@ -396,6 +406,7 @@ function fcRankSuggestions(spellChecker, text, start, length, suggestions, isSpe
   return scored
     .filter((x) => !x.extra || x.errors <= bar)
     .sort((a, b) =>
+      a.accentOnly - b.accentOnly ||
       (isSpelling ? a.errors - b.errors : a.repaired - b.repaired) ||
       a.caseChange - b.caseChange ||
       a.soundTier - b.soundTier ||

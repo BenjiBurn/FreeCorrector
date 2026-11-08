@@ -136,6 +136,16 @@ const COMMON_MISSPELLINGS = {
   boivé: "bu", buvé: "bu", savu: "su", pouvu: "pu", voulé: "voulu", asseyé: "assis", assoyé: "assis",
 };
 
+// Software and services typed in lowercase, missing from the dictionary ("un excel" -> Excel):
+// the dictionary's nearest words are nonsense ("excès", "poseront"). Lowercase only: "Youtube"
+// with its capital passes as a name.
+const FC_BRANDS = Object.fromEntries([
+  "Excel", "PowerPoint", "Outlook", "OneDrive", "SharePoint", "YouTube", "iPhone", "iPad", "WhatsApp",
+  "LinkedIn", "Gmail", "Hotmail", "Yahoo", "Skype", "Slack", "Spotify", "PayPal", "Dropbox", "ChatGPT",
+  "MacBook", "iOS", "macOS", "Messenger", "Twitch", "GitHub", "GitLab", "Jira", "Trello", "Canva",
+  "Photoshop", "Doodle", "WordPress",
+].map((b) => [b.toLowerCase(), b]));
+
 // Plurals of -al / -ail nouns: "chevals" -> chevaux, "festivaux" -> festivals,
 // "vitrails" -> vitraux, "jeus" -> jeux. Only when the result is a real word.
 function irregularPlural(lower) {
@@ -422,6 +432,22 @@ function checkParagraph(paragraph) {
     // "dispo", "resto", "mdr": informal on purpose.
     if (self.FC_INFORMAL_WORDS.has(word.toLowerCase())) continue;
     if (insideEnglishQuote(paragraph, token.nStart)) continue;
+    // (Reached at the start of a sentence too, where a capital is no sign of a name.)
+    const brand = FC_BRANDS[word.toLowerCase()];
+    if (brand === word) continue;
+    if (brand) {
+      spelling.push({
+        offset: token.nStart,
+        length: token.nEnd - token.nStart,
+        word,
+        message: `Nom de marque : « ${brand} ».`,
+        replacements: Object.assign([brand], { only: [brand] }),
+        ruleId: "SPELLING",
+        category: "spelling",
+        label: CATEGORY_LABEL.spelling,
+      });
+      continue;
+    }
     // "soeur", "coeur": most keyboards have no "œ"; a typographic nicety, offered as a
     // style hint (asked by a user). One message for every word (fcRuleKey).
     // ("ex aequo", "et caetera" keep their "ae" in usual spelling: accepted, no hint.)

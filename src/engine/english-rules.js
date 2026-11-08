@@ -2058,6 +2058,10 @@ function roundEightRules(toks, i, paragraph, add, frequency) {
   // (after a verb or a preposition, a noun follows, then a noun, a preposition or the end)
   if (/^(you're|it's)$/.test(t.lower) && prev && !isBoundary(prev) &&
       !/^(that|what|if|because|and|but|or|so|when|since|where|while|until|till|before|after|once|unless|as|than|whether|why|how|who|which|though|although|think|know|hope|guess|sure|said|says|until)$/.test(L1) &&
+      // "Now it's time for lunch", "Maybe it's fate": after an adverb, "it's" is "it is".
+      !(t.lower === "it's" && (/ly$/.test(L1) || /^(now|maybe|perhaps|well|yes|yeah|then|here|there|today|tonight|still|again|also|too|just|anyway|anyways|sometimes|often|always|never|guess|bet|reckon|believe|feel|mean|suppose|figure|say)$/.test(L1))) &&
+      // "it's time to go", "it's time we left": the idiom, not a possessive.
+      !(t.lower === "it's" && R1 === "time" && (isBoundary(next2) || /^(to|for|we|i|you|he|she|they|now|again|already|yet)$/.test(R2))) &&
       lowerNoun(next) && !EN_PAST_VERB(R1, frequency) && !enBaseOfThird(R1) &&
       (isBoundary(next2) || EN_PREP.test(R2) || lowerNoun(next2) && !EN_PAST_VERB(R2, frequency))) {
     if (t.lower === "you're") fix("your", "Did you mean “your” (belonging to you)?");

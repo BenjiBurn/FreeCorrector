@@ -1113,6 +1113,14 @@ function fcCustomRules(paragraph, spellChecker, existing) {
 
     // ---------- SMS and phonetic spellings ----------
 
+    // "Coucou lé gens", "mé amis", "cé gens" -> les, mes, ces: a determiner written as it sounds,
+    // before a plural noun ("un lé de papier peint", "le dé" keep theirs: a determiner before).
+    const soundDet = { lé: "les", mé: "mes", té: "tes", sé: "ses", cé: "ces", dé: "des" }[t.lower];
+    if (soundDet && next && (!prev || /^[.!?…]$/.test(prev.text) || /^\p{Ll}/u.test(t.text)) &&
+        !(prev && fcHas(morph(prev), /:D/)) && fcHas(morph(next), /:[NA]:[mfe]:[pi]/) && !fcHas(morph(next), /:[NA]:[mfe]:s/)) {
+      add(t, soundDet, `Déterminant : « ${soundDet} ».`, true);
+    }
+
     // "Jsuis", "Ya", "Koi", "Sava", "Quesque": whole words written as they sound.
     // "Kel heure" -> Quelle (agrees with the noun)
     const smsBase = FC_SMS_WORDS[t.lower];

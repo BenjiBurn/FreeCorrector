@@ -63,4 +63,12 @@ module.exports = [
   ["I updated my profil yesterday.", "profil", "profile"],
   ["Our profits went up this year.", null, null],
   ["Please update your profile.", null, null],
+  // Signalé depuis l'extension (1.2.9) : « I think it's time » soulignait « it's » (-> its).
+  ["I think it's time to find a new ISP.", null, null],
+  ["Now it's time for lunch.", null, null],
+  ["Maybe it's fate.", null, null],
+  ["I guess it's money well spent.", null, null],
+  ["The dog wagged it's tail.", "it's", "its"],
+  ["I think it's battery died.", "it's", "its"],
+  ["Every department has it's own channel.", "it's", "its"],
 ];

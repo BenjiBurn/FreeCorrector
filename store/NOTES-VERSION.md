@@ -1,8 +1,8 @@
 # Notes de version à coller dans les stores
 
-## 1.2.10 (prochaine version, pas encore publiée)
+## 1.3.0 (prochaine version, pas encore publiée)
 
-Brouillon, à compléter jusqu’à la sortie (numéro à confirmer).
+Brouillon, à compléter jusqu’à la sortie. 1.3.0 et non 1.2.10 : l’icône grise est une nouveauté visible.
 
 - L’icône de FreeCorrector devient grise sur une page où la correction est coupée (site désactivé, correction coupée partout ou raccourci Ctrl+Maj+1) ; idée d’un utilisateur.
 
@@ -11,6 +11,10 @@ Brouillon, à compléter jusqu’à la sortie (numéro à confirmer).
 - « un ordre du jour pour la réunion de demain que j’ai rédigé » : le participe n’est plus accordé d’office avec le dernier nom (« rédigée ») quand un nom plus haut s’accorde déjà avec lui ; signalé par un utilisateur.
 - « Il faudrait que vous nous confirmer » : l’infinitif après « il faut que vous » est souligné (→ « confirmiez ») ; signalé par un utilisateur.
 - Anglais : « profils » propose « profiles » avant « profits » (orthographe française de « -ile ») ; signalé par un utilisateur.
+- Anglais : « I think it's time », « Now it's time for lunch », « Maybe it's fate » : « it's » n’est plus souligné (→ « its ») ; signalé par un utilisateur.
+- « etre » propose « être » en premier, même quand une autre faute suit (« pour etre accepter ») ; signalé par un utilisateur.
+- Les logiciels écrits en minuscules (« un excel », « le powerpoint », « youtube », « iphone »…) proposent leur nom (« Excel », « PowerPoint »…) au lieu de mots sans rapport ; signalé par un utilisateur.
+- « Coucou lé gens », « mé amis », « cé gens » : le déterminant écrit comme il se prononce est souligné (→ « les », « mes », « ces ») ; signalé par un utilisateur.
 
 ## 1.2.9
 
