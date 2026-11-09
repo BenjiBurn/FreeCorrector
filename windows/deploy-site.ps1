@@ -27,8 +27,12 @@ if (-not (Test-Path (Join-Path $Site 'freecorrector-windows.php'))) { throw "$Si
 $sha = (Get-FileHash $file -Algorithm SHA256).Hash.ToLower()
 $tag = "windows-v$version"
 
+# "release not found" on stderr: Windows PowerShell would stop on it.
+$ErrorActionPreference = 'Continue'
 & $Gh release view $tag --repo $repo --json tagName 2>$null | Out-Null
-if ($LASTEXITCODE) {
+$found = $LASTEXITCODE -eq 0
+$ErrorActionPreference = 'Stop'
+if (-not $found) {
   # The release built from what is committed: no local changes in the app.
   if (git -C $root status --porcelain -- windows) { throw 'windows/ a des modifications non commitées : commiter, puis relancer setup.ps1' }
   $notes = Get-Content (Join-Path $PSScriptRoot 'NOTES-VERSION.md') -Raw -Encoding UTF8
