@@ -36,7 +36,7 @@ if (-not $found) {
   # The release built from what is committed: no local changes in the app.
   if (git -C $root status --porcelain -- windows) { throw 'windows/ a des modifications non commitées : commiter, puis relancer setup.ps1' }
   $notes = Get-Content (Join-Path $PSScriptRoot 'NOTES-VERSION.md') -Raw -Encoding UTF8
-  $section = [regex]::Match($notes, "(?ms)^## $([regex]::Escape($version))\s*$(.*?)(?=^## |\z)").Groups[1].Value
+  $section = [regex]::Match($notes, '(?ms)^## ' + [regex]::Escape($version) + '\s*$(.*?)(?=^## |\z)').Groups[1].Value
   $blocks = [regex]::Matches($section, '(?ms)```text\r?\n(.*?)\r?\n```') | ForEach-Object { $_.Groups[1].Value.Trim() }
   if ($blocks.Count -lt 2) { throw "NOTES-VERSION.md : pas de notes FR et EN pour $version" }
   $body = @"
