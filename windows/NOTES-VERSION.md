@@ -4,6 +4,22 @@
 dans le champ « Nouveautés de cette version » de la fiche, en français et en anglais
 (1500 caractères au maximum chacune).
 
+## 0.3.1
+
+Version du site seulement (pas envoyée au Store : rien n'y change pour lui).
+
+**Français** :
+
+```text
+- Mises à jour en un clic : quand une nouvelle version sort, cliquez sur la notification (ou sur « Installer » dans le menu de l'icône) et FreeCorrector s'installe et redémarre tout seul, sans avertissement de Windows. Le fichier est téléchargé depuis GitHub et son empreinte vérifiée avant d'être lancé.
+```
+
+**English** :
+
+```text
+- One-click updates: when a new version is out, click the notification (or "Install" in the icon's menu) and FreeCorrector installs and restarts by itself, with no Windows warning. The file is downloaded from GitHub and its fingerprint checked before it runs.
+```
+
 ## 0.3.0
 
 Aussi la première version téléchargeable sur le site, sans le Store (`windows/setup.ps1`, page

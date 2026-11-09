@@ -1,6 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
 using System.Net.Http;
+using System.Security.Cryptography;
 using System.Text.Json;
 using System.Threading.Tasks;
 using System.Windows.Threading;
@@ -10,9 +13,10 @@ namespace FreeCorrector
 {
     // The app downloaded from lapigeonnerie.fr (the Store updates its own apps):
     // once a day, asks the site for the latest version and says so when there
-    // is a newer one. The request carries the app's version and nothing else
-    // (no identifier, never any text). It can be turned off, at install time
-    // and in the tray menu; the privacy page says so.
+    // is a newer one, which one click installs (InstallAsync). The request
+    // carries the app's version and nothing else (no identifier, never any
+    // text). It can be turned off, at install time and in the tray menu; the
+    // privacy page says so.
     static class Updates
     {
         const string Key = @"Software\LaPigeonnerie\FreeCorrector";
@@ -22,8 +26,19 @@ namespace FreeCorrector
             ?? "https://lapigeonnerie.fr/freecorrector/windows/latest";
         public static readonly string PageUrl = L.T("https://lapigeonnerie.fr/freecorrector/windows", "https://lapigeonnerie.fr/freecorrector/en/windows");
 
+        // The installers: GitHub releases of the repository (windows/deploy-site.ps1),
+        // never the site, which only says which version is the latest.
+        // FREECORRECTOR_RELEASES_URL: another server (tests).
+        static readonly string? releasesTest = Environment.GetEnvironmentVariable("FREECORRECTOR_RELEASES_URL");
+        static readonly string ReleaseUrl = releasesTest ?? "https://api.github.com/repos/BenjiBurn/FreeCorrector/releases/tags/windows-v";
+        const string DownloadPrefix = "https://github.com/BenjiBurn/FreeCorrector/releases/download/";
+        static readonly string UpdateFolder = Path.Combine(Path.GetTempPath(), "FreeCorrector-update");
+
         static readonly HttpClient http = new() { Timeout = TimeSpan.FromSeconds(20) };
+        static readonly HttpClient download = new() { Timeout = TimeSpan.FromMinutes(15) };
         static DispatcherTimer? timer;
+
+        public static bool Installing { get; private set; }
 
         public static bool Available => !Startup.Packaged;
 
@@ -49,6 +64,10 @@ namespace FreeCorrector
         {
             if (!Available) return;
             http.DefaultRequestHeaders.UserAgent.ParseAdd($"FreeCorrector/{Program.Version} (Windows)");
+            download.DefaultRequestHeaders.UserAgent.ParseAdd($"FreeCorrector/{Program.Version} (Windows)");
+            // The installer of the last update, now installed.
+            try { if (Directory.Exists(UpdateFolder)) Directory.Delete(UpdateFolder, true); }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException) { }
             // A first look a minute after starting (not while Windows itself
             // starts), then every hour: a day after the last answer, it asks again.
             timer = new DispatcherTimer { Interval = TimeSpan.FromMinutes(1) };
@@ -82,6 +101,57 @@ namespace FreeCorrector
             catch (Exception e) when (e is HttpRequestException or TaskCanceledException or JsonException or InvalidOperationException or KeyNotFoundException)
             {
                 Log.Write("update check: " + e.Message);
+            }
+        }
+
+        // One click on the notification or in the menu: the installer of the newer
+        // version, from its GitHub release, checked against the SHA-256 that
+        // GitHub gives (not the site: a hacked site could not make the app run
+        // anything else), then run without any window. Downloaded by the app and
+        // not by a browser, it carries no "from the Internet" mark: Windows does
+        // not warn. The installer closes this app (FreeCorrector.exe --quit),
+        // replaces it and starts the new version, with the options chosen at the
+        // first installation. Throws when something fails: the caller offers the
+        // download page instead.
+        public static async Task InstallAsync()
+        {
+            if (Newer is not { } version || Installing) return;
+            Installing = true;
+            try
+            {
+                var name = $"freecorrector-{version}-windows-x64-setup.exe";
+                using var release = JsonDocument.Parse(await http.GetStringAsync(ReleaseUrl + version));
+                string? url = null, digest = null;
+                foreach (var asset in release.RootElement.GetProperty("assets").EnumerateArray())
+                {
+                    if (asset.GetProperty("name").GetString() != name) continue;
+                    url = asset.GetProperty("browser_download_url").GetString();
+                    digest = asset.TryGetProperty("digest", out var d) ? d.GetString() : null;
+                }
+                if (url == null || (releasesTest == null && !url.StartsWith(DownloadPrefix, StringComparison.Ordinal)))
+                    throw new InvalidDataException($"{name}: not in the release");
+                if (digest == null || !digest.StartsWith("sha256:", StringComparison.Ordinal))
+                    throw new InvalidDataException($"{name}: no SHA-256 from GitHub");
+
+                Directory.CreateDirectory(UpdateFolder);
+                var file = Path.Combine(UpdateFolder, name);
+                await using (var source = await download.GetStreamAsync(url))
+                await using (var target = File.Create(file))
+                    await source.CopyToAsync(target);
+                string sha;
+                await using (var written = File.OpenRead(file))
+                    sha = Convert.ToHexString(await SHA256.HashDataAsync(written)).ToLowerInvariant();
+                if ("sha256:" + sha != digest)
+                {
+                    File.Delete(file);
+                    throw new InvalidDataException($"{name}: SHA-256 {sha}, GitHub says {digest}");
+                }
+                Log.Write($"update: installing {version}");
+                Process.Start(new ProcessStartInfo(file, "/VERYSILENT /SUPPRESSMSGBOXES /NORESTART") { UseShellExecute = false });
+            }
+            finally
+            {
+                Installing = false;
             }
         }
 

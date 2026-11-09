@@ -218,25 +218,52 @@ namespace FreeCorrector
             };
             tray.DoubleClick += (_, _) => SettingsWindow.Show(engine);
 
-            // A newer version on the site: at the top of the menu, and said once in a notification.
+            // A newer version on the site: at the top of the menu, and said once in a
+            // notification. One click on either installs it (Updates.InstallAsync).
+            Forms.ToolStripMenuItem? updateItem = null;
+            Action balloonClick = () => { };
+            tray.BalloonTipClicked += (_, _) => balloonClick();
+            string InstallLabel() => L.T($"Installer FreeCorrector {Updates.Newer}", $"Install FreeCorrector {Updates.Newer}");
+            async void InstallUpdate()
+            {
+                if (Updates.Installing || updateItem == null) return;
+                updateItem.Enabled = false;
+                updateItem.Text = L.T($"Installation de FreeCorrector {Updates.Newer}…", $"Installing FreeCorrector {Updates.Newer}…");
+                balloonClick = () => { };
+                tray.ShowBalloonTip(10000, "FreeCorrector", L.T("Téléchargement de la mise à jour… FreeCorrector redémarrera tout seul dans un instant.",
+                    "Downloading the update… FreeCorrector will restart by itself in a moment."), Forms.ToolTipIcon.Info);
+                try
+                {
+                    await Updates.InstallAsync();
+                }
+                // Blocked by a company's rules, offline, a wrong file: the page, as before.
+                catch (Exception e)
+                {
+                    Log.Write("update install: " + e.Message);
+                    updateItem.Enabled = true;
+                    updateItem.Text = InstallLabel();
+                    balloonClick = OpenDownloadPage;
+                    tray.ShowBalloonTip(15000, L.T("Mise à jour impossible", "Update failed"),
+                        L.T("La mise à jour n'a pas pu s'installer. Cliquez ici pour la télécharger depuis le site.",
+                            "The update could not be installed. Click here to download it from the website."), Forms.ToolTipIcon.Warning);
+                }
+            }
             Updates.Found += () =>
             {
-                var item = new Forms.ToolStripMenuItem(L.T($"Télécharger FreeCorrector {Updates.Newer}", $"Download FreeCorrector {Updates.Newer}"))
-                {
-                    Font = new System.Drawing.Font(menu.Font, System.Drawing.FontStyle.Bold),
-                };
-                item.Click += (_, _) => OpenDownloadPage();
-                if (menu.Items[0].Tag as string == "update") menu.Items.RemoveAt(0);
-                item.Tag = "update";
-                menu.Items.Insert(0, item);
+                if (updateItem != null) menu.Items.Remove(updateItem);
+                updateItem = new Forms.ToolStripMenuItem(InstallLabel()) { Font = new System.Drawing.Font(menu.Font, System.Drawing.FontStyle.Bold) };
+                updateItem.Click += (_, _) => InstallUpdate();
+                menu.Items.Insert(0, updateItem);
                 if (Updates.Told) return;
                 Updates.Told = true;
+                balloonClick = InstallUpdate;
                 tray.ShowBalloonTip(15000, L.T("Nouvelle version de FreeCorrector", "New FreeCorrector version"),
-                    L.T($"FreeCorrector {Updates.Newer} est disponible. Cliquez ici pour la télécharger.",
-                        $"FreeCorrector {Updates.Newer} is available. Click here to download it."), Forms.ToolTipIcon.Info);
+                    L.T($"FreeCorrector {Updates.Newer} est disponible. Cliquez ici pour l'installer.",
+                        $"FreeCorrector {Updates.Newer} is available. Click here to install it."), Forms.ToolTipIcon.Info);
             };
-            tray.BalloonTipClicked += (_, _) => OpenDownloadPage();
             Updates.Start();
+            // FREECORRECTOR_UPDATE_INSTALL=1 (tests): installs as soon as a newer version is found, as the click would.
+            if (Environment.GetEnvironmentVariable("FREECORRECTOR_UPDATE_INSTALL") == "1") Updates.Found += InstallUpdate;
             return tray;
         }
 
