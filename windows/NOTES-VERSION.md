@@ -4,6 +4,26 @@
 dans le champ « Nouveautés de cette version » de la fiche, en français et en anglais
 (1500 caractères au maximum chacune).
 
+## 0.3.0
+
+Aussi la première version téléchargeable sur le site, sans le Store (`windows/setup.ps1`, page
+lapigeonnerie.fr/freecorrector/windows). Celle-là seule recherche les mises à jour (`Updates.cs`) ;
+celle du Store n'envoie toujours rien.
+
+**Français** :
+
+```text
+- FreeCorrector pour Windows peut maintenant aussi s'installer sans le Microsoft Store, pour les PC où il est bloqué (souvent en entreprise) : lapigeonnerie.fr/freecorrector/windows
+- L'application a maintenant sa propre icône partout dans Windows (Gestionnaire des tâches, etc.).
+```
+
+**English** :
+
+```text
+- FreeCorrector for Windows can now also be installed without the Microsoft Store, on PCs where it is blocked (often at work): lapigeonnerie.fr/freecorrector/en/windows
+- The app now has its own icon everywhere in Windows (Task Manager, etc.).
+```
+
 ## 0.2.0
 
 **Français** :

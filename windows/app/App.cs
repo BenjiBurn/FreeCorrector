@@ -17,16 +17,20 @@ namespace FreeCorrector
     {
         public static readonly string Version = typeof(Program).Assembly.GetName().Version!.ToString(3);
         public static bool Probing { get; private set; }
+        const string MutexName = "FreeCorrector.Windows";
         const string ShowSettingsEvent = "FreeCorrector.Windows.ShowSettings";
+        const string QuitEvent = "FreeCorrector.Windows.Quit";
 
         [STAThread]
         static void Main(string[] args)
         {
             // FreeCorrector.exe --probe <window handle>: see Watcher.Probe.
             // FreeCorrector.exe --settings: opens the settings window too.
+            // FreeCorrector.exe --quit: closes the running app (the installer, before replacing its files).
+            if (args.Contains("--quit")) { Quit(); return; }
             var probe = args.Length == 2 && args[0] == "--probe" ? new IntPtr(long.Parse(args[1])) : IntPtr.Zero;
             Probing = probe != IntPtr.Zero;
-            using var mutex = new Mutex(true, "FreeCorrector.Windows", out var first);
+            using var mutex = new Mutex(true, MutexName, out var first);
             if (!first && probe == IntPtr.Zero)
             {
                 // Started again (from the Start menu…): the running app shows its settings.
@@ -54,6 +58,23 @@ namespace FreeCorrector
                 }
             };
             app.Run();
+        }
+
+        // Asks the running app to quit, and returns once it is gone (10 s at most).
+        static void Quit()
+        {
+            if (!EventWaitHandle.TryOpenExisting(QuitEvent, out var quit)) return;
+            using (quit) quit.Set();
+            if (!Mutex.TryOpenExisting(MutexName, out var mutex)) return;
+            using (mutex)
+            {
+                try
+                {
+                    if (mutex.WaitOne(TimeSpan.FromSeconds(10))) mutex.ReleaseMutex();
+                }
+                // Its process ended without releasing it, the normal case: ours now, let go of it.
+                catch (AbandonedMutexException) { mutex.ReleaseMutex(); }
+            }
         }
 
         static async Task StartAsync(Application app, IntPtr probe, bool settingsAtStart)
@@ -101,6 +122,8 @@ namespace FreeCorrector
             if (settingsAtStart) SettingsWindow.Show(engine);
             var showSettings = new EventWaitHandle(false, EventResetMode.AutoReset, ShowSettingsEvent);
             ThreadPool.RegisterWaitForSingleObject(showSettings, (_, _) => app.Dispatcher.BeginInvoke(() => SettingsWindow.Show(engine)), null, -1, false);
+            var quit = new EventWaitHandle(false, EventResetMode.AutoReset, QuitEvent);
+            ThreadPool.RegisterWaitForSingleObject(quit, (_, _) => app.Dispatcher.BeginInvoke(() => app.Shutdown()), null, -1, true);
             app.Exit += (_, _) =>
             {
                 tray.Visible = false;
@@ -174,6 +197,16 @@ namespace FreeCorrector
             menu.Opening += async (_, _) => startup.Checked = await Startup.IsOnAsync();
             startup.Click += async (_, _) => startup.Checked = await Startup.SetAsync(startup.Checked);
             menu.Items.Add(startup);
+            if (Updates.Available)
+            {
+                var checkUpdates = new Forms.ToolStripMenuItem(L.T("Rechercher les mises à jour", "Check for updates")) { CheckOnClick = true, Checked = Updates.On };
+                checkUpdates.Click += async (_, _) =>
+                {
+                    Updates.On = checkUpdates.Checked;
+                    if (Updates.On) await Updates.CheckAsync(true);
+                };
+                menu.Items.Add(checkUpdates);
+            }
             menu.Items.Add(L.T("Quitter", "Quit"), null, (_, _) => app.Shutdown());
 
             var tray = new Forms.NotifyIcon
@@ -184,8 +217,31 @@ namespace FreeCorrector
                 Visible = true,
             };
             tray.DoubleClick += (_, _) => SettingsWindow.Show(engine);
+
+            // A newer version on the site: at the top of the menu, and said once in a notification.
+            Updates.Found += () =>
+            {
+                var item = new Forms.ToolStripMenuItem(L.T($"Télécharger FreeCorrector {Updates.Newer}", $"Download FreeCorrector {Updates.Newer}"))
+                {
+                    Font = new System.Drawing.Font(menu.Font, System.Drawing.FontStyle.Bold),
+                };
+                item.Click += (_, _) => OpenDownloadPage();
+                if (menu.Items[0].Tag as string == "update") menu.Items.RemoveAt(0);
+                item.Tag = "update";
+                menu.Items.Insert(0, item);
+                if (Updates.Told) return;
+                Updates.Told = true;
+                tray.ShowBalloonTip(15000, L.T("Nouvelle version de FreeCorrector", "New FreeCorrector version"),
+                    L.T($"FreeCorrector {Updates.Newer} est disponible. Cliquez ici pour la télécharger.",
+                        $"FreeCorrector {Updates.Newer} is available. Click here to download it."), Forms.ToolTipIcon.Info);
+            };
+            tray.BalloonTipClicked += (_, _) => OpenDownloadPage();
+            Updates.Start();
             return tray;
         }
+
+        static void OpenDownloadPage() =>
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(Updates.PageUrl) { UseShellExecute = true });
 
         static System.Drawing.Icon LoadIcon(string png)
         {

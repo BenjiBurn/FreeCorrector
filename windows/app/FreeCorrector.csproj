@@ -16,11 +16,13 @@
     <Nullable>enable</Nullable>
     <AssemblyName>FreeCorrector</AssemblyName>
     <RootNamespace>FreeCorrector</RootNamespace>
-    <Version>0.2.0</Version>
+    <Version>0.3.0</Version>
     <Product>FreeCorrector</Product>
     <Company>BenjiBurn</Company>
     <Copyright>GPL v3 · BenjiBurn</Copyright>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <!-- Drawn from src/icons/icon.svg by tools/make-icon.ps1. -->
+    <ApplicationIcon>icon.ico</ApplicationIcon>
     <!-- The DPI mode stays in app.manifest: the windows are WPF, Windows Forms only gives the tray icon. -->
     <NoWarn>$(NoWarn);WFO0003</NoWarn>
     <SatelliteResourceLanguages>fr;en</SatelliteResourceLanguages>
