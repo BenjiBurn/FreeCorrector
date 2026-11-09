@@ -26,6 +26,9 @@
     <!-- The DPI mode stays in app.manifest: the windows are WPF, Windows Forms only gives the tray icon. -->
     <NoWarn>$(NoWarn);WFO0003</NoWarn>
     <SatelliteResourceLanguages>fr;en</SatelliteResourceLanguages>
+    <!-- The builds handed to users: no debug symbols, so no path of the building
+         PC (C:\Users\<account>\…) written into FreeCorrector.dll. -->
+    <DebugType Condition="'$(Configuration)' == 'Release'">none</DebugType>
     <InteropDir>$(MSBuildProjectDirectory)\obj\interop</InteropDir>
   </PropertyGroup>
 
