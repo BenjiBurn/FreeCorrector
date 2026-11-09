@@ -1,4 +1,4 @@
-# Publishes the installer built by windows/setup.ps1 for the download page
+﻿# Publishes the installer built by windows/setup.ps1 for the download page
 # lapigeonnerie.fr/freecorrector/windows:
 #   windows/deploy-site.ps1 C:/wamp64/www/lapigeonnerie
 # 1. a GitHub release of the repository, tag windows-v<version> on the current
