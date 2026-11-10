@@ -5,6 +5,9 @@
 Brouillon, à compléter jusqu’à la sortie.
 
 - « la 1ere », « mes 1eres », « la 2eme » : le nombre ordinal est souligné en entier et corrigé en « 1ʳᵉ », « 1ʳᵉˢ », « 2ᵉ » (au lieu de proposer « erre » pour « ere ») ; signalé par un utilisateur.
+- « … » Peux tu m’en dire plus ? », « ou puis je l’acheter ? » : au milieu d’une phrase, l’inversion sans trait d’union est soulignée (→ « Peux-tu », « puis-je ») au lieu de conjuguer l’infinitif (« dis », « achète ») ; signalé deux fois.
+- Mode exigeant : un mot répété dans une citation entre guillemets n’est plus signalé, et l’alerte de répétition ne propose plus de mot sans rapport (« produit » → « produis ») ; signalé par un utilisateur.
+- « (alcool, vitesse, contrôle technique, ...) » : la virgule avant les points de suspension n’est plus signalée qu’en mode exigeant, avec la bonne correction ; signalé par un utilisateur.
 
 ## 1.3.0
 

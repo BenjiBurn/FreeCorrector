@@ -309,4 +309,13 @@ module.exports = [
   ["C'est la 1re fois.", null, null],
   ["Ce sont mes 1res vacances.", null, null],
   ["Une ère nouvelle commence.", null, null],
+  // Signalé depuis l'extension (1.3.0) : inversion sans trait d'union au milieu d'une phrase, l'infinitif était conjugué (« dire » → « dis », « acheter » → « achète »).
+  ["« la désintégration extrêmement rare d’une particule suscite l’espoir » Peux tu m’en dire plus ?", "Peux tu", "Peux-tu"],
+  ["Olimpia Splendid Air Pro 14 HP ou puis je l’acheter ?", "puis je", "puis-je"],
+  ["Et va il nous aider ?", "va il", "va-t-il"],
+  ["Bonjour, peux-tu me dire où il est ?", null, null],
+  ["Il faut que tu manger avant de partir.", "manger", "manges"],
+  // Signalé depuis l'extension (1.3.0) : « contrôle technique, ... » signalé hors mode exigeant (virgule avant les points de suspension).
+  ["(alcool, vitesse, contrôle technique, ...)", null, null],
+  ["Pommes, poires, …", null, null],
 ];

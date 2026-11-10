@@ -624,6 +624,48 @@ function checkParagraph(paragraph) {
       const que = [...paragraph.slice(0, err.nStart).matchAll(/(?<![\p{L}])qu(?:e(?![\p{L}])|['’])/giu)].pop();
       if (que && fcEarlierNounAgrees(spellChecker, paragraph.slice(0, que.index), m.word)) continue;
     }
+    // "(alcool, vitesse, contrôle technique, ...)": a comma before the ellipsis of a list is
+    // common, and only fine typography drops it. The fix keeps the dots ("technique...").
+    if (/ponctuation_superflue|virgule_avant_points_suspension/.test(m.ruleId) && /^,\s*[.…]$/.test(m.word)) {
+      if (!picky) continue;
+      m.replacements = [m.word.slice(-1)];
+      m.message = "Typographie : pas de virgule avant les points de suspension.";
+    }
+    // Picky repetitions: a quotation is someone else's words ("la fiche produit indique :
+    // « Ce produit n’est plus disponible »"), so only the writer's own words count. And no
+    // fix to offer: the ranking would otherwise make up verb forms ("produit" -> produis).
+    if (/redondances/.test(m.ruleId)) {
+      const own = paragraph.replace(/«[^»]*»|“[^”]*”|"[^"]*"/g, (q) => " ".repeat(q.length));
+      if (own.slice(err.nStart, err.nEnd) !== m.word) continue;
+      const word = m.word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      if ((own.match(new RegExp(`(?<![\\p{L}\\p{M}])${word}(?![\\p{L}\\p{M}])`, "giu")) ?? []).length < 2) continue;
+      // One alert per repetition: the first word already says it.
+      if (errors.some((e) => e.nStart < err.nStart && /redondances/.test(e.sRuleId) &&
+          paragraph.slice(e.nStart, e.nEnd).toLowerCase() === m.word.toLowerCase())) continue;
+      m.replacements = Object.assign([], { only: [] });
+    }
+    // "… » Peux tu m’en dire plus ?", "ou puis je l’acheter ?": an inversion without its hyphen,
+    // read as subject + verb, so the infinitive gets conjugated ("dis", "achète"). The hyphen is
+    // the mistake (Grammalecte finds it at the start of a sentence, not further in).
+    if (/conj_/.test(m.ruleId) && spellChecker.getMorph(m.word.toLowerCase()).some((x) => /:V[^/]*:Y/.test(x))) {
+      const inv = /(^|[^\p{L}’'-])(\p{L}+)\s+(je|tu|il|elle|on|nous|vous|ils|elles)\s+(?:(?:me|te|se|le|la|les|lui|leur|nous|vous|en|y)\s+|[mtsl]['’]\s*)*$/iu
+        .exec(paragraph.slice(Math.max(0, err.nStart - 40), err.nStart));
+      if (inv && spellChecker.getMorph(inv[2].toLowerCase()).some((x) => /:V[^/]*:(Ip|Iq|If|K)/.test(x))) {
+        const start = Math.max(0, err.nStart - 40) + inv.index + inv[1].length;
+        const end = start + inv[2].length + 1 + paragraph.slice(start + inv[2].length + 1).search(/\s/);
+        if (errors.some((e) => e !== err && e.nStart < end && start < e.nEnd)) continue;
+        const pronoun = inv[3];
+        const joint = /^(il|elle|on)$/i.test(pronoun) && /[aeiou]$/i.test(inv[2]) ? "-t-" : "-";
+        Object.assign(m, {
+          offset: start,
+          length: end - start,
+          word: paragraph.slice(start, end),
+          message: "Forme interrogative ? Mettez un trait d’union.",
+          replacements: [`${inv[2]}${joint}${pronoun}`],
+          ruleId: "gv2__inte_union_fc",
+        });
+      }
+    }
     // "Ne vend pas ta voiture" -> vends, the imperative the message asks for, not "vendent".
     if (/imp_verbe/.test(m.ruleId) && m.replacements.length) m.replacements.only = [...m.replacements];
     // Optional commas ("passée chez toi, mais") are style, for picky mode.
