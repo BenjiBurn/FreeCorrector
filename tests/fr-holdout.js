@@ -302,4 +302,11 @@ module.exports = [
   ["On pose le lé de papier peint.", null, null],
   ["Il lance un dé.", null, null],
   ["Mé bon, on verra.", "Mé", "Mais"],
+  // Signalé depuis l'extension (1.3.0) : « la 1ere » proposait « erre » pour « ere » (→ « 1ʳᵉ »).
+  ["@leblogauto C'est quoi la 1ere qui ressemble à une 300SL ?", "1ere", "1ʳᵉ"],
+  ["Ce sont mes 1eres vacances.", "1eres", "1ʳᵉˢ"],
+  ["C'est la 2eme fois.", "2eme", "2ᵉ"],
+  ["C'est la 1re fois.", null, null],
+  ["Ce sont mes 1res vacances.", null, null],
+  ["Une ère nouvelle commence.", null, null],
 ];

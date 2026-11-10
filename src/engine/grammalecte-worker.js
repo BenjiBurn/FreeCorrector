@@ -432,6 +432,21 @@ function checkParagraph(paragraph) {
     // "dispo", "resto", "mdr": informal on purpose.
     if (self.FC_INFORMAL_WORDS.has(word.toLowerCase())) continue;
     if (insideEnglishQuote(paragraph, token.nStart)) continue;
+    // "la 1ere": the ordinal "1ʳᵉ" (Grammalecte only knows "1ère"), not "ere" -> erre.
+    const first = /^ere(s?)$/i.exec(word);
+    if (first && /(^|[^\p{N}])1$/u.test(paragraph.slice(0, token.nStart))) {
+      spelling.push({
+        offset: token.nStart - 1,
+        length: token.nEnd - token.nStart + 1,
+        word: "1" + word,
+        message: "Nombre ordinal. Premier : 1ᵉʳ. Première : 1ʳᵉ. Premiers : 1ᵉʳˢ. Premières : 1ʳᵉˢ.",
+        replacements: Object.assign([first[1] ? "1ʳᵉˢ" : "1ʳᵉ"], { only: [first[1] ? "1ʳᵉˢ" : "1ʳᵉ"] }),
+        ruleId: "FC_ORDINAL",
+        category: "typo",
+        label: CATEGORY_LABEL.typo,
+      });
+      continue;
+    }
     // (Reached at the start of a sentence too, where a capital is no sign of a name.)
     const brand = FC_BRANDS[word.toLowerCase()];
     if (brand === word) continue;
@@ -631,6 +646,12 @@ function checkParagraph(paragraph) {
           return m.word[0] === m.word[0].toUpperCase() ? low[0].toUpperCase() + low.slice(1) : low;
         });
       }
+    }
+    // "la 1ere", "le 2eme": the ordinal ("1ʳᵉ") is the fix, not the letters after the digit ("ere" -> erre).
+    if (/typo_ordinaux/.test(m.ruleId)) {
+      for (let k = spelling.length - 1; k >= 0; k--) if (overlaps(spelling[k], m)) spelling.splice(k, 1);
+      grammar.push(m);
+      continue;
     }
     // An unknown word is the more useful report; drop grammar noise on top of it.
     if (!spelling.some((s) => overlaps(s, m))) grammar.push(m);

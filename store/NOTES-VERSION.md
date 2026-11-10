@@ -1,5 +1,11 @@
 # Notes de version à coller dans les stores
 
+## 1.3.1 (prochaine version, pas encore publiée)
+
+Brouillon, à compléter jusqu’à la sortie.
+
+- « la 1ere », « mes 1eres », « la 2eme » : le nombre ordinal est souligné en entier et corrigé en « 1ʳᵉ », « 1ʳᵉˢ », « 2ᵉ » (au lieu de proposer « erre » pour « ere ») ; signalé par un utilisateur.
+
 ## 1.3.0
 
 1.3.0 et non 1.2.10 : l’icône grise est une nouveauté visible.
