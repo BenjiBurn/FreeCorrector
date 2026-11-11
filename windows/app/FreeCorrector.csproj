@@ -16,7 +16,7 @@
     <Nullable>enable</Nullable>
     <AssemblyName>FreeCorrector</AssemblyName>
     <RootNamespace>FreeCorrector</RootNamespace>
-    <Version>0.3.1</Version>
+    <Version>0.4.0</Version>
     <Product>FreeCorrector</Product>
     <Company>BenjiBurn</Company>
     <Copyright>GPL v3 · BenjiBurn</Copyright>

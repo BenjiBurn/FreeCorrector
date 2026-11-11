@@ -4,6 +4,25 @@
 dans le champ « Nouveautés de cette version » de la fiche, en français et en anglais
 (1500 caractères au maximum chacune).
 
+## 0.4.0
+
+Envoyée au Microsoft Store (la dernière version du Store était la 0.2.0) et au site. Nouveau aussi, non
+annoncé : la version du Store propose une fois de laisser un avis, après 100 corrections (`Review.cs`).
+
+**Français** :
+
+```text
+- De nombreuses corrections suite à vos signalements : « une idée à la con », « Il faudrait que vous nous confirmer », « le reste des photos que j'ai pris », « un excel » → Excel, « lé gens » → les, « la 1ere » → 1ʳᵉ, « Peux tu m'en dire plus ? » → Peux-tu ; en anglais « I think it's time » n'est plus souligné, « profils » → profiles… Merci à vous !
+- L'application a maintenant sa propre icône partout dans Windows (Gestionnaire des tâches, etc.).
+```
+
+**English** :
+
+```text
+- Many fixes thanks to your reports, in French and in English: "I think it's time" is no longer flagged, "profils" suggests "profiles", "excel" suggests "Excel", "la 1ere" becomes "1ʳᵉ"… Thank you!
+- The app now has its own icon everywhere in Windows (Task Manager, etc.).
+```
+
 ## 0.3.1
 
 Version du site seulement (pas envoyée au Store : rien n'y change pour lui).

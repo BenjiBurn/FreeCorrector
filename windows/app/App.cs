@@ -110,7 +110,7 @@ namespace FreeCorrector
                 overlay.Draw(list);
                 if (card.IsVisible && !list.Any(card.Shows)) card.Hide();
             }));
-            card.Replace = (match, replacement) => watcher.Replace(match, replacement);
+            card.Replace = (match, replacement) => { watcher.Replace(match, replacement); Review.Count(); };
             card.Ignore = match => watcher.Ignore(match);
             card.AddWord = async match => { await engine.AddWordAsync(match.Word); watcher.Recheck(); };
             card.DisableRule = async match => { await engine.DisableRuleAsync(match); watcher.Recheck(); };
@@ -262,6 +262,32 @@ namespace FreeCorrector
                         $"FreeCorrector {Updates.Newer} is available. Click here to install it."), Forms.ToolTipIcon.Info);
             };
             Updates.Start();
+
+            // "Leave a review" (Review.cs): an item at the top of the menu once
+            // enough fixes were made, and a notification the first time (and once more).
+            Forms.ToolStripMenuItem? reviewItem = null;
+            void OpenReview()
+            {
+                Review.Open();
+                if (reviewItem != null) menu.Items.Remove(reviewItem);
+                reviewItem = null;
+                balloonClick = () => { };
+            }
+            Review.Due += notify =>
+            {
+                if (reviewItem == null)
+                {
+                    reviewItem = new Forms.ToolStripMenuItem(L.T("★ Laisser un avis sur le Microsoft Store", "★ Leave a review on the Microsoft Store"));
+                    reviewItem.Click += (_, _) => OpenReview();
+                    menu.Items.Insert(0, reviewItem);
+                }
+                if (!notify || Updates.Installing) return;
+                balloonClick = OpenReview;
+                tray.ShowBalloonTip(15000, L.T("FreeCorrector vous rend service ?", "Is FreeCorrector helping you?"),
+                    L.T("Un avis sur le Microsoft Store aide d'autres personnes à le découvrir. Cliquez ici pour en laisser un.",
+                        "A review on the Microsoft Store helps other people find it. Click here to leave one."), Forms.ToolTipIcon.Info);
+            };
+            Review.Start();
             // FREECORRECTOR_UPDATE_INSTALL=1 (tests): installs as soon as a newer version is found, as the click would.
             if (Environment.GetEnvironmentVariable("FREECORRECTOR_UPDATE_INSTALL") == "1") Updates.Found += InstallUpdate;
             return tray;
