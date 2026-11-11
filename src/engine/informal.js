@@ -90,4 +90,5 @@ self.FC_LOAN_PHRASES = new RegExp(`(?<![\\p{L}'’-])(?:${[
   "s['’]il vous plaît", "merci beaucoup", "la dolce vita", "dolce vita", "dolce far niente", "prima donna",
   "al fresco", "panna cotta", "sotto voce", "dim sum", "pad thai", "tom yum", "nasi goreng", "pastéis de nata", "pastel de nata", "pho bo", "banh mi", "tarte tatin", "mi casa es su casa", "hasta la vista", "hasta luego", "persona non grata",
   "sine qua non", "quid pro quo", "terra incognita", "magnum opus", "modus operandi", "ad nauseam", "ad infinitum",
+  "annus mirabilis", "annus horribilis", "sui generis", "alma mater", "bon courage", "bonne chance", "bonne journée", "bonne journee",
 ].join("|")})(?![\\p{L}'’-])`, "giu");

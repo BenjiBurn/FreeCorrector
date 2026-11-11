@@ -166,7 +166,7 @@ if (require.main === module) {
     }
     if (only !== "fr") {
       const call = await loadEnglish();
-      for (const corpus of ["./en-corpus.js", "./en-holdout.js", "./en-blind2.js", "./en-blind3.js", "./en-blind4.js", "./en-dumb.js", "./en-dumb2.js", "./en-blind-agent-c.js", "./en-blind-agent-f.js", "./en-blind-agent-i.js", "./mix-blind-agent-k.js", "./en-blind-agent-m.js", "./en-blind-agent-r.js", "./en-blind-agent-s.js", "./en-blind-agent-v.js", "./en-blind-agent-y.js", "./en-blind-agent-ab.js", "./en-blind-agent-ae.js", "./clean-messages.js", "./clean-agent-d.js", "./clean-agent-g.js", "./clean-agent-j.js", "./clean-agent-n.js", "./clean-agent-t.js", "./clean-agent-z.js", "./clean-agent-ac.js", "./clean-agent-af.js"]) {
+      for (const corpus of ["./en-corpus.js", "./en-holdout.js", "./en-blind2.js", "./en-blind3.js", "./en-blind4.js", "./en-dumb.js", "./en-dumb2.js", "./en-blind-agent-c.js", "./en-blind-agent-f.js", "./en-blind-agent-i.js", "./mix-blind-agent-k.js", "./en-blind-agent-m.js", "./en-blind-agent-r.js", "./en-blind-agent-s.js", "./en-blind-agent-v.js", "./en-blind-agent-y.js", "./en-blind-agent-ab.js", "./en-blind-agent-ae.js", "./en-blind-agent-ag.js", "./clean-messages.js", "./clean-agent-d.js", "./clean-agent-g.js", "./clean-agent-j.js", "./clean-agent-n.js", "./clean-agent-t.js", "./clean-agent-z.js", "./clean-agent-ac.js", "./clean-agent-af.js"]) {
         if (!wanted(corpus) || !fs.existsSync(path.join(__dirname, corpus))) continue;
         console.log(`\n=== ${corpus}`);
         await score(call, require(corpus).en ?? require(corpus), verbose);

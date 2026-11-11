@@ -49,7 +49,7 @@ const EN_MISSPELLINGS = {
   restaraunt: "restaurant", rythm: "rhythm", sargent: "sergeant", similiar: "similar", sincerly: "sincerely", speach: "speech",
   stregth: "strength", suprise: "surprise", suprised: "surprised", temperture: "temperature", thier: "their", tought: "taught",
   truley: "truly", unfortunatly: "unfortunately", usualy: "usually", wonderfull: "wonderful", writting: "writing",
-  wether: "whether", adress: "address", alot: "a lot", alright: "alright",
+  wether: "whether", adress: "address", alot: "a lot", alright: "alright", datas: "data",
   // regularized irregular verbs and plurals
   teached: "taught", buyed: "bought", thinked: "thought", goed: "went", runned: "ran", catched: "caught", bringed: "brought",
   eated: "ate", drinked: "drank", writed: "wrote", speaked: "spoke", falled: "fell", feeled: "felt", keeped: "kept",
@@ -419,7 +419,8 @@ export function englishRules(paragraph, existing, frequency = () => 0) {
     // capitalized ones Harper skips as names ("Wensday").
     const known = EN_MISSPELLINGS[t.lower];
     if (known && /^[\p{L}]+$/u.test(t.text)) {
-      const fix = /^\p{Lu}/u.test(t.text) ? known[0].toUpperCase() + known.slice(1) : known;
+      // ("TOMOROW" -> "TOMORROW": a word in capitals keeps them.)
+      const fix = t.text.length > 1 && t.text === t.text.toUpperCase() ? known.toUpperCase() : /^\p{Lu}/u.test(t.text) ? known[0].toUpperCase() + known.slice(1) : known;
       add(t.start, t.end, fix, `Did you mean “${fix}”?`, { override: true, category: "spelling", keepCase: true });
     }
 
@@ -722,6 +723,7 @@ export function englishRules(paragraph, existing, frequency = () => 0) {
     roundEightRules(toks, i, paragraph, add, frequency);
     roundNineRules(toks, i, paragraph, add, frequency);
     roundTenRules(toks, i, paragraph, add, frequency);
+    roundElevenRules(toks, i, paragraph, add, frequency);
   }
 
   // ---------- Phrases borrowed from other languages ----------
@@ -761,6 +763,10 @@ const EN_PHRASES = [
   [/(^|[^\p{L}])insisted to (\p{L}+)/giu, (w) => { const verb = w.split(" ")[2]; return `insisted on ${verb.replace(/e$/, "")}ing`; }, "“Insist on doing”, not “insist to do”."],
   [/(^|[^\p{L}])(reached|reach|reaches) to (?=the|a|our|their|his|her|my)/giu, (w) => w.replace(/ to $/i, ""), "“Reach” takes no “to”."],
   [/(^|[^\p{L}])(discuss|discussed|discussing) about\b/giu, (w) => w.replace(/ about$/i, ""), "“Discuss” takes no “about”."],
+  [/(^|[^\p{L}])(assist|assists|assisted|assisting) to(?= (a|an|the|this|that|my|our|your|his|her|their|several|many|every|all)( \p{L}+){0,2} (conference|conferences|meeting|meetings|class|classes|course|courses|concert|show|presentation|lecture|wedding|event|seminar|workshop|ceremony|match|game|mass|funeral|training|session|party|performance|webinar|talk|exhibition|festival|play|opera)\b)/giu, (w) => ({ assist: "attend", assists: "attends", assisted: "attended", assisting: "attending" })[w.split(" ")[0].toLowerCase()], "To be present at an event is to “attend” it; to “assist” is to help."],
+  [/(^|[^\p{L}])(this|that) (kinds|types|sorts)(?= of\b)/giu, (w) => w.replace(/^(this|that)/i, (d) => ({ this: "these", that: "those" })[d.toLowerCase()]), "A plural noun takes “these” or “those”."],
+  [/(^|[^\p{L}])(make|makes|made|making)(?= (my|your|his|her|our|their|the|his) homework\b)/giu, (w) => ({ make: "do", makes: "does", made: "did", making: "doing" })[w.toLowerCase()], "In English, you “do” your homework."],
+  [/(^|[^\p{L}])(make|makes|made|making)(?= a (birthday )?party( for| at| on| this| next| tonight| tomorrow| to| with|[.,!?]|$))/giu, (w) => ({ make: "have", makes: "has", made: "had", making: "having" })[w.toLowerCase()], "In English, you “have” (or “throw”) a party."],
   [/(^|[^\p{L}])(suggested|suggest|suggests) (him|her|them|me|us) to\b/giu, (w) => w.replace(/ (him|her|them|me|us) to$/i, (_, p) => ` ${p === "me" ? "I" : p === "us" ? "we" : p === "him" ? "he" : p === "her" ? "she" : "they"}`), "“Suggest that he…”, not “suggest him to”."],
 ];
 
@@ -2383,6 +2389,98 @@ function roundTenRules(toks, i, paragraph, add, frequency) {
   if (t.lower === "the" && R1 === "most" && R2 === "of" && /^(my|the|his|her|our|their|your|it|them|this|that|these|those|its)$/.test(toks[i + 3]?.lower ?? "") &&
       !/^(make|makes|made|making|get|gets|got|getting)$/.test(L1)) {
     fix("most of", "“Most of …”, without “the”.", t.start, next2.end);
+  }
+}
+
+// ---------- Eleventh round: e-mails and messages, French writers of English (2026-11-11) ----------
+const EN_COLLECTIVE = /^(family|team|staff|crew|group|class|band|public|people|police|children|men|women|data|kind|type|sort|best|worst|most|least|first|last|rest|same|other|others|few|many|lot|majority|minority|audience|committee|company|government|jury|faculty|army)$/;
+const EN_PLURAL_OF = (w) => (/[^aeiou]y$/.test(w) ? `${w.slice(0, -1)}ies` : /(ch|sh|x|s|z)$/.test(w) ? `${w}es` : `${w}s`);
+
+function roundElevenRules(toks, i, paragraph, add, frequency) {
+  const t = toks[i];
+  const prev = toks[i - 1], next = toks[i + 1], next2 = toks[i + 2];
+  const L1 = prev?.lower ?? "", L2 = toks[i - 2]?.lower ?? "", R1 = next?.lower ?? "", R2 = next2?.lower ?? "";
+  const fix = (replacement, message, start = t.start, end = t.end) => add(start, end, replacement, message, { override: true });
+  const lowerWord = (x) => !!x && /^\p{Ll}+$/u.test(x.text);
+
+  // "I have been working here for three year now", "five hundred dollar per person" -> plural
+  // ("a three year plan", "a five dollar bill": a noun after it, the number describes it;
+  // "1/2 cup of sugar", "the 8:15 train to Boston", "W-2 form": figures before a preposition
+  // are measures, times and names.)
+  const spelledNumber = /^(two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|fifteen|twenty|thirty|forty|fifty|sixty|hundred|thousand)$/.test(L1);
+  const figure = /^([2-9]|[1-9]\d)$/.test(L1) && !/[-/:.,]$/.test(paragraph.slice(0, prev?.start ?? 0));
+  if ((spelledNumber || figure) &&
+      !/^(at|by|from|until|till|before|after|around|since|page|chapter|room|gate|line|step|level|number|no|version|season|episode|part|phase|round|act|scene|the|a|an)$/.test(L2) &&
+      lowerWord(t) && !/s$/.test(t.lower) && !NUMBER_FOLLOWERS.test(t.lower) && !/^(am|pm|percent|o|dozen|hundred|thousand|million|billion|times|more|less|euro|yen|ago)$/.test(t.lower) &&
+      (/^(now|tomorrow|today|tonight|yesterday|per|each|ahead|already|later|ago)$/.test(R1) || spelledNumber && /^(and|or|in|at|on|from|to|with|for|left|before|after)$/.test(R1) &&
+       // ("five pound and ten pound notes": both describe the noun at the end.)
+       !/^(one|two|three|four|five|six|seven|eight|nine|ten|twenty|fifty|hundred|\d+)$/.test(R2))) {
+    const plural = EN_PLURAL_OF(t.lower);
+    if (frequency(plural) >= 3 && frequency(plural) > frequency(t.lower) - 2) fix(plural, `After “${L1}”, the noun is plural.`);
+  }
+  // "One of my colleague is moving" -> colleagues
+  if (L1 && /^(my|your|his|her|our|their|these|those)$/.test(L1) && L2 === "of" && toks[i - 3]?.lower === "one" &&
+      lowerWord(t) && !/s$/.test(t.lower) && !EN_COLLECTIVE.test(t.lower) && !/(ing|ly|est|er)$/.test(t.lower) &&
+      (isBoundary(next) || /^(is|was|has|who|that|lives|works|told|said|asked|called|sent)$/.test(R1))) {
+    const plural = EN_PLURAL_OF(t.lower);
+    if (frequency(plural) >= 3 && frequency(plural) > frequency(t.lower) - 2) fix(plural, "“One of …” is followed by a plural noun.");
+  }
+  // "I am interesting in this position", "We are interesting by your offer", "I'm very exciting to start"
+  if (/^(interesting|exciting)$/.test(t.lower) && /^(in|by|about|to|for)$/.test(R1)) {
+    let k = i - 1;
+    if (/^(very|really|so|quite|extremely|truly|super|really)$/.test(toks[k]?.lower ?? "")) k--;
+    const be = toks[k]?.lower ?? "";
+    const subject = toks[k - 1]?.lower ?? "";
+    if (/^(i'm|we're|i’m|we’re)$/.test(be) || /^(am|was)$/.test(be) && subject === "i" || /^(are|were)$/.test(be) && subject === "we") {
+      fix(t.lower === "interesting" ? "interested" : "excited", `How you feel: “${t.lower === "interesting" ? "interested" : "excited"}”; “${t.lower}” describes what causes it.`);
+    }
+  }
+  // "Sorry, I'm not agree" -> I don't agree
+  if (/^(i'm|we're|they're|you're|he's|she's|am|are|is)$/.test(t.lower) && R1 === "not" && /^(agree|disagree)$/.test(R2)) {
+    const third = /^(he's|she's|is)$/.test(t.lower);
+    const subject = { "i'm": "I ", "we're": "we ", "they're": "they ", "you're": "you ", "he's": "he ", "she's": "she " }[t.lower] ?? "";
+    add(t.start, next2.end, `${subject}${third ? "doesn't" : "don't"} ${R2}`, "“Agree” is a verb: “I don't agree”, not “I'm not agree”.", { override: true, keepCase: subject === "I " });
+  }
+  // "We're you at the meeting yesterday?" -> Were
+  if (t.lower === "we're" && (!prev || isBoundary(prev)) && /^(you|they|he|she)$/.test(R1)) {
+    let k = i + 2;
+    while (k < toks.length && !/^[.!?]$/.test(toks[k].text)) k++;
+    if (toks[k]?.text === "?") fix("were", "A question in the past: “Were you…?”.");
+  }
+  // "Please send me you're address", "The kids left they're shoes in the hallway" -> your, their
+  if (/^(you're|they're)$/.test(t.lower) && lowerWord(next) && !YOURE_FOLLOWERS.test(R1) && !/(ing|ed|ly|ful|ous|ive|able|ible|al)$/.test(R1) && frequency(R1) >= 3 &&
+      (/^(left|leave|leaves|forgot|forget|lost|lose|brought|bring|took|take|sold|sell|washed|wash|cleaned|clean|packed|pack|parked|park|fixed|changed|updated)$/.test(L1) && L2 !== "to" ||
+       /^(me|us|him|her|them)$/.test(L1) && /^(send|sent|give|gave|forward|email|text|mail|tell|told)$/.test(L2) && /^(address|number|name|email|details|phone|account|password|address|location|schedule|availability|résumé|resume|cv|opinion|feedback|answer|decision)$/.test(R1))) {
+    fix(t.lower === "you're" ? "your" : "their", `Did you mean the possessive “${t.lower === "you're" ? "your" : "their"}”?`);
+  }
+  // "Hope your feeling better" -> you're
+  if (t.lower === "your" && /^(feeling|doing|getting)$/.test(R1) && /^(better|well|ok|okay|good|great|fine|alright|worse)$/.test(R2)) {
+    fix("you're", "Did you mean “you're” (you are)?");
+  }
+  // "It's a very good news" -> very good news
+  if (/^(a|an)$/.test(t.lower) && /^(very|really|truly|such|extremely|quite)$/.test(R1) && lowerWord(next2) && frequency(R2) >= 3 &&
+      EN_UNCOUNT_STRICT.test(toks[i + 3]?.lower ?? "")) {
+    const noun = toks[i + 3];
+    fix(paragraph.slice(next.start, noun.end), `“${noun.lower}” is uncountable: no “a”.`, t.start, noun.end);
+  }
+  // "Several person called" -> people ("a two person team" describes the team)
+  if (t.lower === "person" && (/^(several|many|these|those|both)$/.test(L1) ||
+      /^(few|two|three|four|five|six|seven|eight|nine|ten)$/.test(L1) && !/^(a|an)$/.test(L2) &&
+      (isBoundary(next) || !lowerWord(next) || /^(called|came|said|were|are|have|had|who|that|in|at|from|with|asked|told|died|work|working|live|living|think|say|want|like|use|need)$/.test(R1)))) {
+    fix("people", "The plural of “person” is “people”.");
+  }
+  // "We made good progresses" -> progress
+  if (t.lower === "progresses" && /^(made|make|makes|making|good|great|much|some|significant|real|huge|little|no|any|steady|slow|rapid|of|enough)$/.test(L1)) {
+    fix("progress", "“Progress” is uncountable: it has no plural.");
+  }
+  // "Can you precise the date?" -> specify (French "préciser"; "precise" is an adjective)
+  if (t.lower === "precise" && /^(to|can|could|would|will|please|you|must|should)$/.test(L1) && (L1 !== "you" || /^(can|could|would|will)$/.test(L2)) &&
+      /^(the|me|us|it|if|what|which|when|whether|how|who|where|your|this|that|a|an|my|our|his|her|their)$/.test(R1)) {
+    fix("specify", "To make clear is to “specify” (or “clarify”); “precise” is an adjective.");
+  }
+  // "I have many works to do" -> a lot of work
+  if (t.lower === "many" && R1 === "works" && /^(to|today|this|at|tonight|tomorrow|these)$/.test(R2)) {
+    fix("a lot of work", "Work to do is uncountable: “a lot of work”.", t.start, next.end);
   }
 }
 

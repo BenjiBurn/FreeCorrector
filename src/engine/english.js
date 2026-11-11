@@ -297,6 +297,8 @@ function looksLikeName(text, start, word, replacements = []) {
   if (before !== "" && !/[.!?…:"“(\n]$/.test(before)) return true;
   // At the start of a sentence: "Mrs. García", "José made…", "Priya, Diego and Mei".
   if (HONORIFIC.test(before)) return true;
+  // After an initial, not a full stop: "V. A. Sundaram", "Charles W. Alcock".
+  if (/(^|[\s(])\p{Lu}\.$/u.test(before)) return true;
   // Contractions and split words are typos, not names ("Dont", "Alot", "Im").
   if (contractionFor(word) || replacements.some((r) => r.replace(/[\s'’]/g, "").toLowerCase() === word.toLowerCase())) return false;
   // "Yann @Helpdesk": a display name next to a handle, alone on its line; not a swap of
@@ -309,7 +311,12 @@ function looksLikeName(text, start, word, replacements = []) {
   // typos such as "alot" or "untill" are far less frequent than names).
   if (frequency(word) >= 3) return true;
   // "Priyanka says it's…": an unknown capitalized word acting as a subject.
-  if (/^\s+(says|said|is|was|has|had|told|thinks|wants|just|will|can|and|loves|likes|got|gets|went|made)\b/.test(text.slice(start + word.length))) return true;
+  // "Isaacson writes that…", "Searle challenges this claim": an author and a reporting verb.
+  if (/^\s+(says|said|is|was|has|had|told|thinks|wants|just|will|can|and|loves|likes|got|gets|went|made|writes|wrote|argues|argued|challenges|challenged|considered|considers|believes|believed|claims|claimed|suggests|suggested|notes|noted|explains|explained|describes|described|defines|defined|proposed|proposes|recommends|recommended|disagreed|disagrees|agreed|agrees|replied|states|stated|concluded|coined|founded|insisted|warned|predicted|observed|remarked)\b/.test(text.slice(start + word.length))) return true;
+  // "Yitzhak Navon, Ben-Gurion's secretary", "Demis Hassabis of DeepMind": a first name
+  // before a surname the frequency list does not know either.
+  const surname = text.slice(start + word.length).match(/^ (\p{Lu}[\p{L}’'-]+)/u)?.[1];
+  if (surname && frequency(surname.replace(/['’]s$/, "")) < 2) return true;
   return /^\s*(,|and\b|&)\s*\p{Lu}/u.test(text.slice(start + word.length));
 }
 
@@ -330,10 +337,80 @@ function dialectForm(word) {
 }
 
 // British words the rules above do not turn into American ones ("practise", "cheque", "tyre").
-const EN_BRITISH = /^(practis(e|es|ed|ing)|cheques?|tyres?|kerbs?|aluminium|ploughs?|pyjamas|mums?|storeys|whilst|amongst|learnt|spelt|dreamt|burnt|aeroplanes?|manoeuvres?|jewellery|cosy|sceptical|enquir(y|ies|e|ed|ing)|fulfil|enrol|instalments?|ageing|judgements?|moustaches?|draughts?|offences?|licences?|defences?|programmes?|catalogues?|dialogues?|grey)$/i;
+const EN_BRITISH = /^(practis(e|es|ed|ing)|cheques?|tyres?|kerbs?|aluminium|ploughs?|pyjamas|mums?|storeys|whilst|amongst|learnt|spelt|dreamt|burnt|aeroplanes?|manoeuvres?|jewellery|cosy|sceptical|enquir(y|ies|e|ed|ing|er|ers)|fulfil|enrol|instalments?|ageing|judgements?|moustaches?|draughts?|offences?|licences?|defences?|programmes?|catalogues?|dialogues?|grey|afterwards|focuss(ed|es|ing)|mediaeval|sizeable)$/i;
+// Right words Harper's dictionary lacks ("employee wellbeing", "a gauge invariance").
+const EN_KNOWN_WORDS = /^(wellbeing|invariances?|wavefunctions?|rulesets?|matchdays?|timewasting|redshifts?|lensing|futsal|bosons?|reprises?|affective|affectively)$/i;
+// A known word behind a scientific or learned prefix, which Harper offers to split:
+// "antisymmetric", "pseudotensor", "bioenergy". Not "inter" ("interresting" -> "inter resting").
+const EN_LEARNED_PREFIX = /^(anti|pseudo|non|semi|bio|neuro|quasi|proto|macro|micro|multi|poly|mono|cyber|electro|thermo|hydro|geo|socio|psycho|hyper|ultra|meta)(\p{L}{4,})$/iu;
+// ... or before a suffix: "personhood", "illusionism", "Computationalism", "cyberneticist".
+const EN_LEARNED_SUFFIX = /^(\p{L}{4,})(hood|isms?|ists?)$/iu;
+// "John von Neumann", "Annalen der Physik": a particle inside a name.
+const EN_NAME_PARTICLE = /^(von|der|van|den|zu|zur|de|di|da|du|del|della|dos|das|le|la|bin|ibn|al|el|ter|ten)$/i;
+// Function words of French, German, Spanish, Italian, never English words: a quotation
+// holding one ("simple mais efficace", "Folgerungen aus den…") is in that language.
+const EN_FOREIGN_FUNCTION = /^(der|das|und|aus|mit|zur|zum|eine|einer|eines|ein|nicht|ist|sind|auf|für|über|bei|nach|vom|dem|les|des|du|et|mais|avec|pour|dans|devant|chez|est|sont|une|aux|très|soi|moi|toi|nous|vous|cette|qui|que|ne|pas|bon|bonne|el|los|las|del|con|por|para|una|il|di|della|che|per|sono)$/i;
 
 function isDialectVariant(word, suggestion) {
   return word.toLowerCase() !== suggestion.toLowerCase() && dialectForm(word) === dialectForm(suggestion);
+}
+
+// Harper's false alarms on edited prose (articles, reports, essays): initials,
+// acronyms, learned words, names and particles, a few constructions it misreads.
+function editedProseFalseAlarm(paragraph, forHarper, offset, end, word, kind, replacements, message) {
+  const spelling = kind === "Spelling" || kind === "Typo";
+  const lower = word.toLowerCase();
+  const after = paragraph.slice(end);
+  const before = paragraph.slice(0, offset);
+  const same = (r, w) => r.toLowerCase() === w.toLowerCase();
+  if (spelling) {
+    // "Franklin D. Roosevelt", "W. E. B. Du Bois": initials.
+    if (/^\p{Lu}\.$/u.test(word) && /^\s+\p{Lu}/u.test(after)) return true;
+    // "the support vector machine (SVM)", "IFAB recommends": an acronym in a text written in
+    // lowercase (all in capitals, "PLEASE SEND IT TOMOROW", the words stay checked).
+    if (/^[A-Z]{2,}s?$/.test(word) && !contractionFor(word) &&
+        (paragraph.match(/\p{Ll}/gu) ?? []).length > 2 * (paragraph.match(/\p{Lu}/gu) ?? []).length) return true;
+    if (EN_KNOWN_WORDS.test(word)) return true;
+    // "antisymmetric" -> "anti symmetric", "personhood" -> "person hood": a learned prefix
+    // or suffix on a word Harper knows; "Computationalism" -> "Computational".
+    const prefixed = word.match(EN_LEARNED_PREFIX);
+    if (prefixed && (frequency(prefixed[2]) >= 3 || replacements.some((r) => same(r, `${prefixed[1]} ${prefixed[2]}`) || same(r, `${prefixed[1]}-${prefixed[2]}`)))) return true;
+    const suffixed = word.match(EN_LEARNED_SUFFIX);
+    if (suffixed && replacements.some((r) => same(r, `${suffixed[1]} ${suffixed[2]}`) || same(r, suffixed[1]))) return true;
+    // "neuro-symbolic", "sci-fi", "doi:10.1000/…": a piece of a hyphenated word or a reference.
+    if (`${word}xxxx`.match(EN_LEARNED_PREFIX)?.[2] === "xxxx" && /^-\p{L}/u.test(after) || /^fi$/i.test(word) && /\b(sci|wi|hi)-$/i.test(before) ||
+        /^doi$/i.test(word) && /^:\s*10\./.test(after)) return true;
+    // "the Nazi book burnings", "the turnings of the road": the plural of a noun in -ing.
+    // (Not "differents", "criterias", "Tonights": a plural an adjective or a name does not take.)
+    if (/^\p{L}{3,}ings$/u.test(word) && replacements.slice(0, 3).some((r) => same(r, word.slice(0, -1)))) return true;
+    // "John von Neumann", "Annalen der Physik"
+    if (EN_NAME_PARTICLE.test(word) && /^\s+\p{Lu}/u.test(after)) return true;
+    // "frequency f is", "a matrix A": a variable.
+    if (/^[defghjlmopqstvwz]$/.test(word)) return true;
+  }
+  // "with a latex bladder", "active lidar": the material and the technique, not the brands.
+  if (kind === "Capitalization" && /^(latex|lidar)$/.test(word)) return true;
+  // "DeepMind developed…", "McCarthy defines…": a capital asked for in the middle of a sentence.
+  if (kind === "Capitalization" && /^This sentence does not start/.test(message) && /[\p{L}\p{N},;]\s+$/u.test(before)) return true;
+  // "Löwenthal nevertheless remained": the name before was blanked for Harper; not a sentence start.
+  if (kind === "Punctuation" && replacements.every((r) => r === `${word},`) &&
+      forHarper.slice(0, offset).trimEnd().length !== before.trimEnd().length) return true;
+  // "an MIT licence", "an FBI agent", "an SQL query": letters read one by one.
+  if (/^an$/i.test(word) && replacements.every((r) => /^a$/i.test(r)) && /^\s+[AEFHILMNORSX][A-Z0-9]+\b/.test(after)) return true;
+  // "his paper on mass–energy equivalence", "some one-shot collaborations": half of a hyphenated word.
+  if (/\s/.test(word) && /^[-–]\p{L}/u.test(after)) return true;
+  // "one of the four first selected": a number, not a noun to put in the plural;
+  // "one of the family": a group.
+  if (kind === "Usage" && /^(two|three|four|five|six|seven|eight|nine|ten|first|last|family|team|staff|crew|group|class|band|public)$/i.test(word)) return true;
+  // "a call from some 400 scientists", "(both 1968)": right as written.
+  if (kind === "Grammar" && /should not be used before a number/.test(message)) return true;
+  // "made up most of the team": the phrasal verb "make up", not "upmost".
+  if (/^up most$/i.test(word) && /\b(make|makes|made|making)\s+$/i.test(before)) return true;
+  // "had a bearing on", "an appreciation for music", "a shortening of": Harper takes these
+  // for mass nouns; the ones every learner gets wrong ("an advice") stay flagged.
+  if (kind === "Agreement" && /is a mass noun/.test(message) && /^(a|an)\s/i.test(word) &&
+      !/^(advice|information|furniture|equipment|knowledge|homework|luggage|baggage|feedback|evidence|research|software|news|traffic|progress|weather|money|vocabulary|machinery|garbage|rubbish|scenery|jewelry|jewellery|music|bread|water|work|fun|stuff|health|accommodation|transportation|clothing|mail|spam|slang|grammar|electricity|pollution|permission|luck|weather)\b/i.test(lower.replace(/^an?\s+/, "").replace(/^(good|great|bad|useful|important|new|very|real|little|big|excellent|wonderful|nice|terrible)\s+/, ""))) return true;
+  return false;
 }
 
 function suggestionText(suggestion, problem) {
@@ -439,6 +516,7 @@ async function lintParagraph(paragraph) {
       if (kind === "Capitalization" && sentenceStart && replacements[0] && plainQuote(replacements[0]) === plainQuote(word).toLowerCase()) continue;
       // "Their being late cost us the set": a gerund after a possessive, not "they're".
       if (!picky && /^their$/i.test(word) && /^\s+being\b/i.test(paragraph.slice(end))) continue;
+      if (editedProseFalseAlarm(paragraph, forHarper, offset, end, word, kind, replacements, lint.message())) continue;
       out.push({
         offset,
         length: end - offset,
@@ -451,6 +529,18 @@ async function lintParagraph(paragraph) {
       });
     } finally {
       lint.free?.();
+    }
+  }
+  // A quotation in another language ("simple mais efficace", "Zur Elektrodynamik bewegter
+  // Körper"): its words are not English typos.
+  for (const q of paragraph.matchAll(/["“„«]([^"“”„«»\n]{2,200})["”»]/g)) {
+    const qStart = q.index + 1;
+    const qEnd = qStart + q[1].length;
+    const inside = (m) => m.category === "spelling" && m.offset >= qStart && m.offset + m.length <= qEnd;
+    const words = q[1].match(/[\p{L}]+/gu) ?? [];
+    if (out.some((m) => inside(m) && EN_FOREIGN_FUNCTION.test(m.word)) ||
+        out.some(inside) && words.filter((w) => EN_FOREIGN_FUNCTION.test(w)).length >= 2) {
+      for (let k = out.length - 1; k >= 0; k--) if (inside(out[k])) out.splice(k, 1);
     }
   }
   // Ranking costs a few lints per error: bounded, so a long foreign or
@@ -553,7 +643,8 @@ export async function check(text) {
         .map((m) => ({ ...m, replacements: [...m.replacements] }));
       const all = [...own, ...fcSentenceRules(paragraph, own, null, prevEnd, "en", fcNextStart(paragraphs, index), original.slice(paraStart, paraStart + paragraph.length))];
       for (const m of all.sort((a, b) => a.offset - b.offset)) matches.push({ ...m, offset: paraStart + m.offset });
-      prevEnd = paragraph.trimEnd().slice(-1);
+      // "search engines (such as Google Search)": a list item closed by a bracket ends on its word.
+      prevEnd = paragraph.trimEnd().replace(/(?<=[\p{L}\p{N}])[)\]]+$/u, "").slice(-1);
     }
     paraStart += paragraph.length + 1;
   }
@@ -565,5 +656,13 @@ export async function check(text) {
     while (j < original.length && /[ \t]/.test(original[j])) j++;
     return j < original.length && text[j] === " " && original[j] !== " ";
   };
-  return matches.filter((m) => original.slice(m.offset, m.offset + m.length) === m.word && !(m.category !== "spelling" && beforeMask(m)));
+  // A capital asked for right after a blanked name ("DeepMind developed", "McCarthy defines"):
+  // the sentence did not start there.
+  const afterMask = (m) => {
+    let j = m.offset - 1;
+    while (j >= 0 && /[ \t]/.test(original[j])) j--;
+    return j >= 0 && text[j] === " " && /[\p{L}\p{N}]/u.test(original[j]);
+  };
+  return matches.filter((m) => original.slice(m.offset, m.offset + m.length) === m.word && !(m.category !== "spelling" && beforeMask(m)) &&
+    !(m.ruleId === "EN_Capitalization" && afterMask(m)));
 }
