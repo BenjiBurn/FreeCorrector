@@ -383,6 +383,70 @@ function fcIsCascadeError(original, originalStart, fixed, fixedStart, length) {
   );
 }
 
+const FC_SKIP_IN_VERB_GROUP = /^(ne|n|pas|plus|jamais|bien|déjà|toujours|vraiment|très|tous|toutes|enfin|encore|aussi|me|m|te|t|se|s|lui|leur|y|en|d|de)$/i;
+const FC_COMPLEMENT_MARK = /^(de|d|du)$/i;
+const FC_STOP_WORD = /^(pourquoi|quand|comme|si|et|ou|mais|car|donc|parce|lorsque|puisque|où|qui|que|qu|dont|quoi)$/i;
+const FC_PRONOUN_AGREEMENT = { il: ["m", "s"], ils: ["m", "p"], elle: ["f", "s"], elles: ["f", "p"] };
+
+// Gender and number of a noun as written: "la literie" (f, s), "des frais" (m, p).
+// An epicene noun takes its gender from the determiner ("une somme").
+function fcNounAgreement(spellChecker, words, i) {
+  const morphs = spellChecker.getMorph(words[i].toLowerCase()).map((m) => m.match(/:N:([mfe]):([spi])/)).filter(Boolean);
+  if (!morphs.length) return null;
+  const genders = new Set(morphs.map((m) => m[1]));
+  const numbers = new Set(morphs.map((m) => m[2]));
+  const det = (words[i - 1] ?? "").toLowerCase();
+  let g = genders.size === 1 && !genders.has("e") ? [...genders][0] : null;
+  if (!g && genders.size === 1) g = /^(la|une|cette|ma|ta|sa)$/.test(det) ? "f" : /^(le|un|ce|cet)$/.test(det) ? "m" : null;
+  let n = numbers.size === 1 && !numbers.has("i") ? [...numbers][0] : null;
+  // "des frais", "le prix": the determiner tells the number of an invariable noun.
+  if (!n) n = /^(les|des|ces|mes|tes|ses|nos|vos|leurs|plusieurs|quelques)$/.test(det) ? "p" : /^(le|la|un|une|ce|cet|cette|mon|ton|son|ma|ta|sa)$/.test(det) ? "s" : null;
+  return g || n ? [g, n] : null;
+}
+
+// What a participle right after the error's auxiliary should agree with, as [gender, number]
+// (either may be null), or null when the sentence does not say:
+// - after "être", "été": the subject, skipping the complements in "de"
+//   ("la literie mériterait d’être changé" -> f, s; "des frais de tenue de compte m’ont
+//   été prélevé" -> m, p);
+// - after "avoir" in a relative clause: the noun before "que" ("sa fille, qu’il n’a jamais
+//   oublié" -> f, s). Not an adverb there: "la réunion de demain que j’ai rédigé" says nothing.
+function fcAgreementTarget(spellChecker, before) {
+  const words = before.match(/[\p{L}-]+|[,;:]/gu) ?? [];
+  let i = words.length - 1;
+  let aux = null;
+  while (i >= 0) {
+    const w = words[i].toLowerCase();
+    if (/^(être|été|suis|es|est|sommes|êtes|sont|étais|était|étions|étiez|étaient|serai|seras|sera|serons|serez|seront|serais|serait|serions|seriez|seraient|soit|soient|fut|furent)$/.test(w)) aux = aux ?? "être";
+    else if (/^(ai|as|a|avons|avez|ont|avais|avait|avions|aviez|avaient|aurai|auras|aura|aurons|aurez|auront|aurais|aurait|aurions|auriez|auraient|ait|aient|eu|avoir)$/.test(w)) aux = aux ?? "avoir";
+    else if (!FC_SKIP_IN_VERB_GROUP.test(w) && !(aux && spellChecker.getMorph(w).some((m) => /:V/.test(m)) &&
+               !spellChecker.getMorph(w).some((m) => /:[NG]/.test(m)))) break;
+    i--;
+  }
+  if (!aux) return null;
+  if (aux === "avoir") {
+    // The subject of the relative clause, then "que".
+    while (i >= 0 && !/^(que|qu)$/i.test(words[i]) && /^(je|j|tu|il|elle|on|nous|vous|ils|elles)$/i.test(words[i])) i--;
+    if (i < 1 || !/^(que|qu)$/i.test(words[i])) return null;
+    i--;
+    if (words[i] === ",") i--;
+    return i >= 0 ? fcNounAgreement(spellChecker, words, i) : null;
+  }
+  for (; i >= 0; i--) {
+    const w = words[i].toLowerCase();
+    if (FC_STOP_WORD.test(w) || /^[,;:]$/.test(w)) return null;
+    if (FC_PRONOUN_AGREEMENT[w]) return FC_PRONOUN_AGREEMENT[w];
+    if (/^(je|j|tu|on|nous|vous)$/.test(w)) return null;
+    const noun = fcNounAgreement(spellChecker, words, i);
+    if (!noun) continue;
+    // A complement: "de tenue", "du compte", "la tenue des comptes".
+    const prev = (words[i - 1] ?? "").toLowerCase();
+    if (FC_COMPLEMENT_MARK.test(prev) || prev === "des" && i > 1 && fcNounAgreement(spellChecker, words, i - 2)) continue;
+    return noun;
+  }
+  return null;
+}
+
 // Rank the suggestions for the error text.slice(start, start + length).
 // `text` should already contain the best fix for the errors before it.
 function fcRankSuggestions(spellChecker, text, start, length, suggestions, isSpelling) {
@@ -413,6 +477,12 @@ function fcRankSuggestions(spellChecker, text, start, length, suggestions, isSpe
   const wordHeard = fcHeardKeys(word);
   const afterSi = !isSpelling && FC_AFTER_SI.test(before);
   const accentless = /^[a-z]+$/i.test(word);
+  // Forms of one participle or adjective ("changé | changés | changée"): the one that agrees.
+  const target = isSpelling ? null : fcAgreementTarget(spellChecker, before);
+  const agrees = (c) => spellChecker.getMorph(c).some((m) => {
+    const x = m.match(/:[QA](?::A)?:([mfe]):([spi])/);
+    return x && (!target[0] || x[1] === target[0] || x[1] === "e") && (!target[1] || x[2] === target[1] || x[2] === "i");
+  });
   const nameTyped = isSpelling && wordIsLower && word.length > 2 && suggestions[0]?.toLowerCase() === word &&
     !candidates.some((c) => c === c.toLowerCase() && fcPlain(c) === fcPlain(word));
 
@@ -447,6 +517,7 @@ function fcRankSuggestions(spellChecker, text, start, length, suggestions, isSpe
       // "parlé" -> "parler" rather than "parle".
       // "si" + conditional is a classic: "si j’aurais" -> "si j’avais".
       soundTier: isSpelling ? 0 : afterSi ? (fcIsImperfect(spellChecker, c) ? 0 : 1) : 1 - sound,
+      agreement: target && !agrees(c) ? 1 : 0,
       cost,
     };
   });
@@ -465,6 +536,7 @@ function fcRankSuggestions(spellChecker, text, start, length, suggestions, isSpe
       (isSpelling ? a.errors - b.errors : a.repaired - b.repaired) ||
       a.caseChange - b.caseChange ||
       a.soundTier - b.soundTier ||
+      a.agreement - b.agreement ||
       a.cost - b.cost ||
       a.errors - b.errors
     )

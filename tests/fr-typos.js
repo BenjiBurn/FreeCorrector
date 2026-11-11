@@ -131,4 +131,15 @@ module.exports = [
   ["On a mangé des crèpes.", "crèpes", "crêpes"],
   ["Ça c'est passé très vite.", "c'est", "s'est"],
   ["Je voudrai un café, s'il vous plaît.", "voudrai", "voudrais"],
+  // ---- Participle agreeing with the subject or with the noun before « que »
+  ["Les lettres que tu m'as envoyer sont arrivées.", "envoyer", "envoyées"],
+  ["La porte a été ouvert par le vent.", "ouvert", "ouverte"],
+  ["Ma voiture a été réparer hier.", "réparer", "réparée"],
+  ["Les fenêtres doivent être fermer le soir.", "fermer", "fermées"],
+  ["La réunion de demain sera annuler.", "annuler", "annulée"],
+  ["Elle est tomber dans l'escalier.", "tomber", "tombée"],
+  ["La pizza que vous avez commander est prête.", "commander", "commandée"],
+  ["Les factures du mois dernier ont été payer.", "payer", "payées"],
+  ["Le vélo de ma fille a été voler.", "voler", "volé"],
+  ["La mère de mes amis est venu me voir.", "venu", "venue"],
 ];
