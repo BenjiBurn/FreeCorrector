@@ -1,8 +1,8 @@
 # Notes de version à coller dans les stores
 
-## 1.3.1 (prochaine version, pas encore publiée)
+## 1.4.0 (prochaine version, pas encore publiée)
 
-Brouillon, à compléter jusqu’à la sortie.
+Brouillon, à compléter jusqu’à la sortie. 1.4.0 et non 1.3.1 : deux nouveautés visibles, Google Docs et le conjugueur.
 
 - Nouveau : FreeCorrector corrige aussi dans Google Docs (Chrome, Edge, Brave ; Firefox : correction à vérifier avant la sortie) : fautes soulignées dans le document, suggestions au clic, liste des fautes et « Tout corriger » (Ctrl+Maj+F). Docs dessine son texte dans un canvas : l’extension le lit dans la copie invisible que Docs ajoute pour les correcteurs, et tape les corrections comme au clavier (Ctrl+Z les annule).
 - « la 1ere », « mes 1eres », « la 2eme » : le nombre ordinal est souligné en entier et corrigé en « 1ʳᵉ », « 1ʳᵉˢ », « 2ᵉ » (au lieu de proposer « erre » pour « ere ») ; signalé par un utilisateur.
