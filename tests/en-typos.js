@@ -135,4 +135,10 @@ module.exports = [
   ["It isnt ready.", "isnt", "isn't"],
   ["Youre welcome.", "Youre", "You're"],
   ["Theyre late again.", "Theyre", "They're"],
+  // ---- Regular endings
+  ["He studys every night.", "studys", "studies"],
+  ["The train was delayd.", "delayd", "delayed"],
+  ["She copys everything I do.", "copys", "copies"],
+  ["We stayd at home all day.", "stayd", "stayed"],
+  ["I tryed to call you.", "tryed", "tried"],
 ];
