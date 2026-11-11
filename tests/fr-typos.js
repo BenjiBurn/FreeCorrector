@@ -142,4 +142,6 @@ module.exports = [
   ["Les factures du mois dernier ont été payer.", "payer", "payées"],
   ["Le vélo de ma fille a été voler.", "voler", "volé"],
   ["La mère de mes amis est venu me voir.", "venu", "venue"],
+  // ---- The person the rule asks for
+  ["Les chaussures que tu m'as prêtées tient chaud.", "tient", "tiennent"],
 ];

@@ -386,7 +386,7 @@ function rankParagraph(paragraph, paraStart, found) {
           : null);
       const only = m.replacements.only;
       m.replacements = fcRankSuggestions(
-        spellChecker, fixed, start + delta, m.length, m.replacements, m.category === "spelling"
+        spellChecker, fixed, start + delta, m.length, m.replacements, m.category === "spelling", m.message
       );
       // Phonetic verb forms: the ranking only picks the person among them.
       if (only) m.replacements = [...m.replacements.filter((r) => only.includes(r)), ...only.filter((r) => !m.replacements.includes(r))];

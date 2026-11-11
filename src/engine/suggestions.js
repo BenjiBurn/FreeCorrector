@@ -447,9 +447,29 @@ function fcAgreementTarget(spellChecker, before) {
   return null;
 }
 
+// The form a grammar rule asks for in its message, as a test on a morphology
+// (":V1_…:Ip:3p", ":Q:A:f:s"), or null: "Accord avec “Les pneus…”. Le verbe devrait
+// être à la 3ᵉ personne du pluriel." -> "tiennent", not "tiens".
+function fcMessageNeeds(message) {
+  const person = message.match(/devrait être à la (1|2|3)(?:ʳᵉ|ᵉ) personne du (singulier|pluriel)/);
+  if (person) {
+    const tag = `:${person[1]}${person[2][0]}`;
+    return (m) => m.includes(tag) || tag === ":1s" && m.includes(":1ś");
+  }
+  const agreement = message.match(/devrait être (?:un participe passé |au )(masculin |féminin )?(singulier|pluriel)?/);
+  if (!agreement || !agreement[1] && !agreement[2]) return null;
+  const g = agreement[1]?.[0];
+  const n = agreement[2]?.[0];
+  return (m) => {
+    const x = m.match(/:([mfe]):([spi])/);
+    return !!x && (!g || x[1] === g || x[1] === "e") && (!n || x[2] === n || x[2] === "i");
+  };
+}
+
 // Rank the suggestions for the error text.slice(start, start + length).
 // `text` should already contain the best fix for the errors before it.
-function fcRankSuggestions(spellChecker, text, start, length, suggestions, isSpelling) {
+// `message` is the rule message, for the form it asks for.
+function fcRankSuggestions(spellChecker, text, start, length, suggestions, isSpelling, message = "") {
   const word = text.slice(start, start + length);
   const isWord = /^[\p{L}’'-]+$/u.test(word);
   const extras = [];
@@ -483,6 +503,7 @@ function fcRankSuggestions(spellChecker, text, start, length, suggestions, isSpe
     const x = m.match(/:[QA](?::A)?:([mfe]):([spi])/);
     return x && (!target[0] || x[1] === target[0] || x[1] === "e") && (!target[1] || x[2] === target[1] || x[2] === "i");
   });
+  const needs = isSpelling ? null : fcMessageNeeds(message);
   const nameTyped = isSpelling && wordIsLower && word.length > 2 && suggestions[0]?.toLowerCase() === word &&
     !candidates.some((c) => c === c.toLowerCase() && fcPlain(c) === fcPlain(word));
 
@@ -518,6 +539,7 @@ function fcRankSuggestions(spellChecker, text, start, length, suggestions, isSpe
       // "si" + conditional is a classic: "si j’aurais" -> "si j’avais".
       soundTier: isSpelling ? 0 : afterSi ? (fcIsImperfect(spellChecker, c) ? 0 : 1) : 1 - sound,
       agreement: target && !agrees(c) ? 1 : 0,
+      asked: needs && !spellChecker.getMorph(c.toLowerCase()).some(needs) ? 1 : 0,
       cost,
     };
   });
@@ -535,6 +557,7 @@ function fcRankSuggestions(spellChecker, text, start, length, suggestions, isSpe
       a.accentOnly - b.accentOnly ||
       (isSpelling ? a.errors - b.errors : a.repaired - b.repaired) ||
       a.caseChange - b.caseChange ||
+      a.asked - b.asked ||
       a.soundTier - b.soundTier ||
       a.agreement - b.agreement ||
       a.cost - b.cost ||
