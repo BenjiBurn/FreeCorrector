@@ -89,17 +89,24 @@ function fcFrequentNeighbours(spellChecker, word, limit = 3) {
     const plain = fcPlain(lower);
     const scored = [];
     const heard = fcHeardKeys(lower);
+    const stem = plain.slice(0, 5);
     // A silent "h" left out: "otel" -> "hôtel".
     const initials = FC_VOWEL_START.test(plain) ? [plain[0], "h"] : [plain[0]];
-    for (const { word: candidate, plain: p } of initials.flatMap((i) => fcFrequentByInitial.get(i) ?? [])) {
-      // Cheap filter on accent-free forms, exact typing cost on the survivors.
-      // Further away when it sounds the same: "resonnable" -> "raisonnable".
-      if (candidate === lower) continue;
-      const within = fcWithin(plain, p, 3);
-      if (within > 3) continue;
-      const sound = fcSoundsLike(heard, fcHeardKeys(candidate));
-      if (within > 2 && !sound) continue;
+    for (const entry of initials.flatMap((i) => fcFrequentByInitial.get(i) ?? [])) {
+      const { word: candidate, plain: p } = entry;
+      // Among the words in "h", only those where the h is all that was left out.
+      if (candidate === lower || p[0] !== plain[0] && p[1] !== plain[0]) continue;
+      // Cheap filter on accent-free forms, exact typing cost on the survivors. Three
+      // letters away for a word starting the same that sounds the same ("informatic").
+      const max = p.startsWith(stem) ? 3 : 2;
+      const within = fcWithin(plain, p, max);
+      if (within > max) continue;
+      const soundsLike = () => fcSoundsLike(heard, entry.heard ??= fcHeardKeys(candidate));
+      if (within > 2 && !soundsLike()) continue;
       const distance = fcTypingDistance(lower, candidate);
+      if (distance > 2.5 && within <= 2) continue;
+      // Further than other slips when it sounds the same: "resonnable" -> "raisonnable".
+      const sound = soundsLike();
       if (distance <= 1.6 || sound) {
         scored.push([candidate, distance - FC_SOUND_BONUS * sound - FC_FREQ_WEIGHT * fcFrequency(candidate)]);
       }
