@@ -38,8 +38,17 @@ class FcUi {
     shadow.append(style, this.layer);
 
     this.schedule = this.schedule.bind(this);
-    window.addEventListener("scroll", this.schedule, { capture: true, passive: true });
-    window.addEventListener("resize", this.schedule, { passive: true });
+    // Fields keep what they measured while their text stays in place inside
+    // them (field.stale): a page that scrolls moves the fields, not their text.
+    const moved = (inside) => {
+      for (const field of this.fields) if (!inside || inside === field.el || field.el.contains(inside)) field.stale = true;
+      this.schedule();
+    };
+    // A field, or a box inside it, scrolling its own text.
+    window.addEventListener("scroll", (e) => moved(e.target), { capture: true, passive: true });
+    window.addEventListener("resize", () => moved(), { passive: true });
+    // A web font arriving moves the words without any change in the page.
+    document.fonts?.addEventListener?.("loadingdone", () => moved());
     document.addEventListener("mousedown", (e) => this.onDocumentMouseDown(e), true);
     document.addEventListener("keydown", (e) => {
       if (e.key === "Escape" && (this.card || this.panel)) {
@@ -133,7 +142,8 @@ class FcUi {
   layoutAll() {
     if (!this.fields.size) return;
     const hostRect = this.host.getBoundingClientRect();
-    for (const field of this.fields) field.layout(hostRect);
+    // (Fields the user has left without mistakes show nothing: not looked at.)
+    for (const field of this.fields) if (!field.isIdle()) field.layout(hostRect);
     // The field went out of sight (a header hidden on scroll): its card goes too.
     if (this.card?.field.root.hidden) this.closeCard();
     if (this.panel?.field.root.hidden) this.closePanel();

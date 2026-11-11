@@ -31,12 +31,19 @@ class FcRichField extends FcFieldBase {
     this.root.append(this.clip);
 
     // Editors often change the DOM without an input event (paste, undo,
-    // formatting, other scripts): watch it.
-    this.mutationObserver = new MutationObserver(() => {
+    // formatting, other scripts): watch it. Nothing else changes the text read
+    // by readText(), so poll() only reads it again after a change.
+    this.domChanged = false;
+    this.mutationObserver = new MutationObserver((records) => {
+      this.domChanged = true;
+      // Formatting moves the words without changing the text (bold, a class).
+      this.stale = true;
+      // Attributes alone are for the next pass: some pages animate them all the time.
+      if (records.every((r) => r.type === "attributes")) return;
       clearTimeout(this.mutationTimer);
       this.mutationTimer = setTimeout(() => this.poll(), 30);
     });
-    this.mutationObserver.observe(el, { subtree: true, childList: true, characterData: true });
+    this.mutationObserver.observe(el, { subtree: true, childList: true, characterData: true, attributes: true });
     this.listen(document, "selectionchange", this.onCaretMove);
     this.start();
   }
@@ -45,6 +52,21 @@ class FcRichField extends FcFieldBase {
     this.mutationObserver.disconnect();
     clearTimeout(this.mutationTimer);
     super.destroy();
+  }
+
+  poll() {
+    if (!this.domChanged) return;
+    this.domChanged = false;
+    super.poll();
+    // The same text, formatted otherwise: the underlines are placed again.
+    this.ui.schedule();
+  }
+
+  onInput() {
+    // The text is read now: what the observer was about to tell is known.
+    if (this.mutationObserver.takeRecords().length) this.stale = true;
+    this.domChanged = false;
+    super.onInput();
   }
 
   // ---------- Text <-> DOM ----------
@@ -116,9 +138,18 @@ class FcRichField extends FcFieldBase {
     return { node: seg.node, offset: local };
   }
 
-  rangeFor(offset, length) {
-    // Text nodes may have been replaced since the last read.
+  // Text nodes may have been replaced since the last read.
+  syncSegments() {
     if (this.segments.some((s) => !s.node.isConnected)) this.readText();
+  }
+
+  rangeFor(offset, length) {
+    this.syncSegments();
+    return this.rangeAt(offset, length);
+  }
+
+  // (For several ranges in a row: syncSegments() first, once.)
+  rangeAt(offset, length) {
     const a = this.domPoint(offset, false);
     const b = this.domPoint(offset + length, true);
     if (!a || !b) return null;
@@ -167,18 +198,20 @@ class FcRichField extends FcFieldBase {
   renderMarks() {
     for (const mark of this.marks) for (const box of mark.boxes) box.remove();
     this.marks = this.matches.map((m, index) => ({ index, match: m, boxes: [] }));
+    this.stale = true;
     this.ui.schedule();
   }
 
   layout(hostRect) {
-    const r = this.el.getBoundingClientRect();
-    const visible = this.isShown(r);
-    this.root.hidden = !visible;
-    if (!visible) return;
+    const el = this.el;
+    const r = el.getBoundingClientRect();
+    const clip = this.shownIn(r);
+    this.root.hidden = !clip;
+    if (!clip) return;
 
     // Clip to the part of the editor the page shows: tall editors scroll inside
     // a box of the page (ChatGPT's prompt, an e-mail body) or the viewport.
-    const v = this.visibleRect(r);
+    const v = this.visibleRect(r, clip);
     const top = v.top;
     const bottom = v.bottom;
     const cs = this.clip.style;
@@ -189,9 +222,17 @@ class FcRichField extends FcFieldBase {
     // (Marks stay placed from the editor's corner; the clip-path hides what the page hides.)
     cs.clipPath = `inset(${Math.max(0, v.top - r.top)}px ${Math.max(0, r.right - v.right)}px ${Math.max(0, r.bottom - v.bottom)}px ${Math.max(0, v.left - r.left)}px)`;
 
-    for (const mark of this.marks) {
-      const range = this.rangeFor(mark.match.offset, mark.match.length);
-      const rects = range ? [...range.getClientRects()].filter((x) => x.width > 0) : [];
+    // The marks are placed from the editor's corner: while the words stay where
+    // they are inside it (the page scrolls, nothing changes), they are left as
+    // they are. The editor scrolling its own text moves them (no event tells it
+    // inside a shadow tree), and so does what nothing tells about (a font that
+    // loads, a style of the page): the first and last marks are measured to see.
+    this.syncSegments();
+    const scroll = `${el.scrollLeft},${el.scrollTop}`;
+    if (scroll !== this.scroll || (!this.stale && this.marksMoved(r))) this.stale = true;
+    this.scroll = scroll;
+    for (const mark of this.takeStale() ? this.marks : []) {
+      const rects = this.markRects(mark, r);
       while (mark.boxes.length < rects.length) {
         const box = document.createElement("div");
         box.className = `fc-mark fc-${mark.match.category}`;
@@ -202,8 +243,8 @@ class FcRichField extends FcFieldBase {
       while (mark.boxes.length > rects.length) mark.boxes.pop().remove();
       rects.forEach((rect, i) => {
         const bs = mark.boxes[i].style;
-        bs.left = `${rect.left - r.left}px`;
-        bs.top = `${rect.top - r.top}px`;
+        bs.left = `${rect.left}px`;
+        bs.top = `${rect.top}px`;
         bs.width = `${rect.width}px`;
         bs.height = `${rect.height}px`;
       });
@@ -211,14 +252,38 @@ class FcRichField extends FcFieldBase {
     }
 
     const area = { left: v.left, top, right: v.right, bottom, height: bottom - top };
-    this.placeBadge(area, hostRect, r.height < FC_BADGE_SIZE + 12);
+    this.placeBadge(area, hostRect, r.height < FC_BADGE_SIZE + 12, r);
   }
 
+  // Where the words of a mark are drawn, from the corner of the editor (at `r`).
+  markRects(mark, r) {
+    const range = this.rangeAt(mark.match.offset, mark.match.length);
+    if (!range) return [];
+    return [...range.getClientRects()].filter((x) => x.width > 0)
+      .map((x) => ({ left: x.left - r.left, top: x.top - r.top, width: x.width, height: x.height }));
+  }
+
+  // Whether the first or the last mark is no longer where it was drawn.
+  marksMoved(r) {
+    const drawn = this.marks.filter((mark) => mark.rects);
+    return [...new Set([drawn[0], drawn.at(-1)])].some((mark) => {
+      if (!mark) return false;
+      const now = this.markRects(mark, r);
+      return now.length !== mark.rects.length || now.some((b, i) => {
+        const a = mark.rects[i];
+        return Math.abs(a.left - b.left) > 0.5 || Math.abs(a.top - b.top) > 0.5 ||
+          Math.abs(a.width - b.width) > 0.5 || Math.abs(a.height - b.height) > 0.5;
+      });
+    });
+  }
 
   matchAt(x, y) {
+    const r = this.el.getBoundingClientRect();
+    x -= r.left;
+    y -= r.top;
     for (const mark of this.marks) {
       for (const rect of mark.rects ?? []) {
-        if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom + 4) return mark.index;
+        if (x >= rect.left && x <= rect.left + rect.width && y >= rect.top && y <= rect.top + rect.height + 4) return mark.index;
       }
     }
     return -1;

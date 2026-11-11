@@ -37,6 +37,10 @@ class FcFieldBase {
     this.reqId = 0;
     this.timer = 0;
     this.destroyed = false;
+    // The text may have moved inside the field (typing, resizing, scrolling it…):
+    // what layout() keeps from one pass to the next is measured again.
+    this.stale = true;
+    this.textBoxes = null;
 
     this.root = document.createElement("div");
     this.badge = document.createElement("div");
@@ -53,6 +57,8 @@ class FcFieldBase {
     this.onFocusChange = (event) => {
       this.refreshVisible();
       this.renderBadge();
+      // (A field with nothing to show is not laid out: now it has its badge.)
+      this.ui.schedule();
       // The background may have gone idle and stopped the engines: restart
       // them before the user's next check (no cost when they are running).
       if (event?.type === "focus") fcWarmup();
@@ -70,6 +76,7 @@ class FcFieldBase {
     el.spellcheck = false;
 
     this.resizeObserver = new ResizeObserver(() => {
+      this.stale = true;
       this.onResize();
       ui.schedule();
     });
@@ -109,37 +116,61 @@ class FcFieldBase {
   hasSelection() { return false; }
   isFocused() { return document.activeElement === this.el; }
   onResize() {}
+
+  // True once per change of the text's place in the field: layout() then
+  // measures again what it keeps between passes.
+  takeStale() {
+    if (!this.stale) return false;
+    this.stale = false;
+    this.textBoxes = null;
+    return true;
+  }
+
+  // Nothing of ours to place: no underline, and the badge is hidden (a field
+  // the user has left, without mistakes).
+  isIdle() {
+    return this.badge.hidden && !this.matches.length;
+  }
+
   // Whether the page shows the field at `r` (its viewport rectangle): not made
   // invisible (X hides its header with opacity when the page scrolls) nor covered
   // by other content. A label laid over the field does not count.
-  isShown(r) {
-    if (r.width <= 0 || r.height <= 0) return false;
+  // Returns the box the page shows it in (clipBox), for the layout, or null.
+  shownIn(r) {
+    if (r.width <= 0 || r.height <= 0) return null;
     const el = this.el;
-    if (el.checkVisibility && !el.checkVisibility({ opacityProperty: true, visibilityProperty: true })) return false;
+    if (el.checkVisibility && !el.checkVisibility({ opacityProperty: true, visibilityProperty: true })) return null;
+    const clip = this.clipBox();
     // Off screen: nothing to see anyway, the layout places the marks there.
-    if (r.bottom <= 0 || r.top >= window.innerHeight || r.right <= 0 || r.left >= window.innerWidth) return true;
+    if (r.bottom <= 0 || r.top >= window.innerHeight || r.right <= 0 || r.left >= window.innerWidth) return clip;
     const isAncestor = (a) => {
       for (let n = el; n; n = n.parentNode ?? n.host) if (n === a) return true;
       return false;
     };
     // Tested on the part a scrolling box shows: a long prompt scrolled down hides its top.
-    const v = this.visibleRect(r);
-    if (v.right - v.left <= 0 || v.bottom - v.top <= 0) return false;
+    const v = this.visibleRect(r, clip);
+    if (v.right - v.left <= 0 || v.bottom - v.top <= 0) return null;
     const y = Math.min(v.top + Math.min((v.bottom - v.top) / 2, 16), window.innerHeight - 1);
     for (const x of [v.left + 8, (v.left + v.right) / 2, v.right - 8]) {
       if (x < 0 || x >= window.innerWidth) continue;
       const top = document.elementsFromPoint(x, y).find((e) => e !== this.ui.host);
       if (!top || top === el || el.contains(top) || isAncestor(top) || top.control === el ||
-          top.closest?.("label")?.control === el) return true;
+          top.closest?.("label")?.control === el) return clip;
     }
-    return false;
+    return null;
   }
 
-  // `r` (the field's viewport rectangle) cut to the boxes of the page that
-  // scroll or clip it, and to the viewport.
-  visibleRect(r) {
-    let left = Math.max(r.left, 0), top = Math.max(r.top, 0);
-    let right = Math.min(r.right, window.innerWidth), bottom = Math.min(r.bottom, window.innerHeight);
+  // `r` (a viewport rectangle of the field) cut to `clip` (clipBox).
+  visibleRect(r, clip) {
+    const left = Math.max(r.left, clip.left), top = Math.max(r.top, clip.top);
+    const right = Math.min(r.right, clip.right), bottom = Math.min(r.bottom, clip.bottom);
+    return { left, top, right: Math.max(left, right), bottom: Math.max(top, bottom) };
+  }
+
+  // The part of the viewport the page shows the field in: the viewport, cut to
+  // the boxes of the page that scroll or clip the field.
+  clipBox() {
+    let left = 0, top = 0, right = window.innerWidth, bottom = window.innerHeight;
     // (Nothing above a fixed box clips it.)
     let fixed = getComputedStyle(this.el).position === "fixed";
     for (let n = this.el.parentNode ?? this.el.host; n && !fixed && n !== document.documentElement && n !== document.body;
@@ -154,7 +185,7 @@ class FcFieldBase {
       if (cs.overflowX !== "visible") { left = Math.max(left, bl); right = Math.min(right, bl + n.clientWidth); }
       if (cs.overflowY !== "visible") { top = Math.max(top, bt); bottom = Math.min(bottom, bt + n.clientHeight); }
     }
-    return { left, top, right: Math.max(left, right), bottom: Math.max(top, bottom) };
+    return { left, top, right, bottom };
   }
 
   layout(_hostRect) {}
@@ -171,8 +202,10 @@ class FcFieldBase {
   // area text is drawn in), or vertically centered on single-line fields. When
   // that hides the text (typed up to the edge: "c'est un peu chiant" on X), it
   // goes out of the way: right of the field, on its top right corner or under
-  // it, where the page has nothing to click.
-  placeBadge(box, hostRect, centered) {
+  // it, where the page has nothing to click. `origin` is a viewport point that
+  // moves with the field (its corner): the text's rectangles are kept from it,
+  // and only measured again once the text has moved inside the field.
+  placeBadge(box, hostRect, centered, origin) {
     const S = FC_BADGE_SIZE;
     const top = centered || box.height < S + 12 ? box.top + (box.height - S) / 2 : box.bottom - S - 4;
     const spots = [
@@ -184,9 +217,13 @@ class FcFieldBase {
     let rects = null;
     const coversText = (s) => {
       // (Only the text shown: what a scrolling box hides does not count.)
-      rects ??= [...this.textRects()].map((r) => ({
-        left: Math.max(r.left, box.left), right: Math.min(r.right, box.right),
-        top: Math.max(r.top, box.top), bottom: Math.min(r.bottom, box.bottom),
+      this.textBoxes ??= [...this.textRects()].map((r) => ({
+        left: r.left - origin.left, right: r.right - origin.left,
+        top: r.top - origin.top, bottom: r.bottom - origin.top,
+      }));
+      rects ??= this.textBoxes.map((r) => ({
+        left: Math.max(r.left + origin.left, box.left), right: Math.min(r.right + origin.left, box.right),
+        top: Math.max(r.top + origin.top, box.top), bottom: Math.min(r.bottom + origin.top, box.bottom),
       }));
       return rects.some((r) => r.right > r.left && r.bottom > r.top &&
         r.left < s.left + S + 1 && s.left - 1 < r.right && r.top < s.top + S + 1 && s.top - 1 < r.bottom);
@@ -321,6 +358,7 @@ class FcFieldBase {
       visible.length === this.matches.length && visible.every((m, i) => m === this.matches[i]);
     if (same && !force) return;
     this.matches = visible;
+    this.stale = true;
     this.renderMarks();
     this.renderBadge();
     this.ui.fieldChanged(this);
@@ -514,9 +552,14 @@ class FcTextField extends FcFieldBase {
   layout(hostRect) {
     const el = this.el;
     const r = el.getBoundingClientRect();
-    const visible = this.isShown(r);
-    this.root.hidden = !visible;
-    if (!visible) return;
+    const clip = this.shownIn(r);
+    this.root.hidden = !clip;
+    if (!clip) return;
+    // The field scrolled its own text (no event tells it inside a shadow tree).
+    const scroll = `${el.scrollLeft},${el.scrollTop}`;
+    if (scroll !== this.scroll) this.stale = true;
+    this.scroll = scroll;
+    this.takeStale();
 
     const left = r.left + this.borders.left;
     const top = r.top + this.borders.top;
@@ -528,7 +571,7 @@ class FcTextField extends FcFieldBase {
     ms.height = `${box.height}px`;
     this.inner.style.transform = `translate(${-el.scrollLeft}px, ${-el.scrollTop}px)`;
     // What a scrolling box of the page hides of the field stays hidden.
-    const v = this.visibleRect({ left, top, right: left + box.width, bottom: top + box.height });
+    const v = this.visibleRect({ left, top, right: left + box.width, bottom: top + box.height }, clip);
     ms.clipPath = `inset(${v.top - top}px ${left + box.width - v.right}px ${top + box.height - v.bottom}px ${v.left - left}px)`;
 
     // A wide right padding keeps room for the site's own buttons (leboncoin's
@@ -536,7 +579,7 @@ class FcTextField extends FcFieldBase {
     const reserved = this.isInput && this.paddingRight >= FC_BADGE_SIZE ? this.paddingRight : 0;
     const area = { left, top, right: left + box.width - reserved, bottom: top + box.height, height: box.height };
     if (this.isInput) area.right = this.freeRight(area);
-    this.placeBadge(area, hostRect, this.isInput);
+    this.placeBadge(area, hostRect, this.isInput, { left, top });
   }
 
   // The right end of `area` not covered by the page's own content (a button laid
