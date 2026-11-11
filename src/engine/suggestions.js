@@ -88,11 +88,21 @@ function fcFrequentNeighbours(spellChecker, word, limit = 3) {
   if (!found) {
     const plain = fcPlain(lower);
     const scored = [];
-    for (const { word: candidate, plain: p } of fcFrequentByInitial.get(plain[0]) ?? []) {
+    const heard = fcHeardKeys(lower);
+    // A silent "h" left out: "otel" -> "hôtel".
+    const initials = FC_VOWEL_START.test(plain) ? [plain[0], "h"] : [plain[0]];
+    for (const { word: candidate, plain: p } of initials.flatMap((i) => fcFrequentByInitial.get(i) ?? [])) {
       // Cheap filter on accent-free forms, exact typing cost on the survivors.
-      if (candidate === lower || fcWithin(plain, p, 2) > 2) continue;
+      // Further away when it sounds the same: "resonnable" -> "raisonnable".
+      if (candidate === lower) continue;
+      const within = fcWithin(plain, p, 3);
+      if (within > 3) continue;
+      const sound = fcSoundsLike(heard, fcHeardKeys(candidate));
+      if (within > 2 && !sound) continue;
       const distance = fcTypingDistance(lower, candidate);
-      if (distance <= 1.6) scored.push([candidate, distance - FC_FREQ_WEIGHT * fcFrequency(candidate)]);
+      if (distance <= 1.6 || sound) {
+        scored.push([candidate, distance - FC_SOUND_BONUS * sound - FC_FREQ_WEIGHT * fcFrequency(candidate)]);
+      }
     }
     found = scored
       .sort((a, b) => a[1] - b[1])
@@ -130,6 +140,39 @@ function fcSoundKey(word) {
     .replace(/(.)\1+/g, "$1");
 }
 
+// Looser keys for misspellings, written as heard: "magnifik" and "magnifique",
+// "otel" and "hôtel", "resonnable" and "raisonnable" sound the same. A final
+// "é" is heard ("acheté" is not "achète"). An "s" between vowels sounds "z",
+// but people often write it for "ss" ("dosier"): both readings are kept.
+function fcHeardKeys(word) {
+  const key = (w) => w
+    .replace(/(?<!c)h/g, "")
+    .replace(/[ae][nm](?![aeiouyéèênm])/g, "an")
+    .replace(/[aeu]?[iy][nm](?![aeiouyéèênm])/g, "in")
+    .replace(/(ai|ei|è|ê|ë)/g, "e")
+    .replace(/y/g, "i")
+    .replace(/(.)\1+/g, "$1")
+    .replace(/(?<!i)ent$/, "")
+    .replace(/(es|e|s|t|x|d)$/, "")
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "");
+  const base = word
+    .toLowerCase()
+    .replace(/['’\- ]/g, "")
+    .replace(/(er|ez)$/, "é")
+    .replace(/e?au/g, "o")
+    .replace(/ph/g, "f")
+    .replace(/(qu|ck|q|c(?=[aouàâôûùlrtkc]|$))/g, "k")
+    .replace(/(c(?=[eiyéèêëîï])|ç)/g, "s")
+    .replace(/g(?=[eiyéèêëîï])/g, "j")
+    .replace(/gu(?=[eiyéèê])/g, "g");
+  return [key(base), key(base.replace(/(?<=[aeiouyàâéèêëîïôûù])s(?=[aeiouyàâéèêëîïôûù])/g, "z"))];
+}
+
+function fcSoundsLike(keys, other) {
+  return keys[0] === other[0] || keys[1] === other[1];
+}
+
 const fcBase = (ch) => ch.normalize("NFD").replace(/[̀-ͯ]/g, "");
 
 // Edit distance where the slips people make most are cheap: a missing or
@@ -164,6 +207,8 @@ function fcTypingDistance(a, b) {
 const FC_CONFUSIONS = [
   [/ction/g, "xion"], [/xion/g, "ction"], [/ph/g, "f"], [/f/g, "ph"],
   [/an/g, "en"], [/en/g, "an"], [/ai/g, "è"], [/è/g, "ai"], [/au/g, "o"], [/o/g, "au"],
+  // An ending written as heard: "magnifik", "informatic" -> "-ique".
+  [/[kc]$/, "que"],
 ];
 
 function fcSpellingCost(typo, candidate) {
@@ -365,24 +410,34 @@ function fcRankSuggestions(spellChecker, text, start, length, suggestions, isSpe
   const after = text.slice(start + length, e);
   const baseline = fcCountErrors(before + word + after);
   const wordKey = fcSoundKey(word);
+  const wordHeard = fcHeardKeys(word);
   const afterSi = !isSpelling && FC_AFTER_SI.test(before);
   const accentless = /^[a-z]+$/i.test(word);
+  const nameTyped = isSpelling && wordIsLower && word.length > 2 && suggestions[0]?.toLowerCase() === word &&
+    !candidates.some((c) => c === c.toLowerCase() && fcPlain(c) === fcPlain(word));
 
   const scored = candidates.map((c) => {
     const index = suggestions.indexOf(c);
     const extra = index < 0;
     const sound = fcSoundKey(c) === wordKey ? 1 : 0;
-    let cost = fcSpellingCost(word, c) - FC_FREQ_WEIGHT * fcFrequency(c);
+    const typing = fcTypingDistance(word, c);
+    const spelling = fcSpellingCost(word, c);
+    let cost = spelling - FC_FREQ_WEIGHT * fcFrequency(c);
+    // Spelling: a candidate that sounds like the typo ("magnifik" -> "magnifique"), unless a
+    // known confusion already made it cheap: "fallus" -> "fallu", not "phallus". A word cut in
+    // two always sounds the same: "couramant" -> "couramment", not "cou ramant".
+    if (isSpelling && spelling >= typing && !c.includes(" ") && fcSoundsLike(wordHeard, fcHeardKeys(c))) cost -= FC_SOUND_BONUS;
     // Elided forms ("j’ai" for "jai") are as trustworthy as Grammalecte's own.
     if (extra && !c.includes("’")) cost += FC_EXTRA_PENALTY;
     if (!extra) cost += FC_ORDER_WEIGHT * index;
-    if (isSpelling) cost -= FC_SOUND_BONUS * sound;
     return {
       c,
       extra,
       errors: isSpelling ? fcCountErrorsForWord(before + c + after, before.length) : fcCountErrors(before + c + after),
       repaired: isSpelling ? null : fcErrorsAfterRepair(before + c + after, before.length, before.length + c.length),
-      caseChange: wordIsLower !== (c === c.toLowerCase()) ? 1 : 0,
+      // The very word with a capital is a name typed in lowercase ("en espagne" -> "Espagne",
+      // not "es pagne"), unless a common word is only an accent away ("pres" -> "près").
+      caseChange: wordIsLower !== (c === c.toLowerCase()) && !(nameTyped && c.toLowerCase() === word) ? 1 : 0,
       // Only accents missing ("etre" -> "être"): first, even when the right word brings out a
       // real mistake next to it ("pour être accepter") that a wrong one hides ("êtres").
       // Not when the word itself is then wrong: "Il appele" -> "appelle", not "appelé".
