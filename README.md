@@ -12,7 +12,7 @@ ligne de vos textes sur Internet : toute l’analyse tourne dans votre navigateu
 · Site officiel : **[lapigeonnerie.fr/freecorrector](https://lapigeonnerie.fr/freecorrector)**
 
 - Soulignement des fautes dans les `<textarea>`, les champs texte et les éditeurs riches
-  (`contenteditable` : Gmail, Outlook, Discord, Notion…)
+  (`contenteditable` : Gmail, Outlook, Discord, Notion…), et Google Docs
   - rouge : orthographe
   - orange : grammaire (accords, conjugaison, homophones…)
   - bleu : typographie et style
@@ -121,6 +121,8 @@ src/
   content/                 Scripts injectés dans les pages
     field.js               Base commune des champs + textarea/input (calque miroir)
     rich-field.js          Éditeurs riches contenteditable (soulignements par Range)
+    docs-field.js          Google Docs (texte lu dans sa couche annotée, frappe simulée)
+    docs-annotate.js       Demande cette couche à Docs (monde de la page, avant son chargement)
     ui.js                  Shadow DOM : bulle de suggestions et panneau des fautes
     styles.js              CSS du shadow DOM
     main.js                Détection des champs, réglages
@@ -193,6 +195,7 @@ en anglais sans mot outil (« Bodies list incoherent display »), français plei
 - [x] Chrome, Edge, Opera, Brave, Vivaldi (Manifest V3 avec document hors écran pour le worker)
 - [ ] Safari (conversion Xcode sur macOS)
 - [x] Champs `contenteditable` (Gmail, Outlook, Discord, Notion, éditeurs Quill, ProseMirror…)
+- [x] Google Docs (texte dessiné dans un canvas : lu dans la couche annotée que Docs ajoute pour les extensions)
 - [x] Anglais (Harper)
 - [ ] Autres langues (espagnol, allemand…) via des moteurs libres
 - [x] Publication sur [addons.mozilla.org](https://addons.mozilla.org/fr/firefox/addon/freecorrector/) (octobre 2026)

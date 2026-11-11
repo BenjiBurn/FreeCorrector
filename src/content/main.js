@@ -1,8 +1,16 @@
-/* global fcApi, fcGetSettings, FcTextField, FcRichField, FcUi, FC_COMPOSE_WINDOW */
+/* global fcApi, fcGetSettings, FcTextField, FcRichField, FcDocsField, fcDocsEditor, FcUi, FC_COMPOSE_WINDOW, FC_DOCS */
 
 // Entry point: attach a checker to each text field the user focuses.
 
 (async () => {
+  // Google Docs' input iframe only receives the keys: the text is checked by
+  // the page above it (docs-field.js).
+  try {
+    if (window.frameElement?.classList.contains("docs-texteventtarget-iframe")) return;
+  } catch {
+    // A frame of another site: not Docs'.
+  }
+
   let settings = await fcGetSettings();
   let ui = null;
   let attached = new WeakMap();
@@ -62,16 +70,28 @@
 
   function attach(focused) {
     const el = editableTarget(focused);
-    if (!el || !isActive() || attached.has(el)) return;
+    if (el) attachField(el, el.isContentEditable ? FcRichField : FcTextField);
+  }
+
+  function attachField(el, Field) {
+    if (!isActive() || attached.has(el)) return;
     if (!ui) {
       ui = new FcUi();
       ui.sentenceRules = settings.sentenceRules;
       ui.onFieldRemoved = (field) => attached.delete(field.el);
     }
-    const Field = el.isContentEditable ? FcRichField : FcTextField;
     const field = new Field(el, ui);
     attached.set(el, field);
     ui.addField(field);
+  }
+
+  // Google Docs: no field to focus, the document is checked as soon as Docs
+  // shows its text (and again when it rebuilds its editor).
+  if (FC_DOCS && topFrame) {
+    setInterval(() => {
+      const editor = fcDocsEditor();
+      if (editor) attachField(editor, FcDocsField);
+    }, 1000);
   }
 
   // composedPath()[0] reaches fields inside open shadow roots (web components).

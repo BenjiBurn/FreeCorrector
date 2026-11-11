@@ -38,8 +38,9 @@ class FcRichField extends FcFieldBase {
       this.domChanged = true;
       // Formatting moves the words without changing the text (bold, a class).
       this.stale = true;
-      // Attributes alone are for the next pass: some pages animate them all the time.
-      if (records.every((r) => r.type === "attributes")) return;
+      // Attributes alone are for the next pass: some pages animate them all the
+      // time. Except those that hold text (Google Docs: docs-field.js).
+      if (records.every((r) => r.type === "attributes" && !this.textAttributes.includes(r.attributeName))) return;
       clearTimeout(this.mutationTimer);
       this.mutationTimer = setTimeout(() => this.poll(), 30);
     });
@@ -52,6 +53,11 @@ class FcRichField extends FcFieldBase {
     this.mutationObserver.disconnect();
     clearTimeout(this.mutationTimer);
     super.destroy();
+  }
+
+  // Attributes of the editor's elements that hold its text.
+  get textAttributes() {
+    return [];
   }
 
   poll() {
