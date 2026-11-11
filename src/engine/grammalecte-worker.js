@@ -700,8 +700,9 @@ function checkParagraph(paragraph) {
   }
 
   // Like Grammalecte's, our missing-"ne" rule is for picky mode: "je sais pas" is fine in a chat.
+  // So is the traditional spelling ("parait" -> "paraît"): the 1990 one is correct too.
   const custom = fcCustomRules(paragraph, spellChecker, [...spelling, ...grammar])
-    .filter((m) => picky || !/^FC_NE_(PAS|JAMAIS)$/.test(m.ruleId));
+    .filter((m) => picky || !(/^FC_NE_(PAS|JAMAIS)$/.test(m.ruleId) || m.message.startsWith("Orthographe traditionnelle")));
   for (const m of custom) if (/^FC_NE_(PAS|JAMAIS)$/.test(m.ruleId)) m.ruleId = FC_NEG_RULE;
   // "mot de basse", "une dent de lit": a slip inside a set phrase.
   for (const s of self.fcCollocationSlips(paragraph, "fr")) {

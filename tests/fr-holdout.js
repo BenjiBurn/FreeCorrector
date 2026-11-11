@@ -192,9 +192,10 @@ module.exports = [
   // Vu par la tâche quotidienne : « Leve » en début de phrase proposait « L’Eve » avant « Lève ».
   ["Leve toi vite, on part.", "Leve", "Lève"],
   ["Eve est arrivée hier soir.", null, null],
-  // Demandé par un utilisateur : l'orthographe traditionnelle proposée (en bleu) pour les formes de 1990.
-  ["Ça me parait normal.", "parait", "paraît"],
-  ["J'ai acheté une boite de chocolats.", "boite", "boîte"],
+  // Demandé par un utilisateur : l'orthographe traditionnelle proposée (en bleu) pour les formes de 1990,
+  // en mode exigeant seulement (décision du 2026-11-11 : l'orthographe de 1990 est correcte aussi).
+  ["Ça me parait normal.", null, null],
+  ["J'ai acheté une boite de chocolats.", null, null],
   ["Il boite depuis sa chute.", null, null],
   ["Ce fut un plaisir de vous rencontrer.", null, null],
   ["La soule est un jeu de balle médiéval.", null, null],

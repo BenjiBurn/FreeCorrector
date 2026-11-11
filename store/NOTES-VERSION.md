@@ -8,6 +8,7 @@ Brouillon, à compléter jusqu’à la sortie.
 - « … » Peux tu m’en dire plus ? », « ou puis je l’acheter ? » : au milieu d’une phrase, l’inversion sans trait d’union est soulignée (→ « Peux-tu », « puis-je ») au lieu de conjuguer l’infinitif (« dis », « achète ») ; signalé deux fois.
 - Mode exigeant : un mot répété dans une citation entre guillemets n’est plus signalé, et l’alerte de répétition ne propose plus de mot sans rapport (« produit » → « produis ») ; signalé par un utilisateur.
 - « (alcool, vitesse, contrôle technique, ...) » : la virgule avant les points de suspension n’est plus signalée qu’en mode exigeant, avec la bonne correction ; signalé par un utilisateur.
+- « parait », « entrainer », « boite » (orthographe rectifiée de 1990, correcte) : la suggestion de l’orthographe traditionnelle (« paraît »…) n’apparaît plus qu’en mode exigeant ; décision de l’auteur.
 
 ## 1.3.0
 
