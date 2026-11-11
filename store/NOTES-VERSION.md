@@ -5,6 +5,7 @@
 Brouillon, à compléter jusqu’à la sortie. 1.4.0 et non 1.3.1 : deux nouveautés visibles, Google Docs et le conjugueur.
 
 - Nouveau : FreeCorrector corrige aussi dans Google Docs (Chrome, Edge, Brave ; Firefox : correction à vérifier avant la sortie) : fautes soulignées dans le document, suggestions au clic, liste des fautes et « Tout corriger » (Ctrl+Maj+F). Docs dessine son texte dans un canvas : l’extension le lit dans la copie invisible que Docs ajoute pour les correcteurs, et tape les corrections comme au clavier (Ctrl+Z les annule).
+- Nouveau : un conjugueur. Tous les temps de n’importe quel verbe français, avec négation, forme pronominale, temps composés, question et féminin. On l’ouvre depuis le menu (« Conjuguer un verbe »), l’onglet de la page Correcteur, ou le lien « Voir la conjugaison de… » dans la bulle d’une faute de conjugaison.
 - « la 1ere », « mes 1eres », « la 2eme » : le nombre ordinal est souligné en entier et corrigé en « 1ʳᵉ », « 1ʳᵉˢ », « 2ᵉ » (au lieu de proposer « erre » pour « ere ») ; signalé par un utilisateur.
 - « … » Peux tu m’en dire plus ? », « ou puis je l’acheter ? » : au milieu d’une phrase, l’inversion sans trait d’union est soulignée (→ « Peux-tu », « puis-je ») au lieu de conjuguer l’infinitif (« dis », « achète ») ; signalé deux fois.
 - Mode exigeant : un mot répété dans une citation entre guillemets n’est plus signalé, et l’alerte de répétition ne propose plus de mot sans rapport (« produit » → « produis ») ; signalé par un utilisateur.

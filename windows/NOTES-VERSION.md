@@ -4,6 +4,22 @@
 dans le champ « Nouveautés de cette version » de la fiche, en français et en anglais
 (1500 caractères au maximum chacune).
 
+## 0.5.0 (prochaine version, pas encore publiée)
+
+Brouillon. 0.5.0 : nouveauté visible (le conjugueur).
+
+**Français** :
+
+```text
+- Nouveau : « Conjuguer un verbe… » dans le menu de l'icône ouvre le conjugueur : tous les temps de n'importe quel verbe français. La bulle d'une faute de conjugaison propose aussi « Voir la conjugaison ».
+```
+
+**English** :
+
+```text
+- New: "Conjugate a verb…" in the icon's menu opens the conjugator: every tense of any French verb. The bubble of a conjugation mistake also offers "See how to conjugate".
+```
+
 ## 0.4.0
 
 Envoyée au Microsoft Store (la dernière version du Store était la 0.2.0) et au site. Nouveau aussi, non
