@@ -399,8 +399,9 @@ function editedProseFalseAlarm(paragraph, forHarper, offset, end, word, kind, re
   if (/^an$/i.test(word) && replacements.every((r) => /^a$/i.test(r)) && /^\s+[AEFHILMNORSX][A-Z0-9]+\b/.test(after)) return true;
   // "his paper on mass–energy equivalence", "some one-shot collaborations": half of a hyphenated word.
   if (/\s/.test(word) && /^[-–]\p{L}/u.test(after)) return true;
-  // "one of the four first selected": a number, not a noun to put in the plural.
-  if (kind === "Usage" && /^(two|three|four|five|six|seven|eight|nine|ten|first|last)$/i.test(word)) return true;
+  // "one of the four first selected": a number, not a noun to put in the plural;
+  // "one of the family": a group.
+  if (kind === "Usage" && /^(two|three|four|five|six|seven|eight|nine|ten|first|last|family|team|staff|crew|group|class|band|public)$/i.test(word)) return true;
   // "a call from some 400 scientists", "(both 1968)": right as written.
   if (kind === "Grammar" && /should not be used before a number/.test(message)) return true;
   // "made up most of the team": the phrasal verb "make up", not "upmost".

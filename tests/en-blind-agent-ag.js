@@ -119,7 +119,7 @@ module.exports = [
   ["I enjoy to travel with my family.", "to travel", "traveling"],
   ["I suggest you to call the support team.", "suggest you to call", "suggest you call"],
   ["Its a good idea, but we don't have enought time.", "enought", "enough"],
-  ["Sorry, I'm not agree with this decision.", "not agree", "don't agree"],
+  ["Sorry, I'm not agree with this decision.", "I'm not agree", "I don't agree"],
   // clean French-friendly
   ["I agree with your proposal.", null, null],
   ["I have been living in Paris for three years.", null, null],
@@ -152,6 +152,7 @@ module.exports = [
   ["Could you please adress the issue with the vendor?", "adress", "address"],
   ["We had a great oportunity to meet the CEO.", "oportunity", "opportunity"],
   ["I am writting to ask about my order.", "writting", "writing"],
+  ["PLEASE SEND THE SIGNED CONTRACT BY TOMOROW.", "TOMOROW", "TOMORROW"],
   ["Sorry for the inconvenience, we are working on it.", null, null],
 
   // --- confusions: to/too, were/where/we're, accept/except, lose/loose, quiet/quite ---
@@ -270,6 +271,32 @@ module.exports = [
   ["It's been five years since I started working here.", null, null],
   ["I've been here since 9 am and I'm exhausted.", null, null],
   ["I have been waiting for two hours.", null, null],
+
+  // --- correct counterparts of the eleventh-round rules ---
+  ["We signed a three year contract and paid a five dollar fee.", null, null],
+  ["The train leaves at 10 am tomorrow, and the bus at 9 tomorrow.", null, null],
+  ["I was there for three years before that.", null, null],
+  ["One of my favorites is the blue one.", null, null],
+  ["One of the family is sick, so we stayed home.", null, null],
+  ["The book is interesting in many ways, and the match was exciting to watch.", null, null],
+  ["I find it interesting to compare the two versions.", null, null],
+  ["We're there for you, aren't we?", null, null],
+  ["We're all set for tomorrow, aren't we?", null, null],
+  ["Tell me you're coming, please.", null, null],
+  ["Send me your address and I'll mail it.", null, null],
+  ["Your feeling about him was right.", null, null],
+  ["That's a really good piece of advice.", null, null],
+  ["A two person team handled the whole migration.", null, null],
+  ["Several people called to complain about the noise.", null, null],
+  ["Could you be more precise? To be precise, it was Tuesday.", null, null],
+  ["His many works include novels, plays and essays.", null, null],
+  ["She assisted the doctor and helped to the best of her ability.", null, null],
+  ["We attended a conference in Berlin last spring.", null, null],
+  ["This kind of problem happens all the time.", null, null],
+  ["I made my bed and did my homework.", null, null],
+  ["We made a party hat for the twins.", null, null],
+  ["I'm not sure I agree with this decision.", null, null],
+  ["Were you at the meeting yesterday?", null, null],
 
   // --- edited prose (articles, reports): must stay clean ---
   ["In 1939 he signed a letter to President Franklin D. Roosevelt, drafted with W. E. B. Du Bois in mind.", null, null],
