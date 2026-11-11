@@ -79,7 +79,9 @@ function init(options) {
     gc_engine.load("JavaScript", "aHSL", base + "graphspell/_dictionaries");
     spellChecker = gc_engine.getSpellChecker();
     if (!spellChecker) throw new Error("Grammalecte failed to load its dictionary");
-    fcLoadFrequencies(helpers.loadFile(new URL("../data/fr-freq.txt", self.location.href).href));
+    const frList = helpers.loadFile(new URL("../data/fr-freq.txt", self.location.href).href);
+    fcLoadFrequencies(frList);
+    loadEnglishLeaning(frList, helpers.loadFile(new URL("../data/en-freq.txt", self.location.href).href));
   }
   if (options) {
     const { fcPicky = false, ...grammalecteOptions } = options;
@@ -321,6 +323,74 @@ function insideEnglishQuote(paragraph, start) {
   return english / words.length >= 0.6;
 }
 
+// Words more frequent in English than in French (data/*-freq.txt, measured as language.js
+// does). Leaning: at least ten times more ("the", "learning", "women", not "machine" or
+// "table"). Common: at least as frequent ("data", "business"); never a French function word.
+const FC_ENGLISH_LEANING = new Set();
+const FC_ENGLISH_COMMON = new Set();
+function loadEnglishLeaning(frList, enList) {
+  const parse = (list) => {
+    const counts = new Map();
+    let total = 0;
+    for (const line of list.split("\n")) {
+      const space = line.lastIndexOf(" ");
+      const count = Number(line.slice(space + 1));
+      if (space > 0 && count > 0) {
+        const word = line.slice(0, space);
+        counts.set(word.includes("'") ? word.replace(/'/g, "’") : word, count);
+        total += count;
+      }
+    }
+    return { counts, total };
+  };
+  const fr = parse(frList), en = parse(enList);
+  for (const [word, count] of en.counts) {
+    const ratio = (count / en.total) / ((fr.counts.get(word) ?? 1) / fr.total);
+    if (ratio >= 10) FC_ENGLISH_LEANING.add(word);
+    else if (ratio >= 1 && word.length > 2) FC_ENGLISH_COMMON.add(word); // (not "a")
+  }
+}
+
+// Words that link the words of an English name or title: "Hall of Fame", "Wiley and Sons".
+const FC_EN_LINK_WORDS = /^(the|of|and|to|from|for|with|in|at|by|is|are|my|your|our|its|vs)$/i;
+// Particles of foreign names: "Alexander von Humboldt", "Copa del Rey", "Leônidas da Silva".
+const FC_NAME_PARTICLES = /^(von|van|der|den|da|di|del|della|dello|degli|dos|das|do|zu|ter|ten|bin|ibn|el)$/;
+// Abbreviations of references, unknown to the dictionary: "(dir.)", "préf.", "rééd.", "couv. ill.".
+const FC_REFERENCE_ABBREVIATIONS = /^(dir|préf|rééd|réimpr|réimp|ill|illustr|couv|assoc|collab|suppl|fasc|augm|impr)$/;
+// Abbreviations whose period ends no sentence: "(trad. de l’anglais)", "14e éd., 944 p.".
+const FC_DOTTED_ABBREVIATIONS = /^(dir|préf|rééd|réimpr|ill|couv|assoc|trad|coll|éd|Éd|éds|cf|vol|chap|al|p|pp|t)$/;
+
+// "le deep learning", "The ball is round", "Hall of Fame", "une data engineer": English
+// words next to English words, or a link word between names, are a title or a borrowed
+// phrase, not French misspellings. ("un the à la menthe" keeps "the" -> thé: nothing
+// English around it.) Returns the start offsets of those words.
+function englishWords(paragraph) {
+  const words = [...paragraph.matchAll(/[\p{L}\p{M}]+(?:['’][\p{L}\p{M}]+)*/gu)];
+  const lower = words.map((w) => w[0].toLowerCase().replace(/'/g, "’"));
+  const english = lower.map((w) => FC_ENGLISH_LEANING.has(w));
+  // (Lowercase only: "en language Python" keeps language -> langage.)
+  const common = lower.map((w, k) => english[k] || FC_ENGLISH_COMMON.has(w) && w === words[k][0]);
+  const french = (k) => spellChecker.isValidToken(words[k][0]);
+  const joined = (a, b) => /^[\s,&-]+$/.test(paragraph.slice(a.index + a[0].length, b.index));
+  const out = new Set();
+  const capital = (j) => j >= 0 && /^\p{Lu}/u.test(words[j][0]);
+  // "the", "of", "and"…, which French never writes ("in", "for" are French words too).
+  const englishLink = (j) => j >= 0 && english[j] && FC_EN_LINK_WORDS.test(words[j][0]) && !spellChecker.isValidToken(lower[j]);
+  for (let k = 0; k < words.length; k++) {
+    const prev = k > 0 && joined(words[k - 1], words[k]) ? k - 1 : -1;
+    const next = k + 1 < words.length && joined(words[k], words[k + 1]) ? k + 1 : -1;
+    if (english[k]
+      ? english[prev] || english[next] || FC_EN_LINK_WORDS.test(words[k][0]) && (capital(prev) || capital(next)) ||
+        // An English word French does not know, after or before a word as common in English
+        // as in French: "data engineer", "business developer".
+        !french(k) && (common[prev] || common[next])
+      // A word that is neither French nor frequent in English right after or before "the",
+      // "of"…: "The blue is our colour".
+      : (englishLink(prev) || englishLink(next)) && !french(k)) out.add(words[k].index);
+  }
+  return out;
+}
+
 function overlaps(a, b) {
   return a.offset < b.offset + b.length && b.offset < a.offset + a.length;
 }
@@ -423,6 +493,7 @@ function checkParagraph(paragraph) {
 
   const spelling = [], ligatures = [];
   let suggested = 0;
+  const english = englishWords(paragraph);
   for (const token of spellChecker.parseParagraph(paragraph)) {
     const word = token.sValue;
     // (A known misspelling with a capital is not a name: "Parmis les candidats".)
@@ -432,6 +503,18 @@ function checkParagraph(paragraph) {
     // "dispo", "resto", "mdr": informal on purpose.
     if (self.FC_INFORMAL_WORDS.has(word.toLowerCase())) continue;
     if (insideEnglishQuote(paragraph, token.nStart)) continue;
+    // English among English words ("AI-driven technocracy": the last part decides for a
+    // compound), and English words in -ing on their own ("le passing", "le dribbling").
+    const last = word.lastIndexOf("-") + 1;
+    if (english.has(token.nStart + last) ||
+        /^\p{Ll}{2,}ing$/u.test(word) && FC_ENGLISH_LEANING.has(word)) continue;
+    // "(de l’anglais mountains)", "en anglais : world models", "(feedforward en anglais)":
+    // announced as English.
+    if (/(^|[^\p{L}])(de\s+l['’]anglais|anglais\s*:)\s*$/iu.test(paragraph.slice(0, token.nStart)) ||
+        /\(\s*$/.test(paragraph.slice(0, token.nStart)) && /^\s+en\s+anglais(?!\p{L})/u.test(paragraph.slice(token.nEnd))) continue;
+    if (FC_NAME_PARTICLES.test(word) &&
+        /\p{Lu}[\p{L}\p{M}.-]*\s+$/u.test(paragraph.slice(0, token.nStart)) && /^\s+\p{Lu}/u.test(paragraph.slice(token.nEnd))) continue;
+    if (FC_REFERENCE_ABBREVIATIONS.test(word) && paragraph[token.nEnd] === ".") continue;
     // "la 1ere": the ordinal "1ʳᵉ" (Grammalecte only knows "1ère"), not "ere" -> erre.
     const first = /^ere(s?)$/i.exec(word);
     if (first && /(^|[^\p{N}])1$/u.test(paragraph.slice(0, token.nStart))) {
@@ -535,14 +618,17 @@ function checkParagraph(paragraph) {
     // "en soit": our rule tells "en soi" from the verb ("ou en soit elle-même victime").
     if (/conf_soi_soit/.test(m.ruleId) && /^soit$/i.test(m.word) && /(^|[^\p{L}])en\s+$/iu.test(paragraph.slice(0, err.nStart))) continue;
     // "un thé à la menthe délicieux": the adjective agrees with the noun before
-    // "à la menthe", "de la maison"…, as written.
+    // "à la menthe", "de la maison"…, as written. Also past an adjective of the second
+    // noun or an adverb ("un rapport de la Commission européenne publié en 2020", "des
+    // ouvrages pour la jeunesse plus anciens", "la réconciliation entre les peuples compatible").
     if (/__gn_/.test(m.ruleId)) {
-      const head = /(\p{L}+)\s+(?:(?:à|de|en)\s+|d['’])(?:la\s+|le\s+|l['’]|les\s+)?\p{L}+\s+$/iu.exec(paragraph.slice(0, err.nStart));
+      const head = /(\p{L}+)\s+(?:(?:à|de|en|pour|entre|sur|avec|sans|contre)\s+|d['’])(?:la\s+|le\s+|l['’]|les\s+)?\p{L}+\s+(?:(\p{L}+)\s+)?$/iu
+        .exec(paragraph.slice(0, err.nStart).replace(/(^|\s)(plus|moins|très|si|aussi|trop|bien)\s+$/i, "$1"));
       const pairs = (word, kind) => spellChecker.getMorph(word.toLowerCase()).flatMap((x) => {
         const g = new RegExp(`:${kind}[^/]*?:([mfe]):([spi])`).exec(x);
         return g ? [[g[1], g[2]]] : [];
       });
-      if (head) {
+      if (head && (!head[2] || spellChecker.getMorph(head[2].toLowerCase()).some((x) => /:A/.test(x)))) {
         const noun = pairs(head[1], "N"), adj = pairs(m.word, "[AQ]");
         if (noun.some(([g, n]) => adj.some(([h, p]) => (g === h || g === "e" || h === "e") && (n === p || n === "i" || p === "i")))) continue;
       }
@@ -564,9 +650,12 @@ function checkParagraph(paragraph) {
     // object of "Pierre t'en veut", when nothing but a clause start comes before it.
     if (/peux_veux_vaux.*sans_sujet/.test(m.ruleId) && /^(peux|veux)$/i.test(m.word) &&
         /(^|[.!?…,;:«(]\s*|(^|[^\p{L}])(combien|si|que|quand|pourquoi|comment|où|mais|et|ou|alors|donc|puis|lorsque|puisque)\s+)t['’]\s*((en|y)\s+)?$/iu.test(paragraph.slice(0, err.nStart))) continue;
-    // Holidays ("le 14 Juillet", "le 8 Mai") and titles ("Germinal") keep their capital.
+    // Holidays ("le 14 Juillet", "le 8 Mai") and titles ("Germinal") keep their capital, and
+    // so do events named after their month ("la révolution de Février", "les massacres de
+    // Septembre").
     if (/maj_mois/.test(m.ruleId) && (/^(vendémiaire|brumaire|frimaire|nivôse|pluviôse|ventôse|germinal|floréal|prairial|messidor|thermidor|fructidor)$/i.test(m.word) ||
-        /(^|\s)(14|1er|8|11|15)\s+$/.test(paragraph.slice(0, err.nStart)))) continue;
+        /(^|\s)(14|1er|8|11|15)\s+$/.test(paragraph.slice(0, err.nStart)) ||
+        /(^|[^\p{L}])(révolution|massacres|journées|insurrection|émeutes|événements|évènements)\s+(de\s+|d['’])$/iu.test(paragraph.slice(0, err.nStart)))) continue;
     // "les notes individuels": the adjective is the mistake, not the noun ("notés"),
     // when the same rule also flags the adjective after it. (Not "son robe" -> sa.)
     if (/gn_/.test(m.ruleId) && m.replacements.length &&
@@ -579,6 +668,75 @@ function checkParagraph(paragraph) {
     // Borrowed words ("les ramen", "des tapas") keep their own plural.
     if (self.FC_INFORMAL_WORDS.has(m.word.toLowerCase())) continue;
     if (insideEnglishQuote(paragraph, err.nStart)) continue;
+    // "The Family on Trial", "fandom in football": an English title, not French grammar.
+    if (!/\s/.test(m.word) && english.has(err.nStart)) continue;
+    const before = paragraph.slice(0, err.nStart);
+    const sentenceStart = /(^|[.!?…:«"“(])$/.test(before.trimEnd());
+    if (/__gn_|ppas_/.test(m.ruleId)) {
+      // "la FA Cup", "la Football Association": the gender of a name is that of what it
+      // names, not that of its first word (an acronym, or a name of several words
+      // starting with a word French does not know or an English one).
+      if (/^(le|la|les|l['’]|du|des|un|une|au|aux)$/i.test(m.word)) {
+        const name = /^\s+(\p{Lu}[\p{L}\p{M}’'-]*)(?:\s+(\p{Lu}[\p{L}\p{M}’'-]*))?/u.exec(paragraph.slice(err.nEnd));
+        const known = (w) => spellChecker.isValidToken(w) && !FC_ENGLISH_LEANING.has(w.toLowerCase());
+        // (In English order the last noun gives the gender: "la Football Association".)
+        const gender = /^(la|une)$/i.test(m.word) ? "f" : /^(le|un|du|au)$/i.test(m.word) ? "m" : "";
+        const headAgrees = (w) => gender && spellChecker.getMorph(w.toLowerCase()).some((x) => new RegExp(`:N[^/]*:[${gender}e]:[si]`).test(x));
+        if (name && (/^\p{Lu}{2,}$/u.test(name[1]) || name[2] && (/^\p{Lu}{2,}$/u.test(name[2]) || !known(name[1]) || !known(name[2]) || headAgrees(name[2])))) continue;
+      }
+      // "l’émission Secrets d’Histoire", "Robert Badinter, Libres et égaux", "les poires Belle
+      // Angevine": a capital inside a sentence starts a title or a name, which agrees with
+      // nothing around it. (Not a nationality, "des Américain" -> Américains, nor a word
+      // right after its determiner, "les Président".)
+      if (/^\p{Lu}\p{Ll}/u.test(m.word) && !/\s/.test(m.word) && !sentenceStart &&
+          !/(^|[^\p{L}])(le|la|les|l['’]|un|une|des|du|de|d['’]|ce|cet|cette|ces|mon|ma|mes|ton|ta|tes|son|sa|ses|notre|nos|votre|vos|leur|leurs|aux|au)\s*$/iu.test(before) &&
+          !spellChecker.getMorph(m.word).some((x) => /#G/.test(x))) continue;
+      // "un phénomène appelé « hallucination »", "des « football » locaux": a word quoted
+      // alone is named, not used; it agrees with nothing.
+      if (/[«“"]\s*$/.test(before) && /^\s*[»”"]/.test(paragraph.slice(err.nEnd))) continue;
+      // "4 vol.", "3 t.": an abbreviation, not a noun to put in the plural.
+      if (FC_DOTTED_ABBREVIATIONS.test(m.word) && paragraph[err.nEnd] === ".") continue;
+    }
+    // "les fédérations anglaise, française et allemande", "les sauces espagnole et béchamel",
+    // "les premier et second cycles": one nationality or one rank for each thing named, so
+    // each adjective stays singular.
+    if (/__gn_|conj_/.test(m.ruleId) && !/\s/.test(m.word)) {
+      // (#G: a nationality in the dictionary.)
+      const distributive = (w) => /^(premier|première|second|seconde|dernier|dernière|\p{L}+ième)$/iu.test(w) ||
+        spellChecker.getMorph(w.toLowerCase()).some((x) => /:A[^/]*:[mfe]:s/.test(x) && /#G/.test(x));
+      const singular = (w) => spellChecker.getMorph(w.toLowerCase()).some((x) => /:[NA][^/]*:[mfe]:[si]/.test(x));
+      const left = /(?:^|[^\p{L}])(\p{L}+)(?:\s*,\s*|\s+(?:et|ou)\s+)$/u.exec(before)?.[1];
+      const right = /^(?:\s*,\s*|\s+(?:et|ou)\s+)(\p{L}+)/u.exec(paragraph.slice(err.nEnd))?.[1];
+      if (distributive(m.word) && [left, right].some((w) => w && singular(w) && !/^(et|ou)$/i.test(w))) continue;
+    }
+    // "éd. Masson (trad. de l’anglais)", "et al. estiment": the period of an abbreviation
+    // ends no sentence.
+    if (/majuscule_après_point/.test(m.ruleId) && /(^|[\s(])(\p{L}+)\.\s*$/u.test(before) &&
+        FC_DOTTED_ABBREVIATIONS.test(/(\p{L}+)\.\s*$/u.exec(before)[1])) continue;
+    // "14e éd., 944 p.", "Robert Downey Jr., inspiré", "Res., vol. LXXV": a comma after the
+    // period of an abbreviation (a word of the list, a capital and up to two letters, or a
+    // word the dictionary does not know) is right.
+    if (/virgule_après_point/.test(m.ruleId)) {
+      const abbr = /(\p{L}+)$/u.exec(before)?.[1];
+      if (abbr && (FC_DOTTED_ABBREVIATIONS.test(abbr) || /^\p{Lu}\p{Ll}{0,2}$/u.test(abbr) || !spellChecker.isValidToken(abbr))) continue;
+    }
+    // "L’entraîneur peut de plus cumuler", "on peut d’ailleurs": "de plus", "d’ailleurs"… are
+    // adverbs after the verb, not "peu de".
+    if (/conf_peut_peux_peu/.test(m.ruleId) && /^peu[tx]$/i.test(m.word) &&
+        /^\s+(de\s+(plus|nouveau|même|surcroît|toute\s+(façon|manière|évidence)|temps\s+(en|à)\s+temps|suite|loin)|d['’](ailleurs|abord|emblée|autant\s+plus|ores\s+et\s+déjà|une\s+certaine\s+manière))(?!\p{L})/iu.test(paragraph.slice(err.nEnd))) continue;
+    // "les journées des 31 mai et 2 juin", "décrets des 26 février et 12 août": "des" before
+    // several dates, not "dès".
+    if (/conf_dès_des/.test(m.ruleId) && /^des$/i.test(m.word) &&
+        /^\s+\d{1,2}(er)?(\s+\p{L}+)?(\s*,\s*\d{1,2}(er)?(\s+\p{L}+)?)*\s+et\s+\d{1,2}(er)?(?!\d)/u.test(paragraph.slice(err.nEnd))) continue;
+    // "Le groupe AI Watch note": an acronym starting a name, not a verb.
+    if (/conj_/.test(m.ruleId) && /^\p{Lu}{2,}$/u.test(m.word) && /^\s+\p{Lu}\p{Ll}/u.test(paragraph.slice(err.nEnd)) && !sentenceStart) continue;
+    // "DALL-E": a name in capitals, not inclusive writing.
+    if (/^eepi_/.test(m.ruleId) && !/\p{Ll}/u.test(m.word)) continue;
+    // "la Fédération Française de Football", "la Coupe des Clubs Champions Européens": a
+    // capital inside a name; "à la nantaise": the manner, in lowercase.
+    if (/maj_gentilés/.test(m.ruleId) &&
+        (/^\p{Lu}/u.test(m.word) && /(^|[^\p{L}])\p{Lu}[\p{L}\p{M}-]*\s+$/u.test(before) && !/(^|[.!?…:«"“(])\s*\p{Lu}[\p{L}\p{M}-]*\s+$/u.test(before) ||
+         /^\p{Ll}/u.test(m.word) && /(^|[^\p{L}])à\s+la\s+$/iu.test(before))) continue;
     // "ils en font partie": before a verb, "en" is the pronoun, not the preposition.
     if (/det_verbe_nom/.test(m.ruleId) && /(^|[^\p{L}])en\s+$/iu.test(paragraph.slice(Math.max(0, err.nStart - 4), err.nStart))) continue;
     // "Les volcans Somma en font partie": a capitalized name is not a verb to conjugate.

@@ -47,6 +47,10 @@ const FC_FOREIGN_LETTERS = /[łøåßğşıčćžšőűăţșțđħŋþðæ]/i;
 // Any accented letter outside the French alphabet: "Siobhán", "Björk", "Nguyễn".
 const FC_NON_FRENCH_LETTER = /(?![éèêëàâîïôûùüÿçœæ])[^\p{ASCII}\p{N}\p{P}\p{S}\p{Z}]/iu;
 const FC_HONORIFIC = /(^|[\s(])(M|Mme|Mlle|MM|Mmes|Dr|Pr|Me|Mr|Mrs|Ms|St|Ste|Sr)\.?\s*$/;
+// The period of an initial or of an abbreviation ends no sentence: "Nils J. Nilsson",
+// "J.-P. Amat", "éd. Masson", "cf. Pauca meae". (Not "etc.", which often ends one.)
+const FC_INITIAL_BEFORE = /(^|[\s(.’'-])\p{Lu}\.$/u;
+const FC_ABBREVIATION_BEFORE = /(^|[\s(])(éd|Éd|éds|cf|coll|dir|trad|préf|rééd|ill|vol|chap|al)\.$/;
 
 function fcLooksLikeProperNoun(paragraph, start, word) {
   if (/\d/.test(word)) return true;
@@ -57,8 +61,12 @@ function fcLooksLikeProperNoun(paragraph, start, word) {
   if (/[@#][\w.-]*$/.test(paragraph.slice(Math.max(0, start - 30), start))) return true;
   if (word[0] === word[0].toLowerCase()) return false;
   const before = paragraph.slice(0, start).trimEnd();
-  const sentenceStart = before === "" || /[.!?…:«"“(\n]$/.test(before);
+  // (An opening parenthesis starts a sentence only after the end of one: "(Ruy Blas en
+  // 1872)", "(Agaricus bisporus)" are names in the middle of a sentence.)
+  const sentenceStart = before === "" || /[.!?…:«"“\n]$/.test(before) ||
+    /\($/.test(before) && /(^|[.!?…:«"“\n])$/.test(before.slice(0, -1).trimEnd());
   if (!sentenceStart) return true;
+  if (FC_INITIAL_BEFORE.test(before) || FC_ABBREVIATION_BEFORE.test(before)) return true;
   // At the start of a sentence: "M. Benali", "Łukasz et Zoë", "Kenji m’a dit".
   if (FC_HONORIFIC.test(before)) return true;
   if (FC_FOREIGN_LETTERS.test(word) || FC_NON_FRENCH_LETTER.test(word.normalize("NFC"))) return true;
