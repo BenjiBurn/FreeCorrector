@@ -88,11 +88,28 @@ function fcFrequentNeighbours(spellChecker, word, limit = 3) {
   if (!found) {
     const plain = fcPlain(lower);
     const scored = [];
-    for (const { word: candidate, plain: p } of fcFrequentByInitial.get(plain[0]) ?? []) {
-      // Cheap filter on accent-free forms, exact typing cost on the survivors.
-      if (candidate === lower || fcWithin(plain, p, 2) > 2) continue;
+    const heard = fcHeardKeys(lower);
+    const stem = plain.slice(0, 5);
+    // A silent "h" left out: "otel" -> "hôtel".
+    const initials = FC_VOWEL_START.test(plain) ? [plain[0], "h"] : [plain[0]];
+    for (const entry of initials.flatMap((i) => fcFrequentByInitial.get(i) ?? [])) {
+      const { word: candidate, plain: p } = entry;
+      // Among the words in "h", only those where the h is all that was left out.
+      if (candidate === lower || p[0] !== plain[0] && p[1] !== plain[0]) continue;
+      // Cheap filter on accent-free forms, exact typing cost on the survivors. Three
+      // letters away for a word starting the same that sounds the same ("informatic").
+      const max = p.startsWith(stem) ? 3 : 2;
+      const within = fcWithin(plain, p, max);
+      if (within > max) continue;
+      const soundsLike = () => fcSoundsLike(heard, entry.heard ??= fcHeardKeys(candidate));
+      if (within > 2 && !soundsLike()) continue;
       const distance = fcTypingDistance(lower, candidate);
-      if (distance <= 1.6) scored.push([candidate, distance - FC_FREQ_WEIGHT * fcFrequency(candidate)]);
+      if (distance > 2.5 && within <= 2) continue;
+      // Further than other slips when it sounds the same: "resonnable" -> "raisonnable".
+      const sound = soundsLike();
+      if (distance <= 1.6 || sound) {
+        scored.push([candidate, distance - FC_SOUND_BONUS * sound - FC_FREQ_WEIGHT * fcFrequency(candidate)]);
+      }
     }
     found = scored
       .sort((a, b) => a[1] - b[1])
@@ -130,6 +147,39 @@ function fcSoundKey(word) {
     .replace(/(.)\1+/g, "$1");
 }
 
+// Looser keys for misspellings, written as heard: "magnifik" and "magnifique",
+// "otel" and "hôtel", "resonnable" and "raisonnable" sound the same. A final
+// "é" is heard ("acheté" is not "achète"). An "s" between vowels sounds "z",
+// but people often write it for "ss" ("dosier"): both readings are kept.
+function fcHeardKeys(word) {
+  const key = (w) => w
+    .replace(/(?<!c)h/g, "")
+    .replace(/[ae][nm](?![aeiouyéèênm])/g, "an")
+    .replace(/[aeu]?[iy][nm](?![aeiouyéèênm])/g, "in")
+    .replace(/(ai|ei|è|ê|ë)/g, "e")
+    .replace(/y/g, "i")
+    .replace(/(.)\1+/g, "$1")
+    .replace(/(?<!i)ent$/, "")
+    .replace(/(es|e|s|t|x|d)$/, "")
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "");
+  const base = word
+    .toLowerCase()
+    .replace(/['’\- ]/g, "")
+    .replace(/(er|ez)$/, "é")
+    .replace(/e?au/g, "o")
+    .replace(/ph/g, "f")
+    .replace(/(qu|ck|q|c(?=[aouàâôûùlrtkc]|$))/g, "k")
+    .replace(/(c(?=[eiyéèêëîï])|ç)/g, "s")
+    .replace(/g(?=[eiyéèêëîï])/g, "j")
+    .replace(/gu(?=[eiyéèê])/g, "g");
+  return [key(base), key(base.replace(/(?<=[aeiouyàâéèêëîïôûù])s(?=[aeiouyàâéèêëîïôûù])/g, "z"))];
+}
+
+function fcSoundsLike(keys, other) {
+  return keys[0] === other[0] || keys[1] === other[1];
+}
+
 const fcBase = (ch) => ch.normalize("NFD").replace(/[̀-ͯ]/g, "");
 
 // Edit distance where the slips people make most are cheap: a missing or
@@ -164,6 +214,8 @@ function fcTypingDistance(a, b) {
 const FC_CONFUSIONS = [
   [/ction/g, "xion"], [/xion/g, "ction"], [/ph/g, "f"], [/f/g, "ph"],
   [/an/g, "en"], [/en/g, "an"], [/ai/g, "è"], [/è/g, "ai"], [/au/g, "o"], [/o/g, "au"],
+  // An ending written as heard: "magnifik", "informatic" -> "-ique".
+  [/[kc]$/, "que"],
 ];
 
 function fcSpellingCost(typo, candidate) {
@@ -338,9 +390,93 @@ function fcIsCascadeError(original, originalStart, fixed, fixedStart, length) {
   );
 }
 
+const FC_SKIP_IN_VERB_GROUP = /^(ne|n|pas|plus|jamais|bien|déjà|toujours|vraiment|très|tous|toutes|enfin|encore|aussi|me|m|te|t|se|s|lui|leur|y|en|d|de)$/i;
+const FC_COMPLEMENT_MARK = /^(de|d|du)$/i;
+const FC_STOP_WORD = /^(pourquoi|quand|comme|si|et|ou|mais|car|donc|parce|lorsque|puisque|où|qui|que|qu|dont|quoi)$/i;
+const FC_PRONOUN_AGREEMENT = { il: ["m", "s"], ils: ["m", "p"], elle: ["f", "s"], elles: ["f", "p"] };
+
+// Gender and number of a noun as written: "la literie" (f, s), "des frais" (m, p).
+// An epicene noun takes its gender from the determiner ("une somme").
+function fcNounAgreement(spellChecker, words, i) {
+  const morphs = spellChecker.getMorph(words[i].toLowerCase()).map((m) => m.match(/:N:([mfe]):([spi])/)).filter(Boolean);
+  if (!morphs.length) return null;
+  const genders = new Set(morphs.map((m) => m[1]));
+  const numbers = new Set(morphs.map((m) => m[2]));
+  const det = (words[i - 1] ?? "").toLowerCase();
+  let g = genders.size === 1 && !genders.has("e") ? [...genders][0] : null;
+  if (!g && genders.size === 1) g = /^(la|une|cette|ma|ta|sa)$/.test(det) ? "f" : /^(le|un|ce|cet)$/.test(det) ? "m" : null;
+  let n = numbers.size === 1 && !numbers.has("i") ? [...numbers][0] : null;
+  // "des frais", "le prix": the determiner tells the number of an invariable noun.
+  if (!n) n = /^(les|des|ces|mes|tes|ses|nos|vos|leurs|plusieurs|quelques)$/.test(det) ? "p" : /^(le|la|un|une|ce|cet|cette|mon|ton|son|ma|ta|sa)$/.test(det) ? "s" : null;
+  return g || n ? [g, n] : null;
+}
+
+// What a participle right after the error's auxiliary should agree with, as [gender, number]
+// (either may be null), or null when the sentence does not say:
+// - after "être", "été": the subject, skipping the complements in "de"
+//   ("la literie mériterait d’être changé" -> f, s; "des frais de tenue de compte m’ont
+//   été prélevé" -> m, p);
+// - after "avoir" in a relative clause: the noun before "que" ("sa fille, qu’il n’a jamais
+//   oublié" -> f, s). Not an adverb there: "la réunion de demain que j’ai rédigé" says nothing.
+function fcAgreementTarget(spellChecker, before) {
+  const words = before.match(/[\p{L}-]+|[,;:]/gu) ?? [];
+  let i = words.length - 1;
+  let aux = null;
+  while (i >= 0) {
+    const w = words[i].toLowerCase();
+    if (/^(être|été|suis|es|est|sommes|êtes|sont|étais|était|étions|étiez|étaient|serai|seras|sera|serons|serez|seront|serais|serait|serions|seriez|seraient|soit|soient|fut|furent)$/.test(w)) aux = aux ?? "être";
+    else if (/^(ai|as|a|avons|avez|ont|avais|avait|avions|aviez|avaient|aurai|auras|aura|aurons|aurez|auront|aurais|aurait|aurions|auriez|auraient|ait|aient|eu|avoir)$/.test(w)) aux = aux ?? "avoir";
+    else if (!FC_SKIP_IN_VERB_GROUP.test(w) && !(aux && spellChecker.getMorph(w).some((m) => /:V/.test(m)) &&
+               !spellChecker.getMorph(w).some((m) => /:[NG]/.test(m)))) break;
+    i--;
+  }
+  if (!aux) return null;
+  if (aux === "avoir") {
+    // The subject of the relative clause, then "que".
+    while (i >= 0 && !/^(que|qu)$/i.test(words[i]) && /^(je|j|tu|il|elle|on|nous|vous|ils|elles)$/i.test(words[i])) i--;
+    if (i < 1 || !/^(que|qu)$/i.test(words[i])) return null;
+    i--;
+    if (words[i] === ",") i--;
+    return i >= 0 ? fcNounAgreement(spellChecker, words, i) : null;
+  }
+  for (; i >= 0; i--) {
+    const w = words[i].toLowerCase();
+    if (FC_STOP_WORD.test(w) || /^[,;:]$/.test(w)) return null;
+    if (FC_PRONOUN_AGREEMENT[w]) return FC_PRONOUN_AGREEMENT[w];
+    if (/^(je|j|tu|on|nous|vous)$/.test(w)) return null;
+    const noun = fcNounAgreement(spellChecker, words, i);
+    if (!noun) continue;
+    // A complement: "de tenue", "du compte", "la tenue des comptes".
+    const prev = (words[i - 1] ?? "").toLowerCase();
+    if (FC_COMPLEMENT_MARK.test(prev) || prev === "des" && i > 1 && fcNounAgreement(spellChecker, words, i - 2)) continue;
+    return noun;
+  }
+  return null;
+}
+
+// The form a grammar rule asks for in its message, as a test on a morphology
+// (":V1_…:Ip:3p", ":Q:A:f:s"), or null: "Accord avec “Les pneus…”. Le verbe devrait
+// être à la 3ᵉ personne du pluriel." -> "tiennent", not "tiens".
+function fcMessageNeeds(message) {
+  const person = message.match(/devrait être à la (1|2|3)(?:ʳᵉ|ᵉ) personne du (singulier|pluriel)/);
+  if (person) {
+    const tag = `:${person[1]}${person[2][0]}`;
+    return (m) => m.includes(tag) || tag === ":1s" && m.includes(":1ś");
+  }
+  const agreement = message.match(/devrait être (?:un participe passé |au )(masculin |féminin )?(singulier|pluriel)?/);
+  if (!agreement || !agreement[1] && !agreement[2]) return null;
+  const g = agreement[1]?.[0];
+  const n = agreement[2]?.[0];
+  return (m) => {
+    const x = m.match(/:([mfe]):([spi])/);
+    return !!x && (!g || x[1] === g || x[1] === "e") && (!n || x[2] === n || x[2] === "i");
+  };
+}
+
 // Rank the suggestions for the error text.slice(start, start + length).
 // `text` should already contain the best fix for the errors before it.
-function fcRankSuggestions(spellChecker, text, start, length, suggestions, isSpelling) {
+// `message` is the rule message, for the form it asks for.
+function fcRankSuggestions(spellChecker, text, start, length, suggestions, isSpelling, message = "") {
   const word = text.slice(start, start + length);
   const isWord = /^[\p{L}’'-]+$/u.test(word);
   const extras = [];
@@ -365,33 +501,56 @@ function fcRankSuggestions(spellChecker, text, start, length, suggestions, isSpe
   const after = text.slice(start + length, e);
   const baseline = fcCountErrors(before + word + after);
   const wordKey = fcSoundKey(word);
+  const wordHeard = fcHeardKeys(word);
   const afterSi = !isSpelling && FC_AFTER_SI.test(before);
   const accentless = /^[a-z]+$/i.test(word);
+  // Forms of one participle or adjective ("changé | changés | changée"): the one that agrees.
+  const target = isSpelling ? null : fcAgreementTarget(spellChecker, before);
+  const agrees = (c) => spellChecker.getMorph(c).some((m) => {
+    const x = m.match(/:[QA](?::A)?:([mfe]):([spi])/);
+    return x && (!target[0] || x[1] === target[0] || x[1] === "e") && (!target[1] || x[2] === target[1] || x[2] === "i");
+  });
+  const needs = isSpelling ? null : fcMessageNeeds(message);
+  const soundsLike = (c) => !c.includes(" ") && fcSoundsLike(wordHeard, fcHeardKeys(c));
+  const someSoundsLike = isSpelling && candidates.some(soundsLike);
+  const nameTyped = isSpelling && wordIsLower && word.length > 2 && suggestions[0]?.toLowerCase() === word &&
+    !candidates.some((c) => c === c.toLowerCase() && fcPlain(c) === fcPlain(word));
 
   const scored = candidates.map((c) => {
     const index = suggestions.indexOf(c);
     const extra = index < 0;
     const sound = fcSoundKey(c) === wordKey ? 1 : 0;
-    let cost = fcSpellingCost(word, c) - FC_FREQ_WEIGHT * fcFrequency(c);
+    const typing = fcTypingDistance(word, c);
+    const spelling = fcSpellingCost(word, c);
+    let cost = spelling - FC_FREQ_WEIGHT * fcFrequency(c);
+    // Spelling: a candidate that sounds like the typo ("magnifik" -> "magnifique"), unless a
+    // known confusion already made it cheap: "fallus" -> "fallu", not "phallus". A word cut in
+    // two always sounds the same: "couramant" -> "couramment", not "cou ramant".
+    if (isSpelling && spelling >= typing && soundsLike(c)) cost -= FC_SOUND_BONUS;
     // Elided forms ("j’ai" for "jai") are as trustworthy as Grammalecte's own.
     if (extra && !c.includes("’")) cost += FC_EXTRA_PENALTY;
     if (!extra) cost += FC_ORDER_WEIGHT * index;
-    if (isSpelling) cost -= FC_SOUND_BONUS * sound;
     return {
       c,
       extra,
       errors: isSpelling ? fcCountErrorsForWord(before + c + after, before.length) : fcCountErrors(before + c + after),
       repaired: isSpelling ? null : fcErrorsAfterRepair(before + c + after, before.length, before.length + c.length),
-      caseChange: wordIsLower !== (c === c.toLowerCase()) ? 1 : 0,
+      // The very word with a capital is a name typed in lowercase ("en espagne" -> "Espagne",
+      // not "es pagne"), unless a common word is only an accent away ("pres" -> "près").
+      caseChange: wordIsLower !== (c === c.toLowerCase()) && !(nameTyped && c.toLowerCase() === word) ? 1 : 0,
       // Only accents missing ("etre" -> "être"): first, even when the right word brings out a
       // real mistake next to it ("pour être accepter") that a wrong one hides ("êtres").
       // Not when the word itself is then wrong: "Il appele" -> "appelle", not "appelé".
-      accentOnly: isSpelling && accentless && fcBase(c) === word &&
+      // Nor when the accent changes the sound and another candidate keeps it:
+      // "Rappele toi" -> "Rappelle", not "Rappelé".
+      accentOnly: isSpelling && accentless && fcBase(c) === word && (!someSoundsLike || soundsLike(c)) &&
         !fcErrorsForWord(before + c + after, before.length).some(([x, y]) => x < before.length + c.length && before.length < y) ? 0 : 1,
       // For grammar errors, sounding the same is the strongest hint:
       // "parlé" -> "parler" rather than "parle".
       // "si" + conditional is a classic: "si j’aurais" -> "si j’avais".
       soundTier: isSpelling ? 0 : afterSi ? (fcIsImperfect(spellChecker, c) ? 0 : 1) : 1 - sound,
+      agreement: target && !agrees(c) ? 1 : 0,
+      asked: needs && !spellChecker.getMorph(c.toLowerCase()).some(needs) ? 1 : 0,
       cost,
     };
   });
@@ -409,7 +568,9 @@ function fcRankSuggestions(spellChecker, text, start, length, suggestions, isSpe
       a.accentOnly - b.accentOnly ||
       (isSpelling ? a.errors - b.errors : a.repaired - b.repaired) ||
       a.caseChange - b.caseChange ||
+      a.asked - b.asked ||
       a.soundTier - b.soundTier ||
+      a.agreement - b.agreement ||
       a.cost - b.cost ||
       a.errors - b.errors
     )

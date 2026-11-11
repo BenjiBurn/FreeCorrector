@@ -237,6 +237,12 @@ async function rankSpelling(paragraph, m) {
     let cost = typingDistance(m.word, c) - FREQ_WEIGHT * frequency(c);
     cost += index >= 0 ? HARPER_ORDER_WEIGHT * index : 0.2;
     if (c === contraction || c.toLowerCase() === contraction?.toLowerCase()) cost -= 1;
+    // Endings of a regular verb or noun: "studys" -> "studies", "cryed" -> "cried" (the y
+    // becomes "ie"), "delayd" -> "delayed" (not "delay").
+    const ending = m.word.toLowerCase()
+      .replace(/([^aeiou])y(s|e?d)$/, (_, k, end) => k + (end === "s" ? "ies" : "ied"))
+      .replace(/([aeiou]y)d$/, "$1ed");
+    if (ending !== m.word.toLowerCase() && c.toLowerCase() === ending) cost -= 2;
     // A plural typo wants a plural fix: "grocerys" -> "groceries", not "grocery".
     // But a past form takes no -s: "it tooks" -> "took", not "tools".
     if (m.word.toLowerCase() === `${c.toLowerCase()}s` && EN_IRREGULAR_PAST.test(c)) cost -= 1;
