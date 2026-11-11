@@ -511,6 +511,8 @@ function fcRankSuggestions(spellChecker, text, start, length, suggestions, isSpe
     return x && (!target[0] || x[1] === target[0] || x[1] === "e") && (!target[1] || x[2] === target[1] || x[2] === "i");
   });
   const needs = isSpelling ? null : fcMessageNeeds(message);
+  const soundsLike = (c) => !c.includes(" ") && fcSoundsLike(wordHeard, fcHeardKeys(c));
+  const someSoundsLike = isSpelling && candidates.some(soundsLike);
   const nameTyped = isSpelling && wordIsLower && word.length > 2 && suggestions[0]?.toLowerCase() === word &&
     !candidates.some((c) => c === c.toLowerCase() && fcPlain(c) === fcPlain(word));
 
@@ -524,7 +526,7 @@ function fcRankSuggestions(spellChecker, text, start, length, suggestions, isSpe
     // Spelling: a candidate that sounds like the typo ("magnifik" -> "magnifique"), unless a
     // known confusion already made it cheap: "fallus" -> "fallu", not "phallus". A word cut in
     // two always sounds the same: "couramant" -> "couramment", not "cou ramant".
-    if (isSpelling && spelling >= typing && !c.includes(" ") && fcSoundsLike(wordHeard, fcHeardKeys(c))) cost -= FC_SOUND_BONUS;
+    if (isSpelling && spelling >= typing && soundsLike(c)) cost -= FC_SOUND_BONUS;
     // Elided forms ("j’ai" for "jai") are as trustworthy as Grammalecte's own.
     if (extra && !c.includes("’")) cost += FC_EXTRA_PENALTY;
     if (!extra) cost += FC_ORDER_WEIGHT * index;
@@ -539,7 +541,9 @@ function fcRankSuggestions(spellChecker, text, start, length, suggestions, isSpe
       // Only accents missing ("etre" -> "être"): first, even when the right word brings out a
       // real mistake next to it ("pour être accepter") that a wrong one hides ("êtres").
       // Not when the word itself is then wrong: "Il appele" -> "appelle", not "appelé".
-      accentOnly: isSpelling && accentless && fcBase(c) === word &&
+      // Nor when the accent changes the sound and another candidate keeps it:
+      // "Rappele toi" -> "Rappelle", not "Rappelé".
+      accentOnly: isSpelling && accentless && fcBase(c) === word && (!someSoundsLike || soundsLike(c)) &&
         !fcErrorsForWord(before + c + after, before.length).some(([x, y]) => x < before.length + c.length && before.length < y) ? 0 : 1,
       // For grammar errors, sounding the same is the strongest hint:
       // "parlé" -> "parler" rather than "parle".

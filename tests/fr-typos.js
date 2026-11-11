@@ -144,4 +144,8 @@ module.exports = [
   ["La mère de mes amis est venu me voir.", "venu", "venue"],
   // ---- The person the rule asks for
   ["Les chaussures que tu m'as prêtées tient chaud.", "tient", "tiennent"],
+  // ---- An accent that changes the sound: the imperative keeps it
+  ["Rappele toi de prendre ton parapluie.", "Rappele", "Rappelle"],
+  ["Jette un œil et rappele moi.", "rappele", "rappelle"],
+  ["Il a rappele son frère.", "rappele", "rappelé"],
 ];
