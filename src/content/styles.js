@@ -199,6 +199,17 @@ const FC_CSS = `
 .fc-alt:hover { border-color: var(--fc-accent); color: var(--fc-accent); background: var(--fc-hover); }
 .fc-repl.fc-empty, .fc-alt.fc-empty { font-style: italic; font-weight: 400; }
 
+.fc-conj {
+  all: unset;
+  display: block;
+  cursor: pointer;
+  margin-top: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--fc-accent);
+}
+.fc-conj:hover { text-decoration: underline; }
+
 .fc-actions {
   display: flex;
   gap: 4px;

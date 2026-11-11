@@ -64,6 +64,11 @@ it:
   suggestions and, since 1.2.6, to tell French from English (`engine/language.js` reads them
   from the extension with `fetch(runtime.getURL(...))`, allowed by `connect-src 'self'`).
 - `editor/`: an extension page where users can paste and check a longer text.
+- `conjugator/` (new in 1.3.1): an extension page showing every tense of a French verb. It runs
+  Grammalecte's own conjugation module (`vendor/grammalecte/fr/conj.js`, unmodified, with its
+  `conj_data.json`) in a Web Worker of its own (`conj-worker.js`). Opened from the popup, from a
+  tab of the editor page, or from the bubble of a conjugation mistake (the content script asks the
+  background to open it with `tabs.create`; in Thunderbird, `windows.create`). No network request.
 - `lib/menus.js`: two right-click entries on selected text.
   - "Check with FreeCorrector" stores the selection in `storage.local` and opens the editor page with it.
   - "Report a missed mistake" (new in 1.2.8) opens the same report page as the bubble's "Report" button

@@ -181,11 +181,13 @@ function build(name) {
 // The proofreader as a web page (lapigeonnerie.fr/freecorrector/correcteur):
 // the editor page, its engines, and web/fc-web.js standing in for the extension
 // APIs. dist/web/index.html is a standalone copy to try it locally; the site
-// serves the same files with its own page around them.
+// serves the same files with its own page around them. The conjugator's
+// files are for the Windows app's conjugator window (windows/app/tools/settings-page.js).
 const WEB_FILES = [
   "lib/settings.js", "lib/i18n.js", "lib/common.css",
   "content/styles.js", "content/field.js", "content/ui.js",
   "editor/editor.css", "editor/editor.js",
+  "conjugator/conjugator.css", "conjugator/conjugator.js", "conjugator/conj-worker.js",
   "icons/icon.svg", "web/fc-web.js",
 ];
 const WEB_DIRS = ["engine", "vendor", "data"];

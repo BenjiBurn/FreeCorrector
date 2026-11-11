@@ -63,6 +63,11 @@ function fcReviewUrl() {
     window.close();
   });
 
+  document.getElementById("open-conjugator").addEventListener("click", () => {
+    fcApi.tabs.create({ url: fcApi.runtime.getURL("conjugator/conjugator.html") });
+    window.close();
+  });
+
   // The test page only exists in development (the store packages leave it out).
   const demoButton = document.getElementById("open-demo");
   fetch(fcApi.runtime.getURL("demo/demo.html"), { method: "HEAD" })
