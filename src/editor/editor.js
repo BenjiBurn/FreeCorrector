@@ -1,6 +1,9 @@
-/* global fcApi, fcGetSettings, fcParagraphLanguages, FcUi, FcTextField, fcLocalizePage, fcT, fcPlural, fcMatchLabel, fcUiLang */
+/* global fcApi, fcGetSettings, fcParagraphLanguages, FcUi, FcTextField, fcLocalizePage, fcT, fcPlural, fcMatchLabel, fcUiLang, fcIsExtension */
 
 fcLocalizePage();
+
+// "Correcteur | Conjugueur": in the extension only.
+for (const tabs of document.querySelectorAll(".tabs")) tabs.hidden = !fcIsExtension();
 
 // The "Correcteur" page: a large text area checked like any field on the web,
 // plus the list of every problem found, with its recommended fix first.

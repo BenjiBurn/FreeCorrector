@@ -17,6 +17,14 @@ fcApi.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     Promise.resolve(tb ? tb(url) : fcApi.tabs.create({ url })).catch(() => {});
     return false;
   }
+  // "See how to conjugate" in the bubble: the conjugator on that verb.
+  // Thunderbird: in a window of its own, in front of the message being written.
+  if (msg?.type === "openConjugator") {
+    const url = `${fcApi.runtime.getURL("conjugator/conjugator.html")}?v=${encodeURIComponent(String(msg.verb ?? "").slice(0, 60))}`;
+    const tb = globalThis.messenger?.windows;
+    Promise.resolve(tb ? tb.create({ url, type: "popup", width: 1100, height: 850 }) : fcApi.tabs.create({ url })).catch(() => {});
+    return false;
+  }
   if (msg?.type === "siteHost") {
     sendResponse(fcHostOf(sender.tab?.url ?? ""));
     return false;

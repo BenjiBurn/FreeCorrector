@@ -78,6 +78,22 @@ footer {
   cursor: pointer;
 }
 .primary-action:hover { filter: brightness(1.1); }
+/* "Conjugate a verb", right under it: the same size, quieter. */
+#open-editor { margin-bottom: 6px; }
+.secondary-action {
+  display: block;
+  width: 100%;
+  margin: 0 0 12px;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--field);
+  color: var(--fg);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.secondary-action:hover { border-color: var(--accent); }
 
 /* "Leave a review", shown once many fixes were applied. */
 .review {

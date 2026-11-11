@@ -1,7 +1,7 @@
 // Shared by the background script, content scripts, popup and options page.
 // Each context loads this file as a classic script, so everything here is global.
 
-/* exported fcApi, FC_DEFAULTS, fcGetSettings, fcSetSettings, fcHostOf, fcRuleKey, fcCountFixes */
+/* exported fcApi, FC_DEFAULTS, fcGetSettings, fcSetSettings, fcHostOf, fcRuleKey, fcCountFixes, fcIsExtension */
 
 const fcApi = globalThis.browser ?? globalThis.chrome;
 
@@ -45,6 +45,13 @@ function fcCountFixes(n) {
   Promise.resolve(fcApi.storage.local.get("fixCount"))
     .then(({ fixCount = 0 }) => fcApi.storage.local.set({ fixCount: fixCount + n }))
     .catch(() => {});
+}
+
+// The extension itself (moz-extension:, chrome-extension:), not one of the web
+// page builds (the online proofreader, the Windows app), which lack some of its
+// pages: the conjugator is only next to the proofreader in the extension.
+function fcIsExtension() {
+  return !/^(https?|file):/i.test(fcApi.runtime.getURL(""));
 }
 
 function fcHostOf(url) {

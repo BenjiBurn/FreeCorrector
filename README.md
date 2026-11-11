@@ -27,6 +27,9 @@ ligne de vos textes sur Internet : toute l’analyse tourne dans votre navigateu
 - Langues : français et anglais, détectées automatiquement phrase par phrase
 - Page « Correcteur » (bouton du menu) : collez ou écrivez un texte, toutes les fautes sont
   listées avec la correction recommandée, « Tout corriger » et « Copier » en un clic
+- Page « Conjugueur » (bouton du menu, onglet de la page « Correcteur », lien « Voir la
+  conjugaison » dans la bulle d’une faute de conjugaison) : tous les temps d’un verbe français,
+  avec négation, forme pronominale, temps composés, question et féminin
 - Aucune connexion réseau : la politique de sécurité de l’extension (`connect-src 'self'`)
   interdit au navigateur toute requête vers Internet depuis l’extension
 
@@ -130,6 +133,7 @@ src/
   options/                 Page d’options
   lib/                     Réglages et styles partagés
   editor/                  Page « Correcteur » : grande zone de texte et liste des fautes
+  conjugator/              Page « Conjugueur » (tables de conjugaison de Grammalecte, dans un worker)
   demo/demo.html           Page de test avec des fautes (développement uniquement : absente des
                            paquets publiés, le bouton du menu n’apparaît qu’en développement)
   vendor/grammalecte/      Moteur Grammalecte 2.3.0 (sous-ensemble non modifié)

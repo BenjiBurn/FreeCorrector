@@ -929,7 +929,40 @@ function check(text) {
     matches.sort((a, b) => a.offset - b.offset);
   }
   // Nothing about the blanks themselves ("multiple spaces").
-  return matches.filter((m) => original.slice(m.offset, m.offset + m.length) === m.word);
+  const result = matches.filter((m) => original.slice(m.offset, m.offset + m.length) === m.word);
+  for (const m of result) {
+    const verb = conjugatedVerb(m);
+    if (verb) m.verb = verb;
+  }
+  return result;
+}
+
+// Conjugation mistakes ("je peut", "ils mange", "sont mangé", "si j’aurais"):
+// the infinitive of the verb, for the card's link to the conjugator. Only
+// when the fix is a form of a single verb ("suis" may be "être" or "suivre":
+// no link); our own rules, only on a typed verb ("je c’est" -> sais, not "ont" -> on).
+const CONJUGATION_RULE = /__(conj|imp|inte|ppas|vmode)_/;
+
+function verbsOf(words) {
+  const lemmas = new Set();
+  for (const w of words.toLowerCase().split(/[\s’'-]+/)) {
+    for (const morph of w ? spellChecker.getMorph(w) : []) {
+      const lemma = /^>([^/]+)\/:V/.exec(morph)?.[1];
+      if (lemma && conj.isVerb(lemma)) lemmas.add(lemma);
+    }
+  }
+  return lemmas;
+}
+
+function conjugatedVerb(m) {
+  const fix = m.replacements[0];
+  const ours = m.ruleId.startsWith("FC_");
+  if (!fix || !(ours || CONJUGATION_RULE.test(m.ruleId))) return "";
+  if (ours && !verbsOf(m.word).size) return "";
+  // A compound form ("a mangé"): the verb, not its auxiliary.
+  let verbs = [...verbsOf(fix)];
+  if (/\s/.test(fix.trim())) verbs = verbs.filter((v) => v !== "avoir" && v !== "être");
+  return verbs.length === 1 ? verbs[0] : "";
 }
 
 self.onmessage = (event) => {

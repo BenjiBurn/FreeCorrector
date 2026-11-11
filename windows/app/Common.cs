@@ -19,6 +19,8 @@ namespace FreeCorrector
         [JsonPropertyName("category")] public string Category { get; set; } = "";
         [JsonPropertyName("ruleId")] public string RuleId { get; set; } = "";
         [JsonPropertyName("replacements")] public List<string> Replacements { get; set; } = new();
+        // A conjugation mistake: the verb's infinitive, for the conjugator ("" otherwise).
+        [JsonPropertyName("verb")] public string Verb { get; set; } = "";
     }
 
     // A match as shown: its boxes are in screen pixels, one per line.

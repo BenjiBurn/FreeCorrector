@@ -1,5 +1,5 @@
 /* exported FcUi, FC_COMPOSE_WINDOW */
-/* global FC_CSS, fcApi, fcGetSettings, fcSetSettings, fcRuleKey, fcT, fcPlural, fcUiLang, fcWarmup */
+/* global FC_CSS, fcApi, fcGetSettings, fcSetSettings, fcRuleKey, fcT, fcPlural, fcUiLang, fcWarmup, fcIsExtension */
 
 // Owns FreeCorrector's single shadow root on the page: the per-field layers,
 // the suggestion card and the error-list panel.
@@ -344,6 +344,17 @@ class FcUi {
       for (const s of others) list.append(replButton(s, "fc-alt"));
       section.append(list);
       frag.append(section);
+    }
+
+    // A conjugation mistake: that verb in the conjugator, a page of the
+    // extension (none next to the online proofreader). The background opens it.
+    if (match.verb && fcIsExtension()) {
+      const conj = fcEl("button", "fc-conj", fcT("seeConjugation", match.verb));
+      conj.addEventListener("click", () => {
+        onDone?.();
+        Promise.resolve(fcApi.runtime.sendMessage({ type: "openConjugator", verb: match.verb })).catch(() => {});
+      });
+      frag.append(conj);
     }
 
     const actions = fcEl("div", "fc-actions");

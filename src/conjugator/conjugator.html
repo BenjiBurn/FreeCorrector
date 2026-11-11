@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title data-i18n="cjTitle">Conjugueur · FreeCorrector</title>
+  <link rel="stylesheet" href="../lib/common.css">
+  <link rel="stylesheet" href="conjugator.css">
+</head>
+<body>
+  <div class="wrap">
+    <header class="top">
+      <img src="../icons/icon.svg" alt="" width="34" height="34">
+      <div>
+        <h1 data-i18n="cjHeading">Conjugueur FreeCorrector</h1>
+        <p class="muted" data-i18n="cjIntro">Tous les verbes français, tous les temps. Calculé sur votre ordinateur, sans connexion.</p>
+      </div>
+      <!-- Shown in the extension only (conjugator.js): elsewhere the proofreader page is not next to this one. -->
+      <nav class="tabs" hidden data-i18n-aria-label="tabsLabel" aria-label="Outils">
+        <a href="../editor/editor.html" data-i18n="tabEditor">Correcteur</a>
+        <a href="conjugator.html" class="on" aria-current="page" data-i18n="tabConjugator">Conjugueur</a>
+      </nav>
+    </header>
+
+    <div class="search">
+      <input id="q" type="search" data-i18n-placeholder="cjPlaceholder" placeholder="Tapez un verbe : faire, s’asseoir, résoudre…"
+        autocomplete="off" spellcheck="false" autofocus role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="suggestions">
+      <div class="list" id="suggestions" role="listbox" hidden></div>
+    </div>
+    <div class="popular" id="popular"><span class="muted" data-i18n="cjPopular">Les plus cherchés :</span></div>
+
+    <section id="out" aria-live="polite"></section>
+  </div>
+
+  <script src="../lib/settings.js"></script>
+  <script src="../lib/i18n.js"></script>
+  <script src="conjugator.js"></script>
+</body>
+</html>

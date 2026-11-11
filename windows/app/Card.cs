@@ -16,7 +16,7 @@ namespace FreeCorrector
         public Mark? Mark { get; private set; }
         public IntPtr Handle { get; private set; }
         public Action<Match, string>? Replace;
-        public Action<Match>? Ignore, AddWord, DisableRule;
+        public Action<Match>? Ignore, AddWord, DisableRule, Conjugate;
 
         public Card()
         {
@@ -55,6 +55,23 @@ namespace FreeCorrector
             foreach (var replacement in match.Replacements.Take(5))
                 choices.Children.Add(Pill(replacement.Length == 0 ? L.T("(supprimer)", "(delete)") : replacement, true, () => Replace?.Invoke(match, replacement)));
             panel.Children.Add(choices);
+
+            // A conjugation mistake: that verb in the conjugator window.
+            if (match.Verb.Length > 0)
+            {
+                var conjugate = new TextBlock
+                {
+                    Text = L.T($"Voir la conjugaison de « {match.Verb} »", $"See how to conjugate « {match.Verb} »"),
+                    Foreground = Theme.Accent,
+                    FontWeight = FontWeights.SemiBold,
+                    Margin = new Thickness(0, 2, 0, 8),
+                    Cursor = Cursors.Hand,
+                };
+                conjugate.MouseEnter += (_, _) => conjugate.TextDecorations = TextDecorations.Underline;
+                conjugate.MouseLeave += (_, _) => conjugate.TextDecorations = null;
+                conjugate.MouseLeftButtonUp += (_, _) => { Hide(); Conjugate?.Invoke(match); };
+                panel.Children.Add(conjugate);
+            }
 
             var actions = new WrapPanel { Margin = new Thickness(0, 2, 0, 0) };
             actions.Children.Add(Pill(L.T("Ignorer", "Ignore"), false, () => Ignore?.Invoke(match)));
