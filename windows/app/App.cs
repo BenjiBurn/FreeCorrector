@@ -114,14 +114,15 @@ namespace FreeCorrector
             card.Ignore = match => watcher.Ignore(match);
             card.AddWord = async match => { await engine.AddWordAsync(match.Word); watcher.Recheck(); };
             card.DisableRule = async match => { await engine.DisableRuleAsync(match); watcher.Recheck(); };
+            card.Conjugate = match => PageWindow.Conjugator(engine, match.Verb);
             var settings = await engine.GetSettingsAsync();
             watcher.Enabled = settings.GetProperty("enabled").GetBoolean();
             watcher.Start();
             FollowMouse(card, () => marks);
             var tray = Tray(app, engine, watcher, settings);
-            if (settingsAtStart) SettingsWindow.Show(engine);
+            if (settingsAtStart) PageWindow.Settings(engine);
             var showSettings = new EventWaitHandle(false, EventResetMode.AutoReset, ShowSettingsEvent);
-            ThreadPool.RegisterWaitForSingleObject(showSettings, (_, _) => app.Dispatcher.BeginInvoke(() => SettingsWindow.Show(engine)), null, -1, false);
+            ThreadPool.RegisterWaitForSingleObject(showSettings, (_, _) => app.Dispatcher.BeginInvoke(() => PageWindow.Settings(engine)), null, -1, false);
             var quit = new EventWaitHandle(false, EventResetMode.AutoReset, QuitEvent);
             ThreadPool.RegisterWaitForSingleObject(quit, (_, _) => app.Dispatcher.BeginInvoke(() => app.Shutdown()), null, -1, true);
             app.Exit += (_, _) =>
@@ -191,7 +192,8 @@ namespace FreeCorrector
             };
             menu.Items.Add(enabled);
             menu.Items.Add(picky);
-            menu.Items.Add(L.T("Réglages…", "Settings…"), null, (_, _) => SettingsWindow.Show(engine));
+            menu.Items.Add(L.T("Réglages…", "Settings…"), null, (_, _) => PageWindow.Settings(engine));
+            menu.Items.Add(L.T("Conjuguer un verbe…", "Conjugate a verb…"), null, (_, _) => PageWindow.Conjugator(engine));
             menu.Items.Add(new Forms.ToolStripSeparator());
             var startup = new Forms.ToolStripMenuItem(L.T("Lancer au démarrage de Windows", "Start with Windows")) { CheckOnClick = true };
             menu.Opening += async (_, _) => startup.Checked = await Startup.IsOnAsync();
@@ -216,7 +218,7 @@ namespace FreeCorrector
                 ContextMenuStrip = menu,
                 Visible = true,
             };
-            tray.DoubleClick += (_, _) => SettingsWindow.Show(engine);
+            tray.DoubleClick += (_, _) => PageWindow.Settings(engine);
 
             // A newer version on the site: at the top of the menu, and said once in a
             // notification. One click on either installs it (Updates.InstallAsync).
