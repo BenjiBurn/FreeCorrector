@@ -6,6 +6,11 @@ fcLocalizePage();
 // conjugation tables (conj-worker.js). ?v=faire (or ?v=se laver) opens a verb.
 // Tense names and forms are French whatever the interface language: they are
 // what the page teaches.
+//
+// On the website (lapigeonnerie.fr/freecorrector/conjugaison/<verbe>), the page is
+// written by the server, verb included: <body data-conj-base="…/conjugaison/"
+// data-verb="pouvoir">. There, another verb is another page (its own address), the
+// popular verbs are the server's links, and this script adds the options in place.
 
 (() => {
   const $ = (id) => document.getElementById(id);
@@ -13,6 +18,14 @@ fcLocalizePage();
   const list = $("suggestions");
   const out = $("out");
 
+  const SITE = document.body.dataset.conjBase ?? "";
+  const PAGE_VERB = document.body.dataset.verb ?? "";
+  // The website in English: the French names of the tenses, translated beside them.
+  const GLOSS = SITE && window.FC_CONJ_GLOSS ? window.FC_CONJ_GLOSS : {};
+  const gloss = (node, title) => {
+    if (GLOSS[title]) node.append(" ", el("span", "gloss", GLOSS[title]));
+    return node;
+  };
   const POPULAR = ["être", "avoir", "aller", "faire", "pouvoir", "vouloir", "savoir", "venir", "dire", "prendre", "devoir", "voir", "mettre", "résoudre", "s’asseoir"];
   const MAX_SUGGESTIONS = 8;
   // The page's options, kept from one verb to the next (except "pronominal").
@@ -151,7 +164,7 @@ fcLocalizePage();
     show(v, parse(input.value).pro || undefined);
   }
 
-  for (const v of POPULAR) {
+  for (const v of SITE ? [] : POPULAR) {
     const b = el("button", "chip", v);
     b.type = "button";
     b.addEventListener("click", () => {
@@ -174,6 +187,11 @@ fcLocalizePage();
       await known;
       // "resoudre", "Résoudre": the verb as the tables spell it.
       verb = verbs.find(([p]) => p === plain(verb))?.[1] ?? verb;
+      // The website: another verb is another page.
+      if (SITE && plain(verb) !== plain(PAGE_VERB) && verbs.some(([, x]) => x === verb)) {
+        location.href = SITE + encodeURIComponent(verb);
+        return;
+      }
       answer = await ask("table", { verb, ...opts, pro: pro ?? false });
       // "s’évanouir", "se souvenir": only used in the pronominal form.
       if (answer && pro === undefined && answer.pronominable === 1) answer = await ask("table", { verb, ...opts, pro: true });
@@ -196,6 +214,8 @@ fcLocalizePage();
 
   // The verb in the address, so a reload or a bookmark comes back to it.
   function remember(name) {
+    // The website's address and title are the server's.
+    if (SITE) return;
     try {
       const url = new URL(location.href);
       url.searchParams.set("v", name);
@@ -287,7 +307,7 @@ fcLocalizePage();
       const rows = keys.map((k) => t[k]).filter((x) => x);
       if (!title || !rows.length) return null;
       const box = el("div", "card");
-      const h = el("h3", "", title);
+      const h = gloss(el("h3", "", title), title);
       const button = el("button", "", fcT("cjCopy"));
       button.type = "button";
       button.title = fcT("cjCopyTitle");
@@ -305,7 +325,7 @@ fcLocalizePage();
       if (!shown.length) return [];
       const grid = el("div", "grid");
       grid.append(...shown);
-      return [el("div", "mood", title), grid];
+      return [gloss(el("div", "mood", title), title), grid];
     };
 
     const head = el("div", "head");
@@ -348,7 +368,7 @@ fcLocalizePage();
 
   // ---------- Start ----------
 
-  const asked = new URLSearchParams(location.search).get("v")?.trim();
+  const asked = SITE ? PAGE_VERB : new URLSearchParams(location.search).get("v")?.trim();
   if (asked) show(asked.replace(PRONOUN, ""), parse(asked).pro || undefined);
-  else show("faire");
+  else if (!SITE) show("faire");
 })();
