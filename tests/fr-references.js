@@ -59,4 +59,10 @@ module.exports = [
   ["Ils ont mangé des crepes de froment.", "crepes", "crêpes"],
   ["J'ai lu le livre de J. Dupont. Il était vraimant bien.", "vraimant", "vraiment"],
   ["Il parle language des signes.", "language", "langage"],
+  // Found in Google Docs (2026-11-12): a time word before "avec ses …" hid the agreement,
+  // and "Je vois ses amis" (his friends) was taken for "ces".
+  ["Il est allé à la plage hier soir avec ses ami.", "ami", "amis"],
+  ["Il joue dimanche avec ses ami.", "ami", "amis"],
+  ["Je vois ses amis ce soir.", null, null],
+  ["Vous voyez ses parents demain ?", null, null],
 ];

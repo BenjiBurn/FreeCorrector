@@ -5,7 +5,26 @@
 // name of the tab (see content/main.js). Everything runs locally: no text
 // ever leaves the browser.
 
-/* global fcApi, fcGetSettings, fcEngineCheck, fcEngineWarmup, fcHostOf, fcSetActionIcon */
+/* global fcApi, fcGetSettings, fcEngineCheck, fcEngineWarmup, fcHostOf, fcSetActionIcon, messenger */
+
+// Thunderbird: the conjugator window, reused while it stays open.
+let fcConjugatorWindow = null;
+async function fcOpenConjugatorWindow(url) {
+  if (fcConjugatorWindow !== null) {
+    try {
+      const [tab] = await messenger.tabs.query({ windowId: fcConjugatorWindow });
+      if (tab) {
+        await messenger.tabs.update(tab.id, { url });
+        await messenger.windows.update(fcConjugatorWindow, { focused: true });
+        return;
+      }
+    } catch {
+      // Closed meanwhile: a new one below.
+    }
+  }
+  const win = await messenger.windows.create({ url, type: "popup", width: 1100, height: 850 });
+  fcConjugatorWindow = win.id;
+}
 
 fcApi.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   // "Report" in the bubble: the website's report page (content scripts cannot
@@ -18,11 +37,11 @@ fcApi.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     return false;
   }
   // "See how to conjugate" in the bubble: the conjugator on that verb.
-  // Thunderbird: in a window of its own, in front of the message being written.
+  // Thunderbird: in a window of its own, in front of the message being written,
+  // the same one for the next verb as long as it is open.
   if (msg?.type === "openConjugator") {
     const url = `${fcApi.runtime.getURL("conjugator/conjugator.html")}?v=${encodeURIComponent(String(msg.verb ?? "").slice(0, 60))}`;
-    const tb = globalThis.messenger?.windows;
-    Promise.resolve(tb ? tb.create({ url, type: "popup", width: 1100, height: 850 }) : fcApi.tabs.create({ url })).catch(() => {});
+    Promise.resolve(globalThis.messenger?.windows ? fcOpenConjugatorWindow(url) : fcApi.tabs.create({ url })).catch(() => {});
     return false;
   }
   if (msg?.type === "siteHost") {

@@ -621,8 +621,9 @@ function checkParagraph(paragraph) {
     // "à la menthe", "de la maison"…, as written. Also past an adjective of the second
     // noun or an adverb ("un rapport de la Commission européenne publié en 2020", "des
     // ouvrages pour la jeunesse plus anciens", "la réconciliation entre les peuples compatible").
+    // The second noun is no determiner: in "dimanche avec ses ami", "ami" is that noun.
     if (/__gn_/.test(m.ruleId)) {
-      const head = /(\p{L}+)\s+(?:(?:à|de|en|pour|entre|sur|avec|sans|contre)\s+|d['’])(?:la\s+|le\s+|l['’]|les\s+)?\p{L}+\s+(?:(\p{L}+)\s+)?$/iu
+      const head = /(\p{L}+)\s+(?:(?:à|de|en|pour|entre|sur|avec|sans|contre)\s+|d['’])(?:la\s+|le\s+|l['’]|les\s+)?(?!(?:le|la|les|l|un|une|des|du|au|aux|ce|cet|cette|ces|mon|ma|mes|ton|ta|tes|son|sa|ses|notre|nos|votre|vos|leur|leurs)(?:\s|['’]))\p{L}+\s+(?:(\p{L}+)\s+)?$/iu
         .exec(paragraph.slice(0, err.nStart).replace(/(^|\s)(plus|moins|très|si|aussi|trop|bien)\s+$/i, "$1"));
       const pairs = (word, kind) => spellChecker.getMorph(word.toLowerCase()).flatMap((x) => {
         const g = new RegExp(`:${kind}[^/]*?:([mfe]):([spi])`).exec(x);

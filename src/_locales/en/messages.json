@@ -149,7 +149,7 @@
   "tabsLabel": { "message": "Tools" },
   "tabEditor": { "message": "Proofreader" },
   "tabConjugator": { "message": "Conjugator" },
-  "seeConjugation": { "message": "See how to conjugate « $1 »" },
+  "seeConjugation": { "message": "See how to conjugate “$1”" },
   "cjTitle": { "message": "Conjugator · FreeCorrector" },
   "cjHeading": { "message": "FreeCorrector conjugator" },
   "cjIntro": { "message": "Every French verb, every tense. Worked out on your computer, offline." },

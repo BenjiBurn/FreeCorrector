@@ -1521,7 +1521,9 @@ function fcRoundThreeRules(tokens, i, { add, morph, apo, paragraph, spellChecker
     add(t, `${t.text.slice(0, -1)}er`, "Après « aller », « pouvoir », « devoir »… : l’infinitif.", true);
   }
   // "Regarde ses nuages" -> ces ; "Chacun range ces affaires" -> ses
-  if (t.lower === "ses" && /^(regarde|regardez|regardons|vois|voyez|écoute|écoutez|sens|sentez|admire|admirez|vise|visez)$/.test(L1)) add(t, "ces", "Pour montrer : « ces » (ces nuages-là).", true);
+  // (An imperative only: "Je vois ses amis" are his friends.)
+  if (t.lower === "ses" && /^(regarde|regardez|regardons|vois|voyez|écoute|écoutez|sens|sentez|admire|admirez|vise|visez)$/.test(L1) &&
+      !/^(je|j’|tu|il|elle|on|nous|vous|ils|elles|qui|ne|n’|me|m’|te|t’|le|la|les|lui|leur|y|en)$/.test(L2)) add(t, "ces", "Pour montrer : « ces » (ces nuages-là).", true);
   if (t.lower === "ces" && L2 === "chacun" && fcHas(morph(prev), /:V/)) add(t, "ses", "Ce qui lui appartient : « ses ».", true);
   // "Il s’est que tu as raison" -> sait
   if (t.lower === "s’" && R1 === "est" && /^(que|qu’|comment|pourquoi|où|si)$/.test(R2) && /^(il|elle|on|chacun|personne|qui)$/.test(L1)) {

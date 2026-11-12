@@ -69,9 +69,12 @@ function fcReviewUrl() {
   });
 
   // The test page only exists in development (the store packages leave it out).
+  // Firefox and Thunderbird answer 200 for a missing extension file: only
+  // reading it fails. So the button shows once the page has been read.
   const demoButton = document.getElementById("open-demo");
-  fetch(fcApi.runtime.getURL("demo/demo.html"), { method: "HEAD" })
-    .then((res) => { demoButton.hidden = !res.ok; }, () => {});
+  fetch(fcApi.runtime.getURL("demo/demo.html"))
+    .then((res) => (res.ok ? res.text() : Promise.reject(new Error(String(res.status)))))
+    .then(() => { demoButton.hidden = false; }, () => { demoButton.hidden = true; });
   demoButton.addEventListener("click", () => {
     fcApi.tabs.create({ url: fcApi.runtime.getURL("demo/demo.html") });
     window.close();
