@@ -31,64 +31,68 @@ est la fiche principale. Le nom et le résumé viennent du paquet (rien à saisi
 **Description, anglais** (langue par défaut) :
 
 ```text
-FreeCorrector fixes your mistakes wherever you write: email, social networks, forms, chat apps, online documents… Free, no account, no subscription, no ads.
+FreeCorrector is a free spell checker and grammar checker for English and French. It underlines your mistakes as you type, everywhere on the web: Gmail, Outlook, Google Docs, Discord, Notion, ChatGPT, social networks, forms… Click the underlined word and it’s fixed.
+
+• Free: no account, no subscription, no ads.
+• No AI: FreeCorrector never rewrites your sentences. It flags the mistake, explains the rule and suggests the fix; you decide.
+• 100% local: everything is checked inside your browser. Nothing is sent over the Internet, and it even works offline.
+• English and French detected automatically, sentence by sentence, even in a text that mixes both.
 
 How it works
 • Mistakes are underlined as you type: red for spelling, orange for grammar, blue for typography.
-• Click an underlined word to see the recommended fix, with the other suggestions right below it.
-• A counter at the bottom right of the field shows how many mistakes there are. Click it to open the full list.
-• The proofreader page (toolbar menu) lets you paste a long text, see every mistake and fix them all in one click. Or select text on any page and right-click "Check with FreeCorrector".
+• Click an underlined word to see the recommended fix, with the other suggestions right below.
+• A counter at the bottom right of the field shows how many mistakes there are; click it for the full list. Ctrl+Shift+F fixes every mistake in the field at once.
+• The proofreader page (toolbar menu) lets you paste a long text and fix everything in one click.
+• A French verb conjugator: every tense of any French verb, from the toolbar menu or from the bubble of a conjugation mistake.
 
-French and English
-The language is detected automatically, sentence by sentence: a French email quoting an English sentence is checked in both languages. In English: your/you're, its/it's, their/there/they're, subject-verb agreement, articles, verb tenses, words typed for others (then/than, lose/loose, form/from…) and typos. In French: agreement, conjugation, homophones (a/à, et/est, ça/sa, ou/où…), past participles, subjunctive, accents, capitals, punctuation.
-
-Your texts stay with you
-Everything is analyzed inside your browser. FreeCorrector sends nothing over the Internet, collects no data and even works offline. The browser itself forbids it any network connection.
+What it catches
+English: your/you’re, its/it’s, their/there/they’re, subject-verb agreement, tenses, “should of”, typos and more. French: agreement, conjugation, homophones, past participles, subjunctive, accents, capitals and punctuation.
 
 Also
-• Personal dictionary ("Add to dictionary"), with import and export as a text file.
-• "Turn off this rule" to stop seeing a kind of mistake.
-• Turn it off on the sites you choose.
-• Picky mode, one click away in the toolbar menu: fine typography, the missing French "ne"…
-• Works in rich text editors too (webmail, social networks, online tools).
-• Code, addresses, links and names are not taken for mistakes.
-• Undo with Ctrl+Z after a correction.
+• Personal dictionary.
+• Turn it off on the sites you choose, or on the current page with Ctrl+Shift+1.
+• Right-click selected text: “Check with FreeCorrector”.
+• Picky mode for fine typography.
+• Undo with Ctrl+Z after a fix.
+• Also for Thunderbird, and as a Windows app (Word, Outlook, Notepad…).
 
-Free software
-FreeCorrector is free software (GPL v3). It builds on two free engines, Grammalecte for French and Harper for English, and adds its own rules and context-aware ranking of suggestions. Source code: https://github.com/BenjiBurn/FreeCorrector
+Open source
+FreeCorrector is free software (GPL v3). It builds on two open-source engines, Harper for English and Grammalecte for French, and adds its own rules and context-aware ranking of suggestions. Source code: https://github.com/BenjiBurn/FreeCorrector
 
-Created by BenjiBurn.
+Made by BenjiBurn.
 ```
 
 Puis ajouter la langue **Français** (sélecteur de langue en haut de la fiche → ajouter une
 langue → Français) et y coller :
 
 ```text
-FreeCorrector corrige vos fautes partout où vous écrivez : e-mails, réseaux sociaux, formulaires, messageries, documents en ligne… Gratuit, sans compte, sans abonnement, sans publicité.
+FreeCorrector est un correcteur d’orthographe et de grammaire gratuit pour le français et l’anglais. Il souligne vos fautes pendant que vous écrivez, partout sur le Web : Gmail, Outlook, Google Docs, Discord, Notion, ChatGPT, réseaux sociaux, formulaires… Un clic sur le mot souligné, et c’est corrigé.
+
+• Gratuit : sans compte, sans abonnement, sans publicité.
+• Sans IA : FreeCorrector ne réécrit pas vos phrases. Il signale la faute, explique la règle et propose la correction ; vous décidez.
+• 100 % local : tout est analysé dans votre navigateur. Rien n’est envoyé sur Internet, et ça marche même hors connexion.
+• Français et anglais détectés automatiquement, phrase par phrase, même dans un texte qui mélange les deux.
 
 Comment ça marche
 • Les fautes sont soulignées pendant que vous tapez : rouge pour l’orthographe, orange pour la grammaire, bleu pour la typographie.
 • Un clic sur le mot souligné affiche la correction recommandée, et les autres suggestions juste en dessous.
-• Un compteur en bas à droite du champ indique le nombre de fautes. Un clic dessus ouvre la liste complète.
-• La page « Correcteur » (bouton du menu) permet de coller un long texte, de voir toutes les fautes et de tout corriger en un clic. Ou sélectionnez un texte sur n’importe quelle page, clic droit → « Corriger avec FreeCorrector ».
+• Un compteur en bas à droite du champ indique le nombre de fautes ; un clic dessus ouvre la liste complète. Ctrl+Maj+F corrige d’un coup toutes les fautes du champ.
+• La page « Correcteur » (menu de l’icône) permet de coller un long texte et de tout corriger en un clic.
+• Un conjugueur : tous les temps de n’importe quel verbe français, depuis le menu de l’icône ou la bulle d’une faute de conjugaison.
 
-Français et anglais
-La langue est détectée automatiquement, phrase par phrase : un e-mail en français avec une citation en anglais est corrigé dans les deux langues. Accords, conjugaison, homophones (a/à, et/est, ça/sa, ou/où, ces/ses, leur/leurs…), participes passés, subjonctif, accents, majuscules, ponctuation, fautes de frappe qui donnent un autre mot (« mot de basse »)… En anglais : your/you’re, its/it’s, their/there/they’re, accords sujet-verbe, articles, temps, fautes de frappe.
-
-Vos textes restent chez vous
-L’analyse se fait entièrement dans votre navigateur. FreeCorrector n’envoie rien sur Internet, ne collecte aucune donnée et fonctionne même hors connexion. Le navigateur lui interdit d’ailleurs toute connexion réseau.
+Ce qu’il corrige
+Accords, conjugaison, homophones (a/à, et/est, ça/sa, ou/où, ces/ses, leur/leurs…), participes passés, subjonctif, accents, majuscules, ponctuation… En anglais : your/you’re, its/it’s, their/there/they’re, accord sujet-verbe, temps, fautes de frappe.
 
 Et aussi
-• Dictionnaire personnel (« Ajouter au dictionnaire »), à importer ou exporter en fichier texte.
-• « Désactiver cette règle » pour ne plus voir un type de faute.
-• Désactivation sur les sites de votre choix.
-• Mode exigeant, à un clic dans le menu : typographie fine (espaces insécables, apostrophes typographiques…), « ne » oublié…
-• Fonctionne aussi dans les zones de texte mises en forme (éditeurs riches des webmails, réseaux sociaux et outils en ligne).
-• Le code, les adresses, les liens et les noms propres ne sont pas pris pour des fautes.
+• Dictionnaire personnel (« Ajouter au dictionnaire »).
+• Désactivation sur les sites de votre choix, ou sur la page en cours avec Ctrl+Maj+1.
+• Clic droit sur un texte sélectionné : « Corriger avec FreeCorrector ».
+• Mode exigeant pour la typographie fine (espaces insécables, apostrophes typographiques…).
 • Annulation avec Ctrl+Z après une correction.
+• Aussi pour Thunderbird, et en application pour Windows (Word, Outlook, Bloc-notes…).
 
 Logiciel libre
-FreeCorrector est un logiciel libre (licence GPL v3). Il s’appuie sur deux moteurs libres : Grammalecte pour le français et Harper pour l’anglais, auxquels il ajoute ses propres règles et un classement des suggestions selon le contexte. Code source : https://github.com/BenjiBurn/FreeCorrector
+FreeCorrector est un logiciel libre (licence GPL v3). Il s’appuie sur deux moteurs libres, Grammalecte pour le français et Harper pour l’anglais, auxquels il ajoute ses propres règles et un classement des suggestions selon le contexte. Code source : https://github.com/BenjiBurn/FreeCorrector
 
 Créé par BenjiBurn.
 ```
@@ -97,7 +101,7 @@ Les images se renseignent une fois (elles valent pour toutes les langues) :
 
 | Champ | Valeur |
 |---|---|
-| Catégorie | Productivité → Outils (Productivity → Tools) |
+| Catégorie | Productivité → Communication (Productivity → Communication) |
 | Icône du store (128×128) | `store/icone-128.png` |
 | Captures d’écran (1280×800, au moins 1) | `store/capture-1-bulle.png`, `capture-2-correcteur.png`, `capture-3-anglais.png`, `capture-4-liste.png`, `capture-5-desactiver.png` (fiche anglaise : `capture-5-desactiver-en.png`) |
 | Petite vignette promotionnelle (440×280, **obligatoire**) | `store/promo-440x280.png` |
