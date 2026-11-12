@@ -1,6 +1,7 @@
 {
-  "extName": { "message": "FreeCorrector" },
-  "extDescription": { "message": "Correcteur orthographique et grammatical gratuit pour le français et l’anglais, 100 % local, propulsé par Grammalecte et Harper." },
+  "extName": { "message": "FreeCorrector – Correcteur orthographique gratuit" },
+  "actionTitle": { "message": "FreeCorrector" },
+  "extDescription": { "message": "Correcteur d’orthographe et de grammaire gratuit, français et anglais. Sans IA, sans compte, 100 % local : rien n’est envoyé." },
 
   "popupTagline": { "message": "Français et anglais · 100 % local" },
   "popupEnabled": { "message": "Correction activée" },

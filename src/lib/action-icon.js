@@ -24,7 +24,7 @@ const fcIcons = fcActionIcons();
 function fcSetActionIcon(tabId, active) {
   if (!fcIcons || tabId === undefined || tabId < 0) return;
   Promise.resolve(fcApi.action.setIcon({ tabId, path: active ? fcIcons.on : fcIcons.off })).catch(() => {});
-  Promise.resolve(fcApi.action.setTitle({ tabId, title: fcT(active ? "extName" : "actionTitleOff") })).catch(() => {});
+  Promise.resolve(fcApi.action.setTitle({ tabId, title: fcT(active ? "actionTitle" : "actionTitleOff") })).catch(() => {});
 }
 
 if (fcIcons) {

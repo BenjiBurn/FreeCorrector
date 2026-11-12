@@ -1,4 +1,4 @@
-# Note for reviewers — FreeCorrector 1.3.0
+# Note for reviewers — FreeCorrector 1.4.0
 
 FreeCorrector is a free, open-source (GPL-3.0) spelling and grammar checker for French and
 English. All checking happens locally in the browser: the extension makes **no network
@@ -18,9 +18,9 @@ To rebuild from the source archive (Node.js 18 or later, no dependencies to inst
 
 ```sh
 node scripts/build.js firefox
-# -> dist/firefox/ and dist/freecorrector-1.3.0-firefox.zip
+# -> dist/firefox/ and dist/freecorrector-1.4.0-firefox.zip
 node scripts/build.js thunderbird
-# -> dist/thunderbird/ and dist/freecorrector-1.3.0-thunderbird.zip
+# -> dist/thunderbird/ and dist/freecorrector-1.4.0-thunderbird.zip
 ```
 
 ## Third-party code (unmodified copies)
@@ -64,11 +64,21 @@ it:
   suggestions and, since 1.2.6, to tell French from English (`engine/language.js` reads them
   from the extension with `fetch(runtime.getURL(...))`, allowed by `connect-src 'self'`).
 - `editor/`: an extension page where users can paste and check a longer text.
-- `conjugator/` (new in 1.3.1): an extension page showing every tense of a French verb. It runs
+- `conjugator/` (new in 1.4.0): an extension page showing every tense of a French verb. It runs
   Grammalecte's own conjugation module (`vendor/grammalecte/fr/conj.js`, unmodified, with its
   `conj_data.json`) in a Web Worker of its own (`conj-worker.js`). Opened from the popup, from a
   tab of the editor page, or from the bubble of a conjugation mistake (the content script asks the
   background to open it with `tabs.create`; in Thunderbird, `windows.create`). No network request.
+- Google Docs (new in 1.4.0): Docs draws its text in a `<canvas>`, so there is no text field to read.
+  Docs offers an "annotated canvas" for this: when a page variable names an extension, it adds
+  an invisible copy of each line (SVG `rect` elements with an `aria-label` holding the text).
+  - `content/docs-annotate.js` is the only script that runs in the page's world (`"world": "MAIN"`,
+    `document_start`, matching `https://docs.google.com/document/*` only). It is one line: it sets
+    `window._docs_annotate_canvas_by_ext` to our Chrome Web Store id. It reads nothing and sends nothing.
+  - `content/docs-field.js` (isolated world, like the other content scripts) reads those labels,
+    draws the underlines over the page, and applies a fix by selecting the word with simulated
+    clicks and typing the replacement as key events into Docs' own input iframe, so that Ctrl+Z
+    undoes it. The text goes to our background page only, like any other field.
 - `lib/menus.js`: two right-click entries on selected text.
   - "Check with FreeCorrector" stores the selection in `storage.local` and opens the editor page with it.
   - "Report a missed mistake" (new in 1.2.8) opens the same report page as the bubble's "Report" button

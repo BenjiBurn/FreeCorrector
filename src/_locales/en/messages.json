@@ -1,6 +1,7 @@
 {
-  "extName": { "message": "FreeCorrector" },
-  "extDescription": { "message": "Free spelling and grammar checker for French and English, 100% local, powered by Grammalecte and Harper." },
+  "extName": { "message": "FreeCorrector – French & English Grammar Checker" },
+  "actionTitle": { "message": "FreeCorrector" },
+  "extDescription": { "message": "Free spell and grammar checker for English and French. No AI, no account, works offline: your text never leaves your computer." },
 
   "popupTagline": { "message": "French and English · 100% local" },
   "popupEnabled": { "message": "Checking on" },

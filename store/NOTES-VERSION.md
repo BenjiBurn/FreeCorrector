@@ -1,8 +1,41 @@
 # Notes de version à coller dans les stores
 
-## 1.4.0 (prochaine version, pas encore publiée)
+## 1.4.0
 
-Brouillon, à compléter jusqu’à la sortie. 1.4.0 et non 1.3.1 : deux nouveautés visibles, Google Docs et le conjugueur.
+1.4.0 et non 1.3.1 : deux nouveautés visibles, Google Docs et le conjugueur. Nouveau nom dans les stores : « FreeCorrector – Correcteur orthographique gratuit » / « FreeCorrector – French & English Grammar Checker » (mêmes modules, mêmes identifiants).
+
+**Français** (Firefox : « Notes de version » ; Thunderbird : « Notes de version », sans la ligne Google Docs ; Chrome : rien à saisir ; Opera : « Changelog ») :
+
+```text
+• Nouveau : FreeCorrector corrige aussi dans Google Docs : fautes soulignées dans le document, correction en un clic, « Tout corriger » (Ctrl+Maj+F), et Ctrl+Z pour annuler.
+• Nouveau : un conjugueur. Tous les temps de n’importe quel verbe français, avec négation, forme pronominale, temps composés, question et féminin. On l’ouvre depuis le menu de l’icône (« Conjuguer un verbe ») ou depuis la bulle d’une faute de conjugaison (« Voir la conjugaison de… »).
+• Beaucoup moins de fausses alertes dans les textes soignés, en français comme en anglais, et la bonne correction proposée plus souvent en premier.
+• « parait », « boite », « entrainer » (orthographe rectifiée de 1990, correcte) ne sont plus soulignés, sauf en mode exigeant.
+• De nombreuses corrections suite à vos signalements : « la 1ere » → 1ʳᵉ, « Peux tu » → Peux-tu, « hier soir avec ses ami » → amis… Merci à vous !
+```
+
+**English** (Opera "Changelog", Firefox and Thunderbird if an English field is offered):
+
+```text
+• New: FreeCorrector now checks Google Docs too: mistakes underlined in the document, one-click fixes, "Fix all" (Ctrl+Shift+F), and Ctrl+Z to undo.
+• New: a French verb conjugator: every tense of any French verb, with negative, pronominal, compound tenses, questions and feminine forms. Open it from the toolbar menu ("Conjugate a verb") or from the bubble of a conjugation mistake.
+• Far fewer false alarms on carefully written text, in English and in French, and the right fix shown first more often.
+• Many fixes thanks to your reports. Thank you!
+```
+
+**Notes aux testeurs** (Firefox et Thunderbird, en anglais) :
+
+```text
+No account or login is needed. Everything runs locally (CSP connect-src 'self'): no network requests, no data collected, no remote code. Our own code is neither minified nor bundled; the engines in vendor/ are unmodified copies of Grammalecte 2.3.0 and harper.js 2.10.0 (see NOTE_FOR_REVIEWERS.md).
+
+1.4.0 adds two things, with no new permission. Google Docs: content/docs-annotate.js is a one-line script in the page's world (world "MAIN", document_start, https://docs.google.com/document/* only) that sets window._docs_annotate_canvas_by_ext, so that Docs adds its invisible, accessible copy of the text; content/docs-field.js (isolated world, like the other content scripts) reads it, draws the underlines and applies fixes as simulated clicks and key events. A conjugator page (src/conjugator/) that runs Grammalecte's unmodified conj.js in a Web Worker of its own. The extension's name and summary now say what it does.
+
+Build: download https://github.com/BenjiBurn/FreeCorrector/archive/refs/tags/v1.4.0.zip, run "node scripts/build.js firefox" (or "thunderbird"; Node.js 18+, no dependencies), output in dist/freecorrector-1.4.0-firefox.zip (or -thunderbird.zip).
+
+To test: type "Ils peut venir demain." in any text field (in Thunderbird: in the body of a new message). Click "peut": the bubble offers "peuvent" and "Voir la conjugaison de « pouvoir »", which opens the conjugator. The same works in any Google Docs document you can edit.
+```
+
+**Détail des changements** (pour nous) :
 
 - Nouveau : FreeCorrector corrige aussi dans Google Docs (Chrome, Edge, Brave, Firefox) : fautes soulignées dans le document, suggestions au clic, liste des fautes et « Tout corriger » (Ctrl+Maj+F). Docs dessine son texte dans un canvas : l’extension le lit dans la copie invisible que Docs ajoute pour les correcteurs, et tape les corrections comme au clavier (Ctrl+Z les annule).
 - Nouveau : un conjugueur. Tous les temps de n’importe quel verbe français, avec négation, forme pronominale, temps composés, question et féminin. On l’ouvre depuis le menu (« Conjuguer un verbe »), l’onglet de la page Correcteur, ou le lien « Voir la conjugaison de… » dans la bulle d’une faute de conjugaison.
