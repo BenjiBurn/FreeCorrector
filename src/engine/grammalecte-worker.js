@@ -581,7 +581,10 @@ function checkParagraph(paragraph) {
 
   const grammar = [];
   const errors = [...gc_engine.parse(paragraph, "FR", false, null, false)];
+  // Grammalecte's alerts that a fix of ours replaces (the inversion without hyphen below).
+  const superseded = new Set();
   for (const err of errors) {
+    if (superseded.has(err)) continue;
     const category = OPTION_CATEGORY[err.sType] ?? "typo";
     const m = {
       offset: err.nStart,
@@ -812,7 +815,17 @@ function checkParagraph(paragraph) {
       if (inv && spellChecker.getMorph(inv[2].toLowerCase()).some((x) => /:V[^/]*:(Ip|Iq|If|K)/.test(x))) {
         const start = Math.max(0, err.nStart - 40) + inv.index + inv[1].length;
         const end = start + inv[2].length + 1 + paragraph.slice(start + inv[2].length + 1).search(/\s/);
-        if (errors.some((e) => e !== err && e.nStart < end && start < e.nEnd)) continue;
+        // Another alert on the same words stops us, except a conjugation alert on the inverted
+        // verb itself: the same misreading (« La Suède stupéfaite » Peux tu… -> "Peux" conjugated
+        // as if it went with the title). Ours replaces it.
+        const others = errors.filter((e) => e !== err && e.nStart < end && start < e.nEnd);
+        const sameMisreading = (e) => /conj_/.test(e.sRuleId) && e.nStart === start && e.nEnd === start + inv[2].length;
+        if (others.some((e) => !sameMisreading(e))) continue;
+        for (const e of others) {
+          superseded.add(e);
+          const i = grammar.findIndex((g) => g.offset === e.nStart && g.length === e.nEnd - e.nStart && g.ruleId === e.sRuleId);
+          if (i >= 0) grammar.splice(i, 1);
+        }
         const pronoun = inv[3];
         const joint = /^(il|elle|on)$/i.test(pronoun) && /[aeiou]$/i.test(inv[2]) ? "-t-" : "-";
         Object.assign(m, {
@@ -842,6 +855,17 @@ function checkParagraph(paragraph) {
       // "C’est pas" -> "Ce n’est pas", not "CE N’".
       const letters = m.word.replace(/\P{L}/gu, "");
       if (letters.length < 2 || letters !== letters.toUpperCase()) {
+        m.replacements = m.replacements.map((r) => {
+          const low = r.toLowerCase();
+          return m.word[0] === m.word[0].toUpperCase() ? low[0].toUpperCase() + low.slice(1) : low;
+        });
+      }
+    }
+    // "Il dit « bonjour ». Peux tu m'en dire plus ?" -> "PEUX-TU": Grammalecte sometimes shouts
+    // the inversion it suggests. It takes the case of the words written, unless they shout too.
+    if (/inte_union/.test(m.ruleId)) {
+      const letters = m.word.replace(/\P{L}/gu, "");
+      if (letters !== letters.toUpperCase()) {
         m.replacements = m.replacements.map((r) => {
           const low = r.toLowerCase();
           return m.word[0] === m.word[0].toUpperCase() ? low[0].toUpperCase() + low.slice(1) : low;

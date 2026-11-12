@@ -65,4 +65,9 @@ module.exports = [
   ["Il joue dimanche avec ses ami.", "ami", "amis"],
   ["Je vois ses amis ce soir.", null, null],
   ["Vous voyez ses parents demain ?", null, null],
+  // Noted by the nightly task (report #34): a title in French quotes before the inversion hid
+  // the missing hyphen, and Grammalecte sometimes suggests the inversion in capitals.
+  ["« La Suède stupéfaite » Peux tu m'en dire plus ?", "Peux tu", "Peux-tu"],
+  ["Il dit « bonjour ». Peux tu m'en dire plus ?", "Peux tu", "Peux-tu"],
+  ["« Le Monde » peut te le dire.", null, null],
 ];
