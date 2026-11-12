@@ -15,6 +15,9 @@ const FC_DEFAULTS = Object.freeze({
   dictionary: [],
   // Rules turned off by the user: [{ key, message, word }] (see fcRuleKey).
   disabledRules: [],
+  // "auto" (the browser's or Windows' light or dark mode), "light" or "dark":
+  // the extension's pages and the bubble.
+  theme: "auto",
 });
 
 // A stable name for the rule behind a match, to turn it off for good.
@@ -61,3 +64,19 @@ function fcHostOf(url) {
     return "";
   }
 }
+
+// The extension's own pages (popup, options, proofreader, conjugator; the
+// Windows app's windows): the chosen theme on <html data-theme>, which the
+// stylesheets read (lib/common.css). Not the web pages content scripts run in,
+// nor the website's pages, which have their own colours.
+(function fcFollowTheme() {
+  if (typeof document === "undefined" || !location.href.startsWith(fcApi.runtime.getURL(""))) return;
+  const apply = (theme) => {
+    if (theme === "light" || theme === "dark") document.documentElement.dataset.theme = theme;
+    else delete document.documentElement.dataset.theme;
+  };
+  fcGetSettings().then((s) => apply(s.theme), () => {});
+  fcApi.storage.onChanged?.addListener((changes, area) => {
+    if (area === "local" && "theme" in changes) apply(changes.theme.newValue);
+  });
+})();

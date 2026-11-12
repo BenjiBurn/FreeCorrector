@@ -37,6 +37,16 @@ class FcUi {
     this.layer.className = "fc-layer";
     shadow.append(style, this.layer);
 
+    // The theme chosen in the options ("auto": the system's, see styles.js).
+    const theme = (value) => {
+      if (value === "light" || value === "dark") this.layer.dataset.theme = value;
+      else delete this.layer.dataset.theme;
+    };
+    fcGetSettings().then((settings) => theme(settings.theme), () => {});
+    fcApi.storage.onChanged?.addListener((changes, area) => {
+      if (area === "local" && "theme" in changes) theme(changes.theme.newValue);
+    });
+
     this.schedule = this.schedule.bind(this);
     // Fields keep what they measured while their text stays in place inside
     // them (field.stale): a page that scrolls moves the fields, not their text.

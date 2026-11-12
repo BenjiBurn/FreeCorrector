@@ -29,7 +29,7 @@ const FC_CSS = `
 }
 
 @media (prefers-color-scheme: dark) {
-  .fc-layer {
+  .fc-layer:not([data-theme="light"]) {
     --fc-bg: #1f2329;
     --fc-fg: #e8eaed;
     --fc-muted: #9aa1ab;
@@ -37,6 +37,14 @@ const FC_CSS = `
     --fc-hover: #2a2f36;
     --fc-accent: #60a5fa;
   }
+}
+.fc-layer[data-theme="dark"] {
+  --fc-bg: #1f2329;
+  --fc-fg: #e8eaed;
+  --fc-muted: #9aa1ab;
+  --fc-border: #343a42;
+  --fc-hover: #2a2f36;
+  --fc-accent: #60a5fa;
 }
 
 /* ---------- Mirror overlay that draws the underlines ---------- */

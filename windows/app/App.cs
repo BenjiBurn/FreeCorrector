@@ -116,6 +116,7 @@ namespace FreeCorrector
             card.DisableRule = async match => { await engine.DisableRuleAsync(match); watcher.Recheck(); };
             card.Conjugate = match => PageWindow.Conjugator(engine, match.Verb);
             var settings = await engine.GetSettingsAsync();
+            Theme.Mode = ThemeOf(settings);
             watcher.Enabled = settings.GetProperty("enabled").GetBoolean();
             watcher.Start();
             FollowMouse(card, () => marks);
@@ -135,6 +136,10 @@ namespace FreeCorrector
         }
 
         // Hovering a mark for a moment opens its card; leaving both closes it.
+        // The "theme" setting (Theme.Mode), "auto" when the settings have none.
+        static string ThemeOf(JsonElement settings) =>
+            settings.TryGetProperty("theme", out var theme) && theme.ValueKind == JsonValueKind.String ? theme.GetString() ?? "auto" : "auto";
+
         static void FollowMouse(Card card, Func<List<Mark>> marks)
         {
             Mark? hovered = null;
@@ -186,6 +191,7 @@ namespace FreeCorrector
             engine.SettingsChanged += async () =>
             {
                 var now = await engine.GetSettingsAsync();
+                Theme.Mode = ThemeOf(now);
                 Log.Write($"settings changed: enabled {now.GetProperty("enabled")}, picky {now.GetProperty("picky")}");
                 Show(now);
                 watcher.Recheck();

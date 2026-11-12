@@ -39,6 +39,7 @@ fcLocalizePage();
     $("sentence-rules").checked = settings.sentenceRules;
     $("language").value = settings.language;
     $("english-dialect").value = settings.englishDialect;
+    $("theme").value = settings.theme;
 
     $("words").replaceChildren(
       ...settings.dictionary.map((word) =>
@@ -76,6 +77,7 @@ fcLocalizePage();
   $("picky").addEventListener("change", (e) => fcSetSettings({ picky: e.target.checked }));
   $("language").addEventListener("change", (e) => fcSetSettings({ language: e.target.value }));
   $("english-dialect").addEventListener("change", (e) => fcSetSettings({ englishDialect: e.target.value }));
+  $("theme").addEventListener("change", (e) => fcSetSettings({ theme: e.target.value }));
   $("sentence-rules").addEventListener("change", (e) =>
     fcSetSettings({ sentenceRules: e.target.checked })
   );

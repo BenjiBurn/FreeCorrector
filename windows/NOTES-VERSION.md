@@ -4,6 +4,22 @@
 dans le champ « Nouveautés de cette version » de la fiche, en français et en anglais
 (1500 caractères au maximum chacune).
 
+## 0.6.0 (prochaine version, pas encore publiée)
+
+Brouillon. 0.6.0 : nouveauté visible (le thème), avec l'extension 1.5.0.
+
+**Français** :
+
+```text
+- Nouveau : un réglage « Thème » (Automatique, Clair, Sombre) dans les réglages. En automatique, FreeCorrector suit le mode des applications de Windows ; « Sombre » passe la bulle, les fenêtres et leur barre de titre en sombre.
+```
+
+**English** :
+
+```text
+- New: a "Theme" setting (Automatic, Light, Dark). In automatic mode, FreeCorrector follows Windows' app mode; "Dark" turns the bubble, the windows and their title bar dark.
+```
+
 ## 0.5.0
 
 0.5.0 : nouveauté visible (le conjugueur). Le paquet du Microsoft Store porte le nom réservé le 2026-11-12,

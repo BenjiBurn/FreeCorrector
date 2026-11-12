@@ -1,5 +1,11 @@
 # Notes de version à coller dans les stores
 
+## 1.5.0 (prochaine version, pas encore publiée)
+
+Brouillon. 1.5.0 : nouveauté visible (le thème).
+
+- Nouveau : un réglage « Thème » (Automatique, Clair, Sombre) pour la bulle et les pages de FreeCorrector. En automatique, comme avant, il suit le thème du navigateur ; « Sombre » le force même quand le navigateur est en clair. Demandé par l’auteur (Windows en mode sombre, applications en mode clair).
+
 ## 1.4.0
 
 1.4.0 et non 1.3.1 : deux nouveautés visibles, Google Docs et le conjugueur. Nouveau nom dans les stores : « FreeCorrector – Correcteur orthographique gratuit » / « FreeCorrector – French & English Grammar Checker » (mêmes modules, mêmes identifiants).

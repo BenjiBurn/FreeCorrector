@@ -62,7 +62,7 @@ namespace FreeCorrector
                 var conjugate = new TextBlock
                 {
                     Text = L.T($"Voir la conjugaison de « {match.Verb} »", $"See how to conjugate “{match.Verb}”"),
-                    Foreground = Theme.Accent,
+                    Foreground = Theme.Link,
                     FontWeight = FontWeights.SemiBold,
                     Margin = new Thickness(0, 2, 0, 8),
                     Cursor = Cursors.Hand,

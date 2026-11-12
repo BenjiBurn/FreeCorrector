@@ -5,8 +5,9 @@
   --hover: #f2f4f7;
 }
 @media (prefers-color-scheme: dark) {
-  :root { --hover: #2a2f36; }
+  :root:not([data-theme="light"]) { --hover: #2a2f36; }
 }
+:root[data-theme="dark"] { --hover: #2a2f36; }
 
 body {
   padding: 24px 16px 16px;

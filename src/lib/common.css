@@ -13,8 +13,10 @@
   color-scheme: light;
 }
 
+/* Dark: with the system's dark mode ("auto" theme, data-theme absent), or
+   always with the "dark" theme (lib/settings.js sets data-theme on the page). */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
     --bg: #1f2329;
     --fg: #e8eaed;
     --muted: #9aa1ab;
@@ -26,6 +28,18 @@
     --on-accent: #0b1b33;
     color-scheme: dark;
   }
+}
+:root[data-theme="dark"] {
+  --bg: #1f2329;
+  --fg: #e8eaed;
+  --muted: #9aa1ab;
+  --border: #343a42;
+  --accent: #60a5fa;
+  --danger: #f87171;
+  --field: #2a2f36;
+  /* The dark accent is light: white text on it was hard to read. */
+  --on-accent: #0b1b33;
+  color-scheme: dark;
 }
 
 * { box-sizing: border-box; }

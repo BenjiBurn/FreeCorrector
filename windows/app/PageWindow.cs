@@ -2,6 +2,7 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Windows;
+using System.Windows.Interop;
 using System.Windows.Media.Imaging;
 using Microsoft.Web.WebView2.Wpf;
 
@@ -64,8 +65,13 @@ namespace FreeCorrector
             if (File.Exists(icon)) Icon = new BitmapImage(new Uri(icon));
             view = new WebView2 { DefaultBackgroundColor = Theme.Dark ? System.Drawing.Color.FromArgb(0x1f, 0x23, 0x29) : System.Drawing.Color.White };
             Content = view;
+            // The title bar in the theme of the page (the page follows it by itself: lib/settings.js).
+            void TitleBar() => Native.DarkTitleBar(new WindowInteropHelper(this).Handle, Theme.Dark);
+            SourceInitialized += (_, _) => TitleBar();
+            Action follow = () => Dispatcher.BeginInvoke(TitleBar);
+            Theme.Changed += follow;
             // Its WebView2 processes go at once, and the engines can sleep (Engine.Release).
-            Closed += (_, _) => view.Dispose();
+            Closed += (_, _) => { Theme.Changed -= follow; view.Dispose(); };
             Loaded += async (_, _) =>
             {
                 await view.EnsureCoreWebView2Async(await engine.EnvironmentAsync());

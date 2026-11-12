@@ -28,6 +28,14 @@ namespace FreeCorrector
         [DllImport("user32.dll")] public static extern bool AllowSetForegroundWindow(int pid);
         [DllImport("user32.dll")] public static extern bool GetWindowRect(IntPtr hwnd, out RECT r);
         [DllImport("user32.dll")] static extern uint SendInput(uint count, INPUT[] inputs, int size);
+        [DllImport("dwmapi.dll")] static extern int DwmSetWindowAttribute(IntPtr hwnd, int attribute, ref int value, int size);
+
+        // A window's title bar in dark or light (DWMWA_USE_IMMERSIVE_DARK_MODE, Windows 10 20H1 and later).
+        public static void DarkTitleBar(IntPtr hwnd, bool dark)
+        {
+            var value = dark ? 1 : 0;
+            DwmSetWindowAttribute(hwnd, 20, ref value, sizeof(int));
+        }
 
         public static void AddExStyle(IntPtr hwnd, int style)
         {

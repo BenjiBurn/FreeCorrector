@@ -4,8 +4,9 @@
   --ending: #1d4ed8;
 }
 @media (prefers-color-scheme: dark) {
-  :root { --hover: #2a2f36; --soft: #1d2a3d; --ending: #93c5fd; }
+  :root:not([data-theme="light"]) { --hover: #2a2f36; --soft: #1d2a3d; --ending: #93c5fd; }
 }
+:root[data-theme="dark"] { --hover: #2a2f36; --soft: #1d2a3d; --ending: #93c5fd; }
 
 body { padding: 24px 16px 40px; }
 .wrap { max-width: 1100px; margin: 0 auto; }

@@ -36,9 +36,22 @@ namespace FreeCorrector
 
     static class Theme
     {
-        // Windows' app mode (Settings > Personalization > Colors).
-        public static readonly bool Dark = Registry.GetValue(
-            @"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize", "AppsUseLightTheme", 1) is int light && light == 0;
+        // The "theme" setting of the options page: "light", "dark", or "auto" for
+        // Windows' app mode (Settings > Personalization > Colors), read each time so
+        // that a change there shows on the next bubble. Set at start and whenever
+        // the settings change (App.cs).
+        public static string Mode
+        {
+            get => mode;
+            set { if (value != mode) { mode = value; Changed?.Invoke(); } }
+        }
+        static string mode = "auto";
+
+        // The setting changed: open windows follow (PageWindow).
+        public static event Action? Changed;
+
+        public static bool Dark => Mode == "dark" || (Mode != "light" && Registry.GetValue(
+            @"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize", "AppsUseLightTheme", 1) is int light && light == 0);
 
         public static Brush Category(string category) => Freeze(category switch
         {
@@ -47,11 +60,20 @@ namespace FreeCorrector
             _ => "#3b82f6",
         });
 
-        public static readonly Brush Background = Freeze(Dark ? "#1f2329" : "#ffffff");
-        public static readonly Brush Border = Freeze(Dark ? "#3a404a" : "#d0d5dd");
-        public static readonly Brush Text = Freeze(Dark ? "#e6e8eb" : "#1f2329");
-        public static readonly Brush Muted = Freeze(Dark ? "#9aa3ad" : "#667085");
+        public static Brush Background => Dark ? DarkBackground : LightBackground;
+        public static Brush Border => Dark ? DarkBorder : LightBorder;
+        public static Brush Text => Dark ? DarkText : LightText;
+        public static Brush Muted => Dark ? DarkMuted : LightMuted;
+        // The main button: white text on it, whatever the theme.
         public static readonly Brush Accent = Freeze("#2563eb");
+        // A link: lighter on a dark background, as in the extension.
+        public static Brush Link => Dark ? DarkLink : Accent;
+
+        static readonly Brush LightBackground = Freeze("#ffffff"), DarkBackground = Freeze("#1f2329");
+        static readonly Brush LightBorder = Freeze("#d0d5dd"), DarkBorder = Freeze("#3a404a");
+        static readonly Brush LightText = Freeze("#1f2329"), DarkText = Freeze("#e6e8eb");
+        static readonly Brush LightMuted = Freeze("#667085"), DarkMuted = Freeze("#9aa3ad");
+        static readonly Brush DarkLink = Freeze("#60a5fa");
 
         static Brush Freeze(string color)
         {
