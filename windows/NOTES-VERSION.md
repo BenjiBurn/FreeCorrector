@@ -4,20 +4,25 @@
 dans le champ « Nouveautés de cette version » de la fiche, en français et en anglais
 (1500 caractères au maximum chacune).
 
-## 0.5.0 (prochaine version, pas encore publiée)
+## 0.5.0
 
-Brouillon. 0.5.0 : nouveauté visible (le conjugueur).
+0.5.0 : nouveauté visible (le conjugueur). Le paquet du Microsoft Store porte le nom réservé le 2026-11-12,
+« FreeCorrector – Correcteur d’orthographe et de grammaire » (même produit, 9P3GM2HR6BZB) ; la tuile du
+menu Démarrer et l'installateur du site gardent « FreeCorrector ». Moteurs de l'extension 1.4.0.
 
 **Français** :
 
 ```text
 - Nouveau : « Conjuguer un verbe… » dans le menu de l'icône ouvre le conjugueur : tous les temps de n'importe quel verbe français. La bulle d'une faute de conjugaison propose aussi « Voir la conjugaison ».
+- Beaucoup moins de fausses alertes dans les textes soignés, en français comme en anglais, et la bonne correction proposée plus souvent en premier.
+- « parait », « boite », « entrainer » (orthographe de 1990, correcte) ne sont plus soulignés, sauf en mode exigeant.
 ```
 
 **English** :
 
 ```text
 - New: "Conjugate a verb…" in the icon's menu opens the conjugator: every tense of any French verb. The bubble of a conjugation mistake also offers "See how to conjugate".
+- Far fewer false alarms on carefully written text, in English and in French, and the right fix shown first more often.
 ```
 
 ## 0.4.0
