@@ -319,4 +319,9 @@ module.exports = [
   // Signalé depuis l'extension (1.3.0) : « contrôle technique, ... » signalé hors mode exigeant (virgule avant les points de suspension).
   ["(alcool, vitesse, contrôle technique, ...)", null, null],
   ["Pommes, poires, …", null, null],
+  // Signalé depuis l'extension (1.3.0) : « infractionniste » (qui commet des infractions, sécurité routière) soulignait et proposait « in fractionniste ».
+  ["Conducteur infractionniste.", null, null],
+  ["Les conducteurs infractionnistes ont été verbalisés.", null, null],
+  ["Ces infractionnistes récidivent souvent.", null, null],
+  ["Une politique inflationniste.", null, null],
 ];

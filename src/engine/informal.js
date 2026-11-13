@@ -65,6 +65,8 @@ self.FC_INFORMAL_WORDS = new Set([
   "spotter", "spotte", "spottes", "spottent", "spottez", "spotté", "spottée", "spottés", "spottées", "spotting", "spotteur", "spotteurs", "spotters",
   // Car words ("une 208 rebadgée": the same car sold under another brand)
   "rebadger", "rebadgé", "rebadgée", "rebadgés", "rebadgées", "rebadging",
+  // Road safety words ("un conducteur infractionniste": one who breaks traffic rules)
+  "infractionniste", "infractionnistes",
   // American chat words and slang, and brands people type every day.
   "omw", "lmk", "idk", "idc", "tbh", "imo", "imho", "ngl", "smh", "wyd", "hbu", "ikr", "ttyl", "rn", "thx", "pls", "plz", "lol", "lmao", "lmfao",
   "lowkey", "highkey", "fam", "bougie", "rizz", "sus", "yeet", "adulting", "hangry", "bestie", "besties", "selfie", "selfies", "vibe", "vibes", "vibing", "ghosted", "ghosting",

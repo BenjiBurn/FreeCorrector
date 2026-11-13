@@ -6,6 +6,7 @@ Brouillon. 1.5.0 : nouveauté visible (le thème).
 
 - Nouveau : un réglage « Thème » (Automatique, Clair, Sombre) pour la bulle et les pages de FreeCorrector. En automatique, comme avant, il suit le thème du navigateur ; « Sombre » le force même quand le navigateur est en clair. Demandé par l’auteur (Windows en mode sombre, applications en mode clair).
 - « « La Suède stupéfaite » Peux tu m’en dire plus ? » : le trait d’union manquant est signalé même après un titre entre guillemets français (il ne l’était qu’avec des guillemets droits), et la suggestion n’est plus en majuscules (« PEUX-TU ») après une citation ; repéré par la tâche des signalements (#34).
+- « infractionniste », « infractionnistes » (conducteur qui commet des infractions, vocabulaire de la sécurité routière) ne sont plus soulignés ; signalé par un utilisateur (#35).
 
 ## 1.4.0
 
