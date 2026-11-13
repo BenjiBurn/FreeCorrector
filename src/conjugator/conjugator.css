@@ -107,3 +107,27 @@ body { padding: 24px 16px 40px; }
 .none { color: var(--muted); font-style: italic; }
 .empty { text-align: center; padding: 50px 0; }
 .empty .chip { margin: 0 2px; }
+
+/* French or English verbs. */
+.verb-langs { display: inline-flex; gap: 2px; padding: 3px; margin-bottom: 10px; border: 1px solid var(--border); border-radius: 999px; }
+.verb-langs[hidden] { display: none; }
+.verb-langs button, .verb-langs a {
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 5px 12px;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+  text-decoration: none;
+}
+.verb-langs [aria-pressed="true"], .verb-langs [aria-current="page"] { background: var(--soft); color: var(--accent); }
+
+/* English verbs: go – went – gone, the other spellings, the French names of the tenses. */
+.head .parts { font-size: 15px; color: var(--muted); }
+.notes { margin: -4px 0 14px; padding-left: 20px; color: var(--muted); font-size: 14px; }
+.gloss { color: var(--muted); font-weight: 400; text-transform: none; letter-spacing: 0; margin-right: auto; }
+.card h3 { flex-wrap: wrap; }
+.card h3 .gloss { font-size: 12px; order: 3; flex-basis: 100%; margin-top: -4px; }

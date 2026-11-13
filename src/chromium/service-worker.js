@@ -60,7 +60,7 @@ fcApi.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   }
   // "See how to conjugate" in the bubble: the conjugator on that verb.
   if (msg?.type === "openConjugator") {
-    const url = `${fcApi.runtime.getURL("conjugator/conjugator.html")}?v=${encodeURIComponent(String(msg.verb ?? "").slice(0, 60))}`;
+    const url = `${fcApi.runtime.getURL("conjugator/conjugator.html")}?l=fr&v=${encodeURIComponent(String(msg.verb ?? "").slice(0, 60))}`;
     fcApi.tabs.create({ url }).catch(() => {});
     return false;
   }

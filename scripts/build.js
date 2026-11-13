@@ -188,6 +188,7 @@ const WEB_FILES = [
   "content/styles.js", "content/field.js", "content/ui.js",
   "editor/editor.css", "editor/editor.js",
   "conjugator/conjugator.css", "conjugator/conjugator.js", "conjugator/conj-worker.js",
+  "conjugator/en-conj.js", "conjugator/en-verbs.js",
   "icons/icon.svg", "web/fc-web.js",
 ];
 const WEB_DIRS = ["engine", "vendor", "data"];

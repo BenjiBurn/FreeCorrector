@@ -22,6 +22,12 @@
       </nav>
     </header>
 
+    <!-- French or English verbs (conjugator.js; the website writes its own links). -->
+    <div class="verb-langs" role="group" hidden data-i18n-aria-label="cjVerbsLabel" aria-label="Langue des verbes">
+      <button type="button" data-lang="fr" data-i18n="cjVerbsFr">Verbes français</button>
+      <button type="button" data-lang="en" data-i18n="cjVerbsEn">Verbes anglais</button>
+    </div>
+
     <div class="search">
       <input id="q" type="search" data-i18n-placeholder="cjPlaceholder" placeholder="Tapez un verbe : faire, s’asseoir, résoudre…"
         autocomplete="off" spellcheck="false" autofocus role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="suggestions">

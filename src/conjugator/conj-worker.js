@@ -1,24 +1,39 @@
-// The conjugator's engine: Grammalecte's conjugation tables, in a worker of
-// their own (the checker's worker is not needed for this page). In a worker
-// conj.js does not try to load its data by itself (it does wherever `browser`
-// or `chrome` exist, with a path that is not ours), and the synchronous
-// loading of conj_data.json is acceptable.
+// The conjugator's engines, in a worker of their own (the checker's worker is
+// not needed for this page):
+// - French: Grammalecte's conjugation tables. In a worker conj.js does not try
+//   to load its data by itself (it does wherever `browser` or `chrome` exist,
+//   with a path that is not ours), and the synchronous loading of
+//   conj_data.json is acceptable.
+// - English: en-conj.js and its verb list en-verbs.js.
+// Each one is loaded the first time it is asked for.
 //
-// Messages in:  { id, type: "verbs" } | { id, type: "table", verb, pro, neg, tpsco, int, fem }
+// Messages in:  { id, type: "verbs", lang } | { id, type: "table", lang, verb, … options }
+//   French options: pro, neg, tpsco, int, fem; English: neg, int, contr, dialect.
 // Messages out: { id, result } | { id, error }
 
 "use strict";
 
 const VENDOR = "../vendor/grammalecte/";
 
-importScripts(VENDOR + "graphspell/helpers.js", VENDOR + "fr/conj.js");
+/* global helpers, conj, Verb, fcEnConj */
 
-/* global helpers, conj, Verb */
+let frenchReady = false;
+function french() {
+  if (!frenchReady) {
+    importScripts(VENDOR + "graphspell/helpers.js", VENDOR + "fr/conj.js");
+    conj.init(helpers.loadFile(new URL(VENDOR + "fr/conj_data.json", self.location.href).href));
+    frenchReady = true;
+  }
+}
 
-conj.init(helpers.loadFile(new URL(VENDOR + "fr/conj_data.json", self.location.href).href));
+function english() {
+  if (typeof fcEnConj === "undefined") importScripts("en-verbs.js", "en-conj.js");
+  return fcEnConj;
+}
 
 // Every verb the tables know.
 function verbs() {
+  french();
   return Object.keys(conj._dVerb);
 }
 
@@ -37,6 +52,7 @@ function infoTags(sInfo) {
 
 // The table of one verb with the options of the page, or null for an unknown verb.
 function table({ verb, pro = false, neg = false, tpsco = false, int = false, fem = false }) {
+  french();
   verb = String(verb ?? "");
   if (!conj.isVerb(verb)) return null;
   let v;
@@ -61,11 +77,13 @@ function table({ verb, pro = false, neg = false, tpsco = false, int = false, fem
 }
 
 self.onmessage = (event) => {
-  const { id, type } = event.data;
+  const { id, type, lang } = event.data;
   try {
     let result;
-    if (type === "verbs") result = verbs();
-    else if (type === "table") result = table(event.data);
+    const en = lang === "en";
+    if (type === "verbs") result = en ? english().verbs() : verbs();
+    else if (type === "table") result = en ? english().table(String(event.data.verb ?? ""), event.data) : table(event.data);
+    else if (type === "lookup") result = english().lookup(String(event.data.verb ?? ""));
     else throw new Error(`Unknown message type: ${type}`);
     self.postMessage({ id, result });
   } catch (err) {

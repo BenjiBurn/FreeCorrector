@@ -33,7 +33,8 @@ namespace FreeCorrector
         // `verb`: the verb to show ("faire", the page's ?v=), or none for the page's own choice.
         public static void Conjugator(Engine engine, string verb = "")
         {
-            var page = "conjugator/conjugator.html" + (verb.Length > 0 ? "?v=" + Uri.EscapeDataString(verb) : "");
+            // A verb from the checker is a French one (a French conjugation mistake).
+            var page = "conjugator/conjugator.html" + (verb.Length > 0 ? "?l=fr&v=" + Uri.EscapeDataString(verb) : "");
             if (conjugator == null)
             {
                 conjugator = new PageWindow(engine, L.T("Conjugueur · FreeCorrector", "Conjugator · FreeCorrector"), page, 1100, 860);

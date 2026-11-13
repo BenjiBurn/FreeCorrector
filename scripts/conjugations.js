@@ -2,7 +2,9 @@
 // every verb the conjugation engine knows, computed once here and loaded into the
 // site's MySQL table fc_verbs. The site's page only reads that table.
 //
-//   node scripts/conjugations.js [out.sql]     (default: dist/conjugaison/fc_verbs.sql)
+//   node scripts/conjugations.js [out.sql]       (default: dist/conjugaison/fc_verbs.sql)
+//   node scripts/conjugations.js --en [out.sql]  the English verbs (default: dist/conjugaison/fc_en_verbs.sql),
+//                                                for /freecorrector/conjugaison-anglaise/<verb>
 //
 // Per verb: its tables as the extension's conjugator shows them (the page's
 // script redraws the same thing, then adds the options: negation, pronominal…),
@@ -19,7 +21,9 @@ const vm = require("vm");
 const { pathToFileURL, fileURLToPath } = require("url");
 
 const ROOT = path.join(__dirname, "..");
-const OUT = path.resolve(process.argv[2] ?? path.join(ROOT, "dist", "conjugaison", "fc_verbs.sql"));
+const ENGLISH = process.argv.includes("--en");
+const ARG = process.argv.slice(2).find((a) => !a.startsWith("--"));
+const OUT = path.resolve(ARG ?? path.join(ROOT, "dist", "conjugaison", ENGLISH ? "fc_en_verbs.sql" : "fc_verbs.sql"));
 
 // ---------- The engine, as in the extension (conjugator/conj-worker.js) ----------
 
@@ -48,9 +52,9 @@ vm.createContext(ctx);
 vm.runInContext(fs.readFileSync(fileURLToPath(workerUrl), "utf8"), ctx);
 const engine = (code) => vm.runInContext(code, ctx);
 const table = (verb, pro) => engine(`table(${JSON.stringify({ verb, pro })})`);
-const verbs = engine("verbs()");
-const models = engine("JSON.stringify(Object.fromEntries(Object.entries(conj._dVerb).map(([v, x]) => [v, x[1]])))");
-const modelOf = JSON.parse(models);
+// (French only: Grammalecte's tables are loaded for the French verbs.)
+const verbs = ENGLISH ? [] : engine("verbs()");
+const modelOf = ENGLISH ? {} : JSON.parse(engine("JSON.stringify(Object.fromEntries(Object.entries(conj._dVerb).map(([v, x]) => [v, x[1]])))"));
 
 // ---------- Helpers ----------
 
@@ -296,4 +300,134 @@ function main() {
   console.log("Les 30 plus courants :", ranked.slice(0, 30).map((v) => v.verb).join(", "));
 }
 
-main();
+// ---------- The English verbs ----------
+
+// The cards of the page, as the extension shows them with no option on
+// (en-conj.js): [before, ending, after] rows, the French names beside.
+function englishCards(t) {
+  const out = [];
+  for (const m of t.moods) {
+    for (const c of m.cards) out.push({ mood: m.title, moodGloss: m.gloss, key: c.key, title: c.title, gloss: c.gloss, rows: c.rows });
+  }
+  return out;
+}
+
+// Verbs conjugated alike: the same changes from the base form (sing sang sung,
+// ring rang rung: "ing ang ung"), or the same spelling rule for the regular ones.
+function englishModel(t, flags) {
+  if (t.kind === "modal") return "modal";
+  const { base, past, pp } = t.parts;
+  if (t.kind === "irregular") {
+    let k = 0;
+    while (k < base.length && base[k] === past[k] && base[k] === pp[k]) k++;
+    return `irr:${base.slice(k)}|${past.slice(k)}|${pp.slice(k)}`;
+  }
+  if (flags.includes("k")) return "reg:k";
+  if (flags.includes("g")) return "reg:g";
+  if (flags.includes("d")) return "reg:d";
+  if (/[^aeiou]y$/.test(base)) return "reg:y";
+  if (base.endsWith("e")) return "reg:e";
+  if (/(?:s|x|z|ch|sh|o)$/.test(base)) return "reg:es";
+  return "reg:ed";
+}
+
+const EN_TRAP_ORDER = ["be", "do_3", "have_3", "irr_past", "irr_pp", "same3", "lie_lay", "double", "k", "ied", "drop_e", "ie_ying", "es",
+  "did_base", "uk_us", "regular"];
+
+// The usual mistakes with one verb, read off its own forms. The page words them.
+function englishTraps(t, E) {
+  const out = [];
+  const add = (k, forms) => out.push({ k, ...forms });
+  if (t.kind === "modal") return out;
+  const { base, s, past, pp, ing } = t.parts;
+  const regPast = t.regular?.past ?? past;
+  const variants = new Set(t.variants.map((v) => v.form));
+  if (base === "be") add("be", {});
+  if (base === "do") add("do_3", {});
+  if (base === "have") add("have_3", {});
+  if (t.kind === "irregular") {
+    if (past === pp && past === base) add("same3", { base, wrong: regPast });
+    else if (regPast !== past && !variants.has(regPast)) add("irr_past", { base, wrong: regPast, past });
+    if (pp !== past) add("irr_pp", { past, pp });
+  } else {
+    const plainPast = base.endsWith("e") ? `${base}d` : `${base}ed`;
+    if (/[^aeiou]y$/.test(base)) add("ied", { base, wrong: `${base}ed`, past, s, ing });
+    else if (past.endsWith("cked") && !base.endsWith("ck")) add("k", { base, wrong: `${base}ed`, past, ing });
+    else if (past !== plainPast) add("double", { base, wrong: plainPast, past, ing });
+  }
+  if (base === "lie" || base === "lay") add("lie_lay", {});
+  if (base.endsWith("ie") && base.length > 2) add("ie_ying", { base, wrong: `${base.slice(0, -1)}ing`, ing });
+  else if (base.endsWith("e") && !/(?:ee|oe|ye)$/.test(base) && ing === `${base.slice(0, -1)}ing`) add("drop_e", { base, wrong: `${base}ing`, ing });
+  if (s.endsWith("es") && !s.endsWith("ies") && base !== "be" && base !== "do" && base !== "have") add("es", { base, wrong: `${base}s`, s });
+  if (base !== "be" && base !== "do" && base !== "have") add("did_base", { base, past });
+  const us = E.parts(base, "us");
+  const gb = E.parts(base, "gb");
+  if (us.past !== gb.past || us.pp !== gb.pp) add("uk_us", { us_past: us.past, gb_past: gb.past, us_pp: us.pp, gb_pp: gb.pp });
+  if (t.kind === "regular" && !out.some((x) => ["ied", "k", "double"].includes(x.k))) add("regular", { base, past });
+  return out.sort((a, b) => EN_TRAP_ORDER.indexOf(a.k) - EN_TRAP_ORDER.indexOf(b.k));
+}
+
+function mainEnglish() {
+  const E = engine("english()");
+  const all = E.verbs();
+  const flagsOf = new Map(engine("globalThis.FC_EN_VERBS").trim().split(/\s+/).map((x) => x.split(":")).map(([v, f = ""]) => [v, f]));
+  const models = new Map();
+  const lines = [
+    "-- FreeCorrector — le conjugueur anglais en ligne : tous les verbes, calculés par",
+    "-- scripts/conjugations.js --en (dépôt FreeCorrector). Généré, ne pas modifier à la main :",
+    "-- relancer le script, puis recharger ce fichier (il remplace la table).",
+    "",
+    "DROP TABLE IF EXISTS fc_en_verbs_new;",
+    "CREATE TABLE fc_en_verbs_new (",
+    "  verb        VARCHAR(40)       NOT NULL,              -- la base verbale, telle que dans l’adresse (« go »)",
+    "  name        VARCHAR(50)       NOT NULL,              -- tel qu’affiché (« to go »)",
+    "  kind        VARCHAR(10)       NOT NULL,              -- irregular, regular, modal",
+    "  forms       VARCHAR(255)      NOT NULL,              -- ses formes entre espaces (« went gone goes going »), pour la recherche",
+    "  model       SMALLINT UNSIGNED NOT NULL,              -- modèle (mêmes changements : sing, ring)",
+    "  rank_n      SMALLINT UNSIGNED NOT NULL,              -- 1 = le plus courant",
+    "  head        TEXT              NOT NULL,              -- JSON : formes principales, variantes US/GB, sens",
+    "  cards       MEDIUMTEXT        NOT NULL,              -- JSON : les tableaux, terminaisons à part",
+    "  traps       TEXT              NOT NULL,              -- JSON : les pièges de ce verbe",
+    "  PRIMARY KEY (verb),",
+    "  KEY idx_rank (rank_n),",
+    "  KEY idx_model (model, rank_n)",
+    ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;",
+    "",
+  ];
+  const rows = [];
+  let withTraps = 0;
+  all.forEach((verb, i) => {
+    const t = E.table(verb, {});
+    if (!t || t.verb !== verb) return;
+    const sig = englishModel(t, flagsOf.get(verb) ?? "");
+    if (!models.has(sig)) models.set(sig, models.size + 1);
+    const p = t.parts;
+    const modal = { can: "could", may: "might", shall: "should", will: "would" }[verb];
+    const forms = p ? [...new Set([p.s, p.past, p.pp, p.ing, ...t.variants.map((v) => v.form)])].filter((f) => f !== verb) : modal ? [modal] : [];
+    const head = { kind: t.kind, parts: p, variants: t.variants, sense: t.sense };
+    const traps = englishTraps(t, E);
+    if (traps.length) withTraps++;
+    rows.push(`(${[
+      sql(verb), sql(t.name), sql(t.kind), sql(` ${forms.join(" ")} `.slice(0, 255)), models.get(sig), i + 1,
+      sql(JSON.stringify(head)), sql(JSON.stringify(englishCards(t))), sql(JSON.stringify(traps)),
+    ].join(", ")})`);
+  });
+  for (let i = 0; i < rows.length; i += 200) {
+    lines.push("INSERT INTO fc_en_verbs_new (verb, name, kind, forms, model, rank_n, head, cards, traps) VALUES");
+    lines.push(rows.slice(i, i + 200).join(",\n") + ";");
+  }
+  lines.push(
+    "",
+    "-- Bascule d’un coup : la page n’est jamais devant une table à moitié remplie.",
+    "CREATE TABLE IF NOT EXISTS fc_en_verbs LIKE fc_en_verbs_new;",
+    "RENAME TABLE fc_en_verbs TO fc_en_verbs_old, fc_en_verbs_new TO fc_en_verbs;",
+    "DROP TABLE fc_en_verbs_old;",
+    "",
+  );
+  fs.mkdirSync(path.dirname(OUT), { recursive: true });
+  fs.writeFileSync(OUT, lines.join("\n"));
+  console.log(`${rows.length} verbes anglais, ${withTraps} avec des pièges, ${models.size} modèles -> ${path.relative(process.cwd(), OUT)}`);
+}
+
+if (ENGLISH) mainEnglish();
+else main();

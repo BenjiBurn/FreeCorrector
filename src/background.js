@@ -40,7 +40,7 @@ fcApi.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   // Thunderbird: in a window of its own, in front of the message being written,
   // the same one for the next verb as long as it is open.
   if (msg?.type === "openConjugator") {
-    const url = `${fcApi.runtime.getURL("conjugator/conjugator.html")}?v=${encodeURIComponent(String(msg.verb ?? "").slice(0, 60))}`;
+    const url = `${fcApi.runtime.getURL("conjugator/conjugator.html")}?l=fr&v=${encodeURIComponent(String(msg.verb ?? "").slice(0, 60))}`;
     Promise.resolve(globalThis.messenger?.windows ? fcOpenConjugatorWindow(url) : fcApi.tabs.create({ url })).catch(() => {});
     return false;
   }
