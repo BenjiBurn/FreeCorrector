@@ -1,6 +1,10 @@
 # Fiche Chrome Web Store — FreeCorrector 1.4.0
 
 Chaque texte est dans un bloc : copier le contenu du bloc tel quel dans le champ indiqué.
+
+Pas de liste de noms de sites ou de logiciels dans la description : le 2026-11-13, Chrome a refusé
+la fiche pour « spam dans les mots clés » (règle Yellow Argon) à cause de « Gmail, Outlook, Google
+Docs, Discord, Notion, ChatGPT ». Décrire les usages (e-mails, documents en ligne…), pas les marques.
 Tableau de bord : https://chrome.google.com/webstore/devconsole
 
 ## 0. Compte développeur (une seule fois)
@@ -31,7 +35,7 @@ est la fiche principale. Le nom et le résumé viennent du paquet (rien à saisi
 **Description, anglais** (langue par défaut) :
 
 ```text
-FreeCorrector is a free spell checker and grammar checker for English and French. It underlines your mistakes as you type, everywhere on the web: Gmail, Outlook, Google Docs, Discord, Notion, ChatGPT, social networks, forms… Click the underlined word and it’s fixed.
+FreeCorrector is a free spell checker and grammar checker for English and French. It underlines your mistakes as you type, in the text fields of the websites you use: emails, online documents, chats, social networks, forms… Click the underlined word and it’s fixed.
 
 • Free: no account, no subscription, no ads.
 • No AI: FreeCorrector never rewrites your sentences. It flags the mistake, explains the rule and suggests the fix; you decide.
@@ -54,7 +58,7 @@ Also
 • Right-click selected text: “Check with FreeCorrector”.
 • Picky mode for fine typography.
 • Undo with Ctrl+Z after a fix.
-• Also for Thunderbird, and as a Windows app (Word, Outlook, Notepad…).
+• Also for Thunderbird, and as a Windows app that checks your text in desktop programs too.
 
 Open source
 FreeCorrector is free software (GPL v3). It builds on two open-source engines, Harper for English and Grammalecte for French, and adds its own rules and context-aware ranking of suggestions. Source code: https://github.com/BenjiBurn/FreeCorrector
@@ -66,7 +70,7 @@ Puis ajouter la langue **Français** (sélecteur de langue en haut de la fiche �
 langue → Français) et y coller :
 
 ```text
-FreeCorrector est un correcteur d’orthographe et de grammaire gratuit pour le français et l’anglais. Il souligne vos fautes pendant que vous écrivez, partout sur le Web : Gmail, Outlook, Google Docs, Discord, Notion, ChatGPT, réseaux sociaux, formulaires… Un clic sur le mot souligné, et c’est corrigé.
+FreeCorrector est un correcteur d’orthographe et de grammaire gratuit pour le français et l’anglais. Il souligne vos fautes pendant que vous écrivez, dans les champs de texte des sites que vous utilisez : e-mails, documents en ligne, messageries, réseaux sociaux, formulaires… Un clic sur le mot souligné, et c’est corrigé.
 
 • Gratuit : sans compte, sans abonnement, sans publicité.
 • Sans IA : FreeCorrector ne réécrit pas vos phrases. Il signale la faute, explique la règle et propose la correction ; vous décidez.
@@ -89,7 +93,7 @@ Et aussi
 • Clic droit sur un texte sélectionné : « Corriger avec FreeCorrector ».
 • Mode exigeant pour la typographie fine (espaces insécables, apostrophes typographiques…).
 • Annulation avec Ctrl+Z après une correction.
-• Aussi pour Thunderbird, et en application pour Windows (Word, Outlook, Bloc-notes…).
+• Aussi pour Thunderbird, et en application Windows qui corrige aussi dans vos logiciels.
 
 Logiciel libre
 FreeCorrector est un logiciel libre (licence GPL v3). Il s’appuie sur deux moteurs libres, Grammalecte pour le français et Harper pour l’anglais, auxquels il ajoute ses propres règles et un classement des suggestions selon le contexte. Code source : https://github.com/BenjiBurn/FreeCorrector
