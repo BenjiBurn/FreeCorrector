@@ -7,6 +7,11 @@ Brouillon. 1.5.0 : nouveauté visible (le thème).
 - Nouveau : un réglage « Thème » (Automatique, Clair, Sombre) pour la bulle et les pages de FreeCorrector. En automatique, comme avant, il suit le thème du navigateur ; « Sombre » le force même quand le navigateur est en clair. Demandé par l’auteur (Windows en mode sombre, applications en mode clair).
 - « « La Suède stupéfaite » Peux tu m’en dire plus ? » : le trait d’union manquant est signalé même après un titre entre guillemets français (il ne l’était qu’avec des guillemets droits), et la suggestion n’est plus en majuscules (« PEUX-TU ») après une citation ; repéré par la tâche des signalements (#34).
 - « infractionniste », « infractionnistes » (conducteur qui commet des infractions, vocabulaire de la sécurité routière) ne sont plus soulignés ; signalé par un utilisateur (#35).
+- Nouveau : le conjugueur conjugue aussi les verbes anglais (go, went, gone), à côté des verbes français.
+- Douzième tour à l’aveugle (2026-11-14, commentaires Facebook, fils Twitter, annonces immobilières, messages médicaux, discours, condoléances, applis de rencontre, service client, forums jardinage/bricolage/voitures anciennes, fanfictions) :
+  - Français : 79 % → 99 % de bonnes corrections en premier sur le nouveau corpus. Accord du participe des verbes pronominaux avec le sujet (« ils se sont plaint » → plaints, « l’équipe s’est battu » → battue), « Toutes nos pensées t’accompagne », « quatre-vingts mille » → quatre-vingt, « deux voir trois ans » → voire, « réouvert » → rouvert, « Bonne fêtes », « ce que vous chercher » → cherchez… Fausses alertes en moins : « C’est avec tristesse que nous avons appris le décès », « Nous sommes désolés pour le retard de votre commande », « développeur full stack », « le dossier dist ».
+  - Anglais : 68 % → 99 % sur le nouveau corpus. « was laying on the bed » → lying, « She lay the letter » → laid, « peaked her curiosity » → piqued, « the police where on » → were, « Nothing seemed to phase him » → faze, « my skills compliment » → complement, « the Miller's house » → Millers', « a honour » → an… Fausses alertes en moins : « snuck », « cul-de-sac », « every one of », « it's every bit as good », « the team are » (anglais britannique), « an honour ».
+  - Aucun autre corpus en recul ; Wikipédia fr 455 → 453 alertes, en 75 → 75.
 
 ## 1.4.0
 

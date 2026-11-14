@@ -345,7 +345,7 @@ function dialectForm(word) {
 // British words the rules above do not turn into American ones ("practise", "cheque", "tyre").
 const EN_BRITISH = /^(practis(e|es|ed|ing)|cheques?|tyres?|kerbs?|aluminium|ploughs?|pyjamas|mums?|storeys|whilst|amongst|learnt|spelt|dreamt|burnt|aeroplanes?|manoeuvres?|jewellery|cosy|sceptical|enquir(y|ies|e|ed|ing|er|ers)|fulfil|enrol|instalments?|ageing|judgements?|moustaches?|draughts?|offences?|licences?|defences?|programmes?|catalogues?|dialogues?|grey|afterwards|focuss(ed|es|ing)|mediaeval|sizeable)$/i;
 // Right words Harper's dictionary lacks ("employee wellbeing", "a gauge invariance").
-const EN_KNOWN_WORDS = /^(wellbeing|invariances?|wavefunctions?|rulesets?|matchdays?|timewasting|redshifts?|lensing|futsal|bosons?|reprises?|affective|affectively)$/i;
+const EN_KNOWN_WORDS = /^(wellbeing|invariances?|wavefunctions?|rulesets?|matchdays?|timewasting|redshifts?|lensing|futsal|bosons?|reprises?|affective|affectively|blokes?|borage|waisted)$/i;
 // A known word behind a scientific or learned prefix, which Harper offers to split:
 // "antisymmetric", "pseudotensor", "bioenergy". Not "inter" ("interresting" -> "inter resting").
 const EN_LEARNED_PREFIX = /^(anti|pseudo|non|semi|bio|neuro|quasi|proto|macro|micro|multi|poly|mono|cyber|electro|thermo|hydro|geo|socio|psycho|hyper|ultra|meta)(\p{L}{4,})$/iu;
@@ -522,6 +522,31 @@ async function lintParagraph(paragraph) {
       if (kind === "Capitalization" && sentenceStart && replacements[0] && plainQuote(replacements[0]) === plainQuote(word).toLowerCase()) continue;
       // "Their being late cost us the set": a gerund after a possessive, not "they're".
       if (!picky && /^their$/i.test(word) && /^\s+being\b/i.test(paragraph.slice(end))) continue;
+      // "a quiet cul-de-sac", "a tête-à-tête": a piece of a hyphenated word the dictionary knows.
+      if ((kind === "Spelling" || kind === "Typo") && /^\p{L}+$/u.test(word)) {
+        const left = paragraph.slice(0, offset).match(/[\p{L}-]*$/u)[0];
+        const right = paragraph.slice(end).match(/^[\p{L}-]*/u)[0];
+        const whole = `${left}${word}${right}`.replace(/^-+|-+$/g, "");
+        if (whole.includes("-") && frequency(whole) >= 2) continue;
+      }
+      // "size 32x34", "a 4x4", "1920x1080": dimensions.
+      if ((kind === "Spelling" || kind === "Typo") && /^x\d+$/i.test(word) && /\d$/.test(paragraph.slice(0, offset))) continue;
+      // "those of you whom I haven't met", "you who know me": a pronoun, not "your".
+      if (/^you$/i.test(word) && /^\s+(whom|who|that|which|all|both|two|three|guys|folks|people|lot)\b/i.test(paragraph.slice(end))) continue;
+      // "Every one of the volunteers": each single one, not "everyone".
+      if (/^every one$/i.test(word) && /^\s+of\b/i.test(paragraph.slice(end))) continue;
+      // "Did you guys hear that?": "you guys" is a plural "you".
+      if (kind === "Agreement" && /^guys$/i.test(word) && /\byou\s+$/i.test(paragraph.slice(0, offset))) continue;
+      // "as he snuck down the stairs": standard in American English.
+      if (/^snuck$/i.test(word)) continue;
+      // "The dragon let out a low growl", "she let down her guard": the verb "let", not "let's"
+      // (a subject before it, or a particle after it).
+      if (/^let$/i.test(word) && replacements.some((r) => /^let['’]s$/i.test(r)) &&
+          (/^\s+(out|down|slip|loose|fly|off|in|up|through|rip|drop)\b/i.test(paragraph.slice(end)) ||
+           /\p{L}\s+$/u.test(paragraph.slice(0, offset)) &&
+           !/\b(and|so|then|now|ok|okay|please|but|just|guys|alright|well|oh|hey|yes|no|come on)\s+$/i.test(paragraph.slice(0, offset)))) continue;
+      // "It was an honour": a silent "h" Harper does not know in the British spelling.
+      if (/^an$/i.test(word) && replacements.every((r) => /^a$/i.test(r)) && /^\s+honou?r/i.test(paragraph.slice(end))) continue;
       if (editedProseFalseAlarm(paragraph, forHarper, offset, end, word, kind, replacements, lint.message())) continue;
       out.push({
         offset,
