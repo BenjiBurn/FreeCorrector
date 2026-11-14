@@ -208,11 +208,19 @@ function fcInflectionOf(a, b) {
   return l.startsWith(s) && /^(s|x|e|es|d|ed|n|en|r|er|ly)$/.test(l.slice(s.length));
 }
 
+// "désolés"/"désolée", "posées"/"posés": two agreements of one French participle (same stem
+// in -é, -i, -u, then -s, -e or -es), not a slip. ("tempe"/"temps" is one.)
+function fcFrenchAgreementPair(a, b) {
+  const stem = (w) => w.replace(/(es|e|s)$/, "");
+  return stem(a).length >= 3 && stem(a) === stem(b) && /[éiu]$/.test(stem(a));
+}
+
 function fcIsSlip(typed, wanted, lang) {
   if (FC_COLLOC_NEVER[lang].test(typed)) return false;
   const small = FC_COLLOC_SMALL[lang];
   if (small.test(typed) || small.test(wanted)) return FC_COLLOC_PAIRS.has(`${typed}|${wanted}`);
   if (typed.length < 3 || wanted.length < 3 || fcInflectionOf(fcCollocPlain(typed), fcCollocPlain(wanted))) return false;
+  if (lang === "fr" && fcFrenchAgreementPair(typed, wanted)) return false;
   const pt = fcCollocPlain(typed), pw = fcCollocPlain(wanted);
   return pt === pw || fcOneEdit(pt, pw) || fcOneEdit(typed, wanted);
 }

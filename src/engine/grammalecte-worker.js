@@ -136,6 +136,9 @@ const COMMON_MISSPELLINGS = {
   souffri: "souffert", couvri: "couvert", découvri: "découvert", craindu: "craint", peindu: "peint", éteindu: "éteint",
   joindu: "joint", plaindu: "plaint", naissu: "né", vivu: "vécu", conclu: "conclu", recevu: "reçu", apercevu: "aperçu",
   boivé: "bu", buvé: "bu", savu: "su", pouvu: "pu", voulé: "voulu", asseyé: "assis", assoyé: "assis",
+  // "réouvrir" does not exist (only the noun "réouverture"): "rouvrir".
+  réouvert: "rouvert", réouverte: "rouverte", réouverts: "rouverts", réouvertes: "rouvertes", réouvrir: "rouvrir",
+  réouvre: "rouvre", réouvrent: "rouvrent", réouvrira: "rouvrira", réouvriront: "rouvriront",
 };
 
 // Software and services typed in lowercase, missing from the dictionary ("un excel" -> Excel):
@@ -196,6 +199,15 @@ function spellSuggestions(word, before = "") {
   // Only an accent wrong or missing ("treve", "trève" -> trêve): a candidate with
   // another first letter ("crève", "drève") is noise. ("Il appele" keeps "appelle".)
   if (out.some((s) => fcPlain(s) === fcPlain(lower))) out = out.filter((s) => fcPlain(s)[0] === fcPlain(lower)[0]);
+  // "renouvelement" -> renouvellement, not the 1990 spelling "renouvèlement" (one accent away,
+  // so the ranking would put it first): the same word in both spellings, the usual one only.
+  const rectifiedOnly = (s) => {
+    const ms = spellChecker.getMorph(s);
+    return ms.length > 0 && ms.every((m) => /\/R$/.test(m));
+  };
+  const skeleton = (s) => fcPlain(s).replace(/(.)\1/g, "$1");
+  out = out.filter((r, a) => !(a < 3 && rectifiedOnly(r) &&
+    out.some((s, k) => k < 5 && s !== r && skeleton(s) === skeleton(r) && !rectifiedOnly(s))));
   if (!AUXILIARY_BEFORE.test(before)) return out;
   const participles = [];
   for (const s of out.slice(0, 4)) {
@@ -386,7 +398,10 @@ function englishWords(paragraph) {
         !french(k) && (common[prev] || common[next])
       // A word that is neither French nor frequent in English right after or before "the",
       // "of"…: "The blue is our colour".
-      : (englishLink(prev) || englishLink(next)) && !french(k)) out.add(words[k].index);
+      : (englishLink(prev) || englishLink(next)) && !french(k) ||
+        // The other way round: a word as common in English as in French, unknown to
+        // French, next to a word ten times more frequent in English: "full stack".
+        common[k] && !french(k) && (english[prev] || english[next])) out.add(words[k].index);
   }
   return out;
 }
@@ -911,7 +926,10 @@ function checkParagraph(paragraph) {
   // "ma posé" -> m’a: the agreement Grammalecte wants with "ma" ("posé" -> posée) goes too.
   const maToMa = custom.filter((m) => /^FC_M_AS?$/.test(m.ruleId) && /^ma$/i.test(m.word));
   const afterMa = (m) => /gn_ma_ta_sa/.test(m.ruleId) && maToMa.some((o) => /^ma\s+$/i.test(paragraph.slice(o.offset, m.offset)));
-  const notOverridden = (m) => !overriding.some((o) => overlaps(o, m)) && !afterOnt(m) && !afterMa(m);
+  // "les horaires son affichés" -> sont: the agreement Grammalecte wants with "son" ("affichés" -> affiché) goes too.
+  const sonToSont = custom.filter((m) => m.ruleId === "FC_SONT" && /^son$/i.test(m.word));
+  const afterSon = (m) => /gn_mon_ton_son/.test(m.ruleId) && sonToSont.some((o) => /^son\s+$/i.test(paragraph.slice(o.offset, m.offset)));
+  const notOverridden = (m) => !overriding.some((o) => overlaps(o, m)) && !afterOnt(m) && !afterMa(m) && !afterSon(m);
   const reports = [...spelling.filter(notOverridden), ...grammar.filter(notOverridden), ...custom];
   // The "œ" hints come last: any other report on the word wins.
   const found = [...reports, ...ligatures.filter((l) => !reports.some((m) => overlaps(m, l)))]

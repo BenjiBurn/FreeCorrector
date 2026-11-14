@@ -44,6 +44,9 @@ self.fcMaskCode = (text) => {
     .replace(/(?<![\p{L}\p{N}_&])#[\p{L}\p{N}_-]+/gu, blank)
     // package-manager commands: "npm install", "npm run build", "git commit", "docker compose up"
     .replace(/(?<![\p{L}\p{N}_])(?:npm|pnpm|yarn|npx|pip3?|apt(?:-get)?|brew|git|docker|cargo|gem|composer|winget|choco|kubectl)\s+(?:install|i|add|remove|rm|uninstall|run|build|test|start|init|update|upgrade|ci|exec|publish|clone|pull|push|commit|checkout|merge|rebase|status|log|diff|compose|ps|up|down|get|fetch|stash|branch|switch|reset|restore)(?:\s+(?:build|dev|start|test|lint|serve|up|down|watch|prod|deploy))?(?![\p{L}\p{N}_])/giu, blank)
+    // project folders and branches named after a "dossier": "le dossier dist", "le répertoire
+    // src", "la branche develop" (only the usual names, which French does not know)
+    .replace(/(?<=(?<![\p{L}\p{N}_])(?:dossier|dossiers|sous-dossier|répertoire|branche)\s+)(?:dist|src|lib|bin|tmp|vendor|build|assets|docs|develop|staging|node_modules)(?![\p{L}\p{N}_])/giu, blank)
     // code review words: "relire la pull request", "une merge request"
     .replace(/(?<![\p{L}\p{N}_])(?:pull|merge) requests?(?![\p{L}\p{N}_])/giu, blank)
     // command-line options: --watch, -v, -d
