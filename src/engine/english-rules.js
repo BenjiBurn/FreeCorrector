@@ -403,8 +403,11 @@ export function englishRules(paragraph, existing, frequency = () => 0) {
     }
 
     // "I look forward to hear from you" -> hearing
+    // ("look forward to not having to", "to summer", "to more updates": no
+    // verb there, "notting", "summering", "moring" are not words.)
     if (prev?.lower === "to" && toks[i - 2]?.lower === "forward" && toks[i - 3] && /^(look|looking|looks|looked)$/.test(toks[i - 3].lower) &&
-        /^\p{Ll}+$/u.test(t.text) && !/ing$/.test(t.lower) && !/^(the|a|an|my|your|our|his|her|their|this|that|it|you|seeing|meeting|working|it)$/.test(t.lower)) {
+        /^\p{Ll}+$/u.test(t.text) && !/ing$/.test(t.lower) && !/^(the|a|an|my|your|our|his|her|their|this|that|it|you|seeing|meeting|working|it|not|never)$/.test(t.lower) &&
+        frequency(ingForm(t.lower)) >= 3) {
       add(t.start, t.end, ingForm(t.lower), "After “look forward to”, use the -ing form.");
     }
 

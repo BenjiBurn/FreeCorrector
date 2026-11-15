@@ -71,4 +71,10 @@ module.exports = [
   ["The dog wagged it's tail.", "it's", "its"],
   ["I think it's battery died.", "it's", "its"],
   ["Every department has it's own channel.", "it's", "its"],
+  // Signalé depuis l'extension (1.4.0) : « look forward to not having » soulignait « not » (-> notting).
+  ["I look forward to not having to do that again for a while.", null, null],
+  ["We look forward to never seeing him again.", null, null],
+  ["I look forward to summer.", null, null],
+  ["I look forward to more updates.", null, null],
+  ["We look forward to receive your reply.", "receive", "receiving"],
 ];
