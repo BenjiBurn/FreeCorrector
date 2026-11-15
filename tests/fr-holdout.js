@@ -328,4 +328,9 @@ module.exports = [
   ["Je suis même pas étonné quand tu vois l'état des steelbooks commandés chez eux .", null, null],
   ["J'ai acheté le steelbook collector.", null, null],
   ["Ce Steelbook est magnifique.", null, null],
+  // Signalé depuis l'extension (1.4.0) : « bugné de partout » (« bugner », cabosser, en Suisse romande, Savoie, région lyonnaise) soulignait et proposait « bugne ».
+  ["Le capot est bugné de partout.", null, null],
+  ["J'ai bugné la voiture en reculant.", null, null],
+  ["Ma portière est toute bugnée.", null, null],
+  ["Le jeu a bugué hier soir.", null, null],
 ];

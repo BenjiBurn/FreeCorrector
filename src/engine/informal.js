@@ -65,6 +65,8 @@ self.FC_INFORMAL_WORDS = new Set([
   "spotter", "spotte", "spottes", "spottent", "spottez", "spotté", "spottée", "spottés", "spottées", "spotting", "spotteur", "spotteurs", "spotters",
   // Car words ("une 208 rebadgée": the same car sold under another brand)
   "rebadger", "rebadgé", "rebadgée", "rebadgés", "rebadgées", "rebadging",
+  // "bugné de partout": "bugner", to dent (Swiss, Savoy and Lyon French; "une bugne", a dent)
+  "bugner", "bugné", "bugnée", "bugnés", "bugnées", "bugnent", "bugnez",
   // Road safety words ("un conducteur infractionniste": one who breaks traffic rules)
   "infractionniste", "infractionnistes",
   // Collectors' words ("l'état des steelbooks": metal DVD and Blu-ray cases)
