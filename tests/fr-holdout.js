@@ -324,4 +324,8 @@ module.exports = [
   ["Les conducteurs infractionnistes ont été verbalisés.", null, null],
   ["Ces infractionnistes récidivent souvent.", null, null],
   ["Une politique inflationniste.", null, null],
+  // Signalé depuis l'extension (1.4.0) : « steelbooks » (boîtiers métal de DVD et Blu-ray) soulignait et proposait « steenboks ».
+  ["Je suis même pas étonné quand tu vois l'état des steelbooks commandés chez eux .", null, null],
+  ["J'ai acheté le steelbook collector.", null, null],
+  ["Ce Steelbook est magnifique.", null, null],
 ];
