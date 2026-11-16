@@ -33,7 +33,14 @@ const TARGETS = {
   firefox: {
     // The test page (demo/) is for development only: never published.
     exclude: ["chromium", "demo", "thunderbird", "web"],
-    manifest: (m) => m,
+    // Firefox 159 took Ctrl+Shift+F for its add-ons manager: "fix all" is
+    // Ctrl+Shift+Space there (Mac unchanged: Firefox uses Cmd+Shift+E). The other
+    // browsers keep Ctrl+Shift+F, which their users know.
+    manifest: (m) => {
+      const out = structuredClone(m);
+      out.commands["fix-all"].suggested_key.default = "Ctrl+Shift+Space";
+      return out;
+    },
   },
   // Thunderbird: no web pages, the checker runs in the message compose window.
   // The content scripts become compose scripts, registered by

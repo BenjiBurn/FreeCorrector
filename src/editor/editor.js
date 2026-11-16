@@ -153,12 +153,113 @@ for (const tabs of document.querySelectorAll(".tabs")) tabs.hidden = !fcIsExtens
     }));
   }
 
+  // ---------- Text statistics (under the text) ----------
+
+  // Reading time, sentences too long to read easily, the words that come back
+  // most. The online proofreader's page (lapigeonnerie.fr) may lack the block.
+  const WORD = /[\p{L}\p{N}]+(?:['’-][\p{L}\p{N}]+)*/gu;
+  const LONG_SENTENCE = 30; // words
+  const READING_SPEED = 230; // words per minute
+  // Words that come back in any text: never "repeated".
+  const COMMON = new Set((
+    "les des une est que qui dans pour pas par sur avec son ses sont mais comme plus tout tous toute toutes " +
+    "nous vous ils elles leur leurs cette ces aux été être avoir fait faire elle lui même aussi bien très " +
+    "peu alors donc car entre sans sous chez vers où dont quand encore après avant ainsi puis moi toi soi " +
+    "notre votre nos vos mon ton mes tes sa ta ma quel quelle quels quelles celui celle ceux celles cela ceci " +
+    "était avait sera peut ont avez avons sommes êtes suis étaient avaient fois rien non oui ici " +
+    "the and that this with for are was were have has had not but you your they their them from " +
+    "which what when where who will would can could should there here been being into about than then " +
+    "also just more most some any all our its his her she him how out very only other such over these those"
+  ).split(" "));
+
+  const stat = {
+    box: $("readability"),
+    brief: $("stats-brief"),
+    numbers: $("stats-numbers"),
+    longTitle: $("long-title"),
+    long: $("long-list"),
+    rep: $("rep-list"),
+  };
+  // Where the "repeated word" buttons are in their cycle through the text.
+  let repCursor = new Map();
+
+  function sentencesOf(text) {
+    const out = [];
+    for (const m of text.matchAll(/[^.!?…\n]+[.!?…]*/g)) {
+      const lead = m[0].length - m[0].trimStart().length;
+      const s = m[0].trim();
+      const words = (s.match(WORD) ?? []).length;
+      if (words) out.push({ offset: m.index + lead, length: s.length, text: s, words });
+    }
+    return out;
+  }
+
+  function renderStats(text) {
+    if (!stat.box) return;
+    const words = text.match(WORD) ?? [];
+    stat.box.hidden = words.length < 2;
+    if (stat.box.hidden) return;
+
+    const minutes = words.length / READING_SPEED;
+    const reading = fcT("edReading", minutes < 1 ? "< 1" : String(Math.round(minutes)));
+    const sentences = sentencesOf(text);
+    const long = sentences.filter((s) => s.words > LONG_SENTENCE);
+    const average = sentences.length ? Math.round(words.length / sentences.length) : 0;
+
+    stat.brief.textContent = [reading, long.length ? fcPlural("edLong", long.length) : ""].filter(Boolean).join(" · ");
+    stat.numbers.textContent = [fcPlural("edSentences", sentences.length), fcT("edAverage", String(average))].join(" · ");
+
+    stat.longTitle.textContent = fcT("edLongTitle", String(LONG_SENTENCE));
+    stat.long.replaceChildren(...(long.length ? long.map((s) => {
+      // Its beginning, the full sentence is selected in the text on click.
+      const b = el("button");
+      b.type = "button";
+      b.title = fcT("edShowInText");
+      b.append(el("span", "start", s.text), el("span", "n", fcPlural("edWords", s.words)));
+      b.addEventListener("click", () => {
+        textEl.focus();
+        field.selectText(s.offset, s.length);
+      });
+      return b;
+    }) : [el("span", "none", fcT("edNoLong"))]));
+
+    // Words of 3 letters or more, apart from the common ones, seen 3 times or more.
+    const counts = new Map();
+    for (const w of words) {
+      const key = w.toLowerCase();
+      if ([...key].length < 3 || /^\p{N}+$/u.test(key) || COMMON.has(key)) continue;
+      counts.set(key, (counts.get(key) ?? 0) + 1);
+    }
+    const top = [...counts].filter(([, n]) => n >= 3).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], fcUiLang)).slice(0, 8);
+    repCursor = new Map();
+    stat.rep.replaceChildren(...(top.length ? top.map(([word, n]) => {
+      const b = el("button", "", word);
+      b.type = "button";
+      b.title = fcT("edShowInText");
+      b.append(el("span", "n", `× ${n}`));
+      // Each click: the next place the word is used.
+      b.addEventListener("click", () => {
+        const places = [...textEl.value.matchAll(WORD)].filter((m) => m[0].toLowerCase() === word);
+        if (!places.length) return;
+        const i = (repCursor.get(word) ?? -1) + 1;
+        const m = places[i % places.length];
+        repCursor.set(word, i % places.length);
+        textEl.focus();
+        field.selectText(m.index, m[0].length);
+      });
+      return b;
+    }) : [el("span", "none", fcT("edNoRep"))]));
+  }
+
   // ---------- Text: stats, language, draft ----------
 
   let saveTimer = 0;
+  let statsTimer = 0;
   function onTextChange() {
     const text = textEl.value;
-    const words = (text.match(/[\p{L}\p{N}]+(?:['’-][\p{L}\p{N}]+)*/gu) ?? []).length;
+    clearTimeout(statsTimer);
+    statsTimer = setTimeout(() => renderStats(textEl.value), 250);
+    const words = (text.match(WORD) ?? []).length;
     const chars = [...text].length;
     $("stats").textContent = `${fcPlural("edWords", words)} · ${fcPlural("edChars", chars)}`;
 

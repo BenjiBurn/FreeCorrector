@@ -4,6 +4,9 @@
 // - "Report a missed mistake": opens the report page on the author's website with
 //   the selection in the URL fragment, which the browser never sends; the page
 //   sends nothing until the user has reviewed it and clicked "Send".
+// - "Conjugate «…»": opens the extension's conjugator on the verb of the
+//   selection ("went" -> go, "résolvons" -> résoudre, found in
+//   conjugator/conj-worker.js), all on the computer.
 // Loaded by the Firefox background page and the Chromium service worker.
 
 /* global fcApi, fcT, fcUiLang */
@@ -11,6 +14,7 @@
 
 const FC_MENU_ID = "fc-check-selection";
 const FC_MENU_MISSED_ID = "fc-report-missed";
+const FC_MENU_CONJ_ID = "fc-conjugate";
 const FC_MISSED_PAGE = { fr: "https://lapigeonnerie.fr/freecorrector/report", en: "https://lapigeonnerie.fr/freecorrector/en/report" };
 
 // The report page for a mistake nothing underlined: { k: "missed", s: selection }.
@@ -33,6 +37,7 @@ function fcSetupMenus() {
     Promise.resolve(menus.removeAll())
       .then(() => {
         menus.create({ id: FC_MENU_ID, title: fcT("menuCheckSelection"), contexts: ["selection"] });
+        menus.create({ id: FC_MENU_CONJ_ID, title: fcT("menuConjugate"), contexts: ["selection"] });
         menus.create({ id: FC_MENU_MISSED_ID, title: fcT("menuReportMissed"), contexts: ["selection"] });
       })
       .catch(() => {});
@@ -43,6 +48,11 @@ function fcSetupMenus() {
       const url = fcMissedReportUrl(info.selectionText);
       const tb = globalThis.messenger?.windows?.openDefaultBrowser;
       Promise.resolve(tb ? tb(url) : fcApi.tabs.create({ url })).catch(() => {});
+      return;
+    }
+    if (info.menuItemId === FC_MENU_CONJ_ID) {
+      const w = String(info.selectionText ?? "").trim().slice(0, 100);
+      fcApi.tabs.create({ url: `${fcApi.runtime.getURL("conjugator/conjugator.html")}?w=${encodeURIComponent(w)}` });
       return;
     }
     if (info.menuItemId !== FC_MENU_ID) return;

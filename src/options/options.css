@@ -162,3 +162,6 @@ footer p {
 footer .version {
   margin: 8px 0 0;
 }
+
+/* "Vos statistiques": the number of fixes, in bold (strong). */
+.fixed { margin: 0 0 6px; }

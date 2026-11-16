@@ -5,6 +5,16 @@ fcLocalizePage();
 (async () => {
   const $ = (id) => document.getElementById(id);
   $("version").textContent = fcT("optVersion", fcApi.runtime.getManifest().version);
+  // "Vos statistiques": the fixes applied (lib/settings.js, this browser only).
+  Promise.resolve(fcApi.storage.local.get("fixCount")).then(({ fixCount = 0 }) => {
+    if (fixCount > 0) {
+      $("fixed-n").textContent = fixCount.toLocaleString(fcUiLang);
+      $("fixed-label").textContent = fcT(fixCount > 1 ? "optFixedMany" : "optFixedOne");
+    } else {
+      $("fixed").textContent = fcT("optFixedNone");
+      $("fixed").classList.add("muted");
+    }
+  }, () => {});
   let settings = await fcGetSettings();
   const sortWords = (words) => words.sort((a, b) => a.localeCompare(b, fcUiLang));
 

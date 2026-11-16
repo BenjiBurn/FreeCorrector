@@ -14,9 +14,14 @@ fcLocalizePage();
   const tips = thunderbird
     ? ["wlcTipBadge", "wlcTipComposeTb", "wlcTipDict", "wlcTipShortcut"]
     : ["wlcTipBadge", "wlcTipSite", "wlcTipDict", "wlcTipShortcut", "wlcTipLogin"];
+  // The "fix all" shortcut as the browser has it (Ctrl+Shift+F, Ctrl+Shift+Space
+  // in Firefox, or the user's own); no tip when none is set.
+  const commands = await Promise.resolve(fcApi.commands?.getAll?.()).catch(() => null);
+  const shortcut = commands?.find((c) => c.name === "fix-all")?.shortcut;
   for (const key of tips) {
+    if (key === "wlcTipShortcut" && !shortcut) continue;
     const li = document.createElement("li");
-    li.textContent = fcT(key, key === "wlcTipSite" ? fcT("popupSiteEnabled") : undefined);
+    li.textContent = fcT(key, key === "wlcTipSite" ? fcT("popupSiteEnabled") : key === "wlcTipShortcut" ? shortcut : undefined);
     $("tips").append(li);
   }
 

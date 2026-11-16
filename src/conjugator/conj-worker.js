@@ -76,6 +76,45 @@ function table({ verb, pro = false, neg = false, tpsco = false, int = false, fem
   };
 }
 
+// The French dictionary (4 MB), loaded only to find the infinitive of a
+// conjugated form ("résolvons" -> résoudre).
+let lexicon = null;
+function frenchLexicon() {
+  if (!lexicon) {
+    // gc_engine.js for the String helpers (gl_isUpperCase…) the dictionary uses;
+    // nothing of the grammar checker runs.
+    importScripts(VENDOR + "fr/gc_engine.js", VENDOR + "graphspell/str_transform.js", VENDOR + "graphspell/char_player.js",
+      VENDOR + "graphspell/lexgraph_fr.js", VENDOR + "graphspell/ibdawg.js", VENDOR + "graphspell/spellchecker.js");
+    lexicon = new SpellChecker("fr", new URL(VENDOR + "graphspell/_dictionaries", self.location.href).href, "fr-allvars.json", "", "");
+  }
+  return lexicon;
+}
+
+// The French verb of one word: itself ("résoudre") or its infinitive
+// ("résolvons", "allé"), or null.
+function frenchVerbOf(word) {
+  french();
+  if (conj.isVerb(word)) return word;
+  const lemmas = frenchLexicon().getMorph(word).filter((m) => /:V/.test(m)).map((m) => m.slice(1, m.indexOf("/")));
+  return lemmas.find((l) => conj.isVerb(l)) ?? null;
+}
+
+// The verb of a selected text, right-click "Conjugate" (lib/menus.js): the
+// words from the last one ("je suis allé" -> aller, "I went" -> go), the
+// user's language first for a word that is a verb in both.
+// -> { lang, verb } or null.
+function guess({ text, prefer = "fr" }) {
+  const words = String(text ?? "").toLowerCase().split(/[^\p{L}]+/u).filter(Boolean).slice(-4).reverse();
+  const langs = prefer === "en" ? ["en", "fr"] : ["fr", "en"];
+  for (const word of words) {
+    for (const l of langs) {
+      const verb = l === "en" ? english().lookup(word) : frenchVerbOf(word);
+      if (verb) return { lang: l, verb };
+    }
+  }
+  return null;
+}
+
 self.onmessage = (event) => {
   const { id, type, lang } = event.data;
   try {
@@ -84,6 +123,7 @@ self.onmessage = (event) => {
     if (type === "verbs") result = en ? english().verbs() : verbs();
     else if (type === "table") result = en ? english().table(String(event.data.verb ?? ""), event.data) : table(event.data);
     else if (type === "lookup") result = english().lookup(String(event.data.verb ?? ""));
+    else if (type === "guess") result = guess(event.data);
     else throw new Error(`Unknown message type: ${type}`);
     self.postMessage({ id, result });
   } catch (err) {

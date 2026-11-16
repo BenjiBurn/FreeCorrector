@@ -236,7 +236,7 @@ fcLocalizePage();
     drawPopular();
   }
 
-  async function setLang(l, verb) {
+  async function setLang(l, verb, pro) {
     if (l === lang && !verb) return;
     lang = l;
     try {
@@ -249,7 +249,7 @@ fcLocalizePage();
     drawLang();
     input.value = "";
     await known;
-    show(verb ?? (lang === "en" ? "be" : "faire"));
+    show(verb ?? (lang === "en" ? "be" : "faire"), pro);
   }
 
   if (switcher && !SITE) {
@@ -537,7 +537,17 @@ fcLocalizePage();
 
   drawLang();
   const asked = SITE ? PAGE_VERB : params.get("v")?.trim();
-  if (asked && lang === "en") show(asked);
+  // ?w=…: the text selected for right-click "Conjugate" (lib/menus.js), in
+  // either language, maybe conjugated ("went", "résolvons").
+  const selected = SITE ? "" : params.get("w")?.trim().slice(0, 100);
+  if (selected) {
+    ask("guess", { text: selected, prefer: fcUiLang }).then((found) => {
+      // "s’asseoir", "se laver": the pronominal form.
+      const pro = found?.lang === "fr" && /(?:^|\s)(?:se\s+|s['’]\s*)[\p{L}-]+$/iu.test(selected) || undefined;
+      if (found && found.lang !== lang) setLang(found.lang, found.verb, pro);
+      else show(found?.verb ?? selected.split(/\s+/).at(-1), pro);
+    }, () => show(selected));
+  } else if (asked && lang === "en") show(asked);
   else if (asked) show(asked.replace(PRONOUN, ""), parse(asked).pro || undefined);
   else if (!SITE) show(lang === "en" ? "be" : "faire");
 })();

@@ -1,4 +1,4 @@
-// Keyboard shortcut "fix all" (Ctrl+Shift+F by default, changeable in the
+// Keyboard shortcut "fix all" (Ctrl+Shift+F by default, Ctrl+Shift+Space in Firefox, changeable in the
 // browser's shortcut settings): asks the content script of the active tab to
 // apply the first suggestion of every problem in the field being edited.
 // "Toggle page" (Ctrl+Shift+1): checking on or off in the tab until it leaves
