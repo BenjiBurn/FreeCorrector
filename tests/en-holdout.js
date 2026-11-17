@@ -81,4 +81,9 @@ module.exports = [
   ["The central theme guiding my interpretation is colour, where all references to others come back to purple.", null, null],
   ["This is a town where all the shops close early.", null, null],
   ["Hurry up, where all late!", "where", "we're"],
+  // Signalé depuis l'extension (1.4.0) : « intended meaning » soulignait « meaning » (-> to mean).
+  ["Your key idea/image/themes and intended meaning.", null, null],
+  ["The planned opening was delayed.", null, null],
+  ["What was the intended meaning of the poem?", null, null],
+  ["We decided going to the beach.", "going", "to go"],
 ];

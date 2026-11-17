@@ -1068,7 +1068,9 @@ function roundThreeRules(toks, i, paragraph, add, frequency) {
     fix(ingForm(R1), `After “${L1}”, use the -ing form: “${ingForm(R1)}”.`, t.start, next.end);
   }
   // "We decided going" -> to go
-  if (EN_INFINITIVE_VERBS.test(L1) && /^\p{Ll}+ing$/u.test(t.text) && !/^(something|nothing|anything|everything|thing|morning|evening|meeting|building|wedding|ceiling|king|ring|spring|string|thing)$/.test(t.lower)) {
+  // "themes and intended meaning", "the planned opening": participle + noun, not a verb
+  if (EN_INFINITIVE_VERBS.test(L1) && /^\p{Ll}+ing$/u.test(t.text) && !/^(something|nothing|anything|everything|thing|morning|evening|meeting|building|wedding|ceiling|king|ring|spring|string|thing|meaning|ending|opening|setting|offering|feeling|reading|spending|funding|earnings|outing|housing|training|seating|timing|pricing|landing|parking|pairing|clothing|lighting|recording|filing|listing|ruling|warning)$/.test(t.lower) &&
+      !/^(the|a|an|my|your|his|her|its|our|their|this|that|these|those)$/.test(L2)) {
     const base = [t.lower.replace(/ing$/, ""), t.lower.replace(/ing$/, "e"), t.lower.replace(/(.)\1ing$/, "$1"), t.lower.replace(/ying$/, "ie")].find((b) => EN_VERBS.has(b) && ingForm(b) === t.lower);
     if (base) fix(`to ${base}`, `After “${L1}”, use “to” + verb: “to ${base}”.`);
   }
