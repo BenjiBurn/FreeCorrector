@@ -349,4 +349,8 @@ module.exports = [
   ["Certaiment pas moi en tout cas.", "Certaiment", "Certainement"],
   ["Il a certaiment raison.", "certaiment", "certainement"],
   ["C'est probablment vrai.", "probablment", "probablement"],
+  // Signalé depuis l'extension (1.4.0) : « elles sont juste plus chere » proposait « cherré » avant « chère » (et pas « chères »).
+  ["Si t'en trouve une nickel ça va, mais elles sont juste plus chere pour rien", "chere", "chères"],
+  ["Elle est chere.", "chere", "chère"],
+  ["Elles sont trop chere.", "chere", "chères"],
 ];

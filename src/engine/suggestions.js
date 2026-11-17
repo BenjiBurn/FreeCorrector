@@ -514,6 +514,20 @@ function fcRankSuggestions(spellChecker, text, start, length, suggestions, isSpe
   const wordHeard = fcHeardKeys(word);
   const afterSi = !isSpelling && FC_AFTER_SI.test(before);
   const accentless = /^[a-z]+$/i.test(word);
+  // "elles sont plus chere" -> "chères": the accented word, agreed as the grammar asks
+  // ("chère" itself is then wrong), counts as only accents missing.
+  const agreedAccent = new Set();
+  if (isSpelling && accentless) {
+    for (const c of candidates.filter((x) => fcBase(x) === word)) {
+      const fix = fcErrorsForWord(before + c + after, before.length)
+        .find(([x, y]) => x === before.length && y === before.length + c.length)?.[2];
+      if (fix && !candidates.includes(fix) && /^[\p{L}]+$/u.test(fix) && fcBase(fix).toLowerCase().startsWith(word.toLowerCase()) &&
+          spellChecker.isValid(fix)) {
+        candidates.push(fix);
+        agreedAccent.add(fix);
+      }
+    }
+  }
   // Forms of one participle or adjective ("changé | changés | changée"): the one that agrees.
   const target = isSpelling ? null : fcAgreementTarget(spellChecker, before);
   const agrees = (c) => spellChecker.getMorph(c).some((m) => {
@@ -553,7 +567,7 @@ function fcRankSuggestions(spellChecker, text, start, length, suggestions, isSpe
       // Not when the word itself is then wrong: "Il appele" -> "appelle", not "appelé".
       // Nor when the accent changes the sound and another candidate keeps it:
       // "Rappele toi" -> "Rappelle", not "Rappelé".
-      accentOnly: isSpelling && accentless && fcBase(c) === word && (!someSoundsLike || soundsLike(c)) &&
+      accentOnly: isSpelling && accentless && (fcBase(c) === word && (!someSoundsLike || soundsLike(c)) || agreedAccent.has(c)) &&
         !fcErrorsForWord(before + c + after, before.length).some(([x, y]) => x < before.length + c.length && before.length < y) ? 0 : 1,
       // For grammar errors, sounding the same is the strongest hint:
       // "parlé" -> "parler" rather than "parle".
