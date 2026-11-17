@@ -461,8 +461,8 @@ function rankParagraph(paragraph, paraStart, found) {
     }
     kept.push(m);
     lastEnd = start + m.length;
-    // Our own rules know their fix: no re-ranking.
-    if (!m.ruleId.startsWith("FC_") && ranked++ < MAX_RANKED_MATCHES) {
+    // Our own rules know their fix, and so do the quotes (« » first, set below): no re-ranking.
+    if (!m.ruleId.startsWith("FC_") && !/^typo_guillemets_/.test(m.ruleId) && ranked++ < MAX_RANKED_MATCHES) {
       // Grammar fixes after "être" ("sont finit" -> finît | finies): the
       // participle candidates, for the same preference as spelling ones.
       const participles = m.replacements.participles ??
@@ -695,7 +695,13 @@ function checkParagraph(paragraph) {
         /\b(coup\p{L}*|cheveux)\s+(\p{L}+\s+){0,2}$/u.test(paragraph.slice(Math.max(0, err.nStart - 40), err.nStart))) continue;
     // Borrowed words ("les ramen", "des tapas") keep their own plural.
     if (self.FC_INFORMAL_WORDS.has(m.word.toLowerCase())) continue;
-    if (insideEnglishQuote(paragraph, err.nStart)) continue;
+    // (Not the closing quote itself: « "Language Tool" » would get « « Language Tool" ».)
+    if (!/^["«»“”]/.test(m.word) && insideEnglishQuote(paragraph, err.nStart)) continue;
+    // « » first for both quotes of a pair: Grammalecte's order depends on the context
+    // ("Great job!" got « first for the opening quote and ” for the closing one).
+    if (/^typo_guillemets_typographiques_doubles_/.test(m.ruleId)) {
+      m.replacements = [...m.replacements.filter((r) => /[«»]/.test(r)), ...m.replacements.filter((r) => !/[«»]/.test(r))];
+    }
     // "The Family on Trial", "fandom in football": an English title, not French grammar.
     if (!/\s/.test(m.word) && english.has(err.nStart)) continue;
     const before = paragraph.slice(0, err.nStart);
