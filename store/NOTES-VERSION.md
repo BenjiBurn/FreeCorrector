@@ -11,6 +11,7 @@ Brouillon. 1.5.0 : nouveauté visible (le thème).
 - Anglais : « I look forward to not having to… » ne souligne plus « not » (il proposait « notting ») ; de même « look forward to never seeing », « to summer », « to more updates ». « look forward to receive » → receiving reste signalé ; signalé par un utilisateur (#38).
 - « steelbook », « steelbooks » (boîtiers métal de DVD et Blu-ray) ne sont plus soulignés ; signalé par un utilisateur (#36).
 - « bugné », « bugnée »… (verbe « bugner », cabosser, en Suisse romande, en Savoie et dans la région lyonnaise) ne sont plus soulignés ; signalé par un utilisateur (#37).
+- « Ces craintes sont à plusieurs égards tout à fait infondées » : « infondées » n’est plus souligné (il était accordé avec « égards ») ; de même après « à certains égards », « à bien des égards » ; signalé par un utilisateur (#45).
 - Nouveau : le conjugueur conjugue aussi les verbes anglais (go, went, gone), à côté des verbes français.
 - Nouveau : clic droit sur un mot sélectionné → « Conjuguer « … » » ouvre le conjugueur sur ce verbe, même conjugué et dans l’une ou l’autre langue (« went » → go, « résolvons » → résoudre, « je suis allé » → aller, « s’asseoir » en forme pronominale).
 - Nouveau : statistiques du texte dans la page Correcteur (section repliable sous le texte) : temps de lecture, nombre de phrases et longueur moyenne, phrases de plus de 30 mots et mots les plus répétés, un clic les montre dans le texte. Aussi sur le correcteur en ligne (bloc déjà ajouté, caché, dans freecorrector-corrector.php ; visible après deploy-web).

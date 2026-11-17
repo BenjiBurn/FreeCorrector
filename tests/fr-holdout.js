@@ -333,4 +333,8 @@ module.exports = [
   ["J'ai bugné la voiture en reculant.", null, null],
   ["Ma portière est toute bugnée.", null, null],
   ["Le jeu a bugué hier soir.", null, null],
+  // Signalé depuis l'extension (1.4.0) : « à plusieurs égards tout à fait infondées » soulignait « infondées » (accordé avec « égards »).
+  ["Ces craintes sont peut-être à plusieurs égards tout à fait infondées, et il ne me reste qu'à me jeter à l'eau.", null, null],
+  ["Cette décision est à certains égards tout à fait justifiée.", null, null],
+  ["Ces mesures, à bien des égards, restent insuffisantes.", null, null],
 ];
