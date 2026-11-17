@@ -16,6 +16,7 @@ Brouillon. 1.5.0 : nouveauté visible (le thème).
 - « la garantie constructeur », « la relation client », « les pièces constructeur » : le nom en apposition n’est plus corrigé en « constructrice », « cliente » ; signalé par un utilisateur (#41).
 - Suggestions : un mot long où deux lettres d’affilée manquent propose le bon mot en premier (« Certaiment » → Certainement, et non « Vertement ») ; signalé par un utilisateur (#42).
 - Suggestions : un mot sans accents qu’il faut aussi accorder propose la forme accentuée et accordée en premier (« elles sont plus chere » → chères, et non « cherré ») ; signalé par un utilisateur (#43).
+- Anglais : « colour, where all references come back… » ne souligne plus « where » (il proposait « we're ») quand un nom suit « all » ; « Hurry up, where all late! » → we're reste signalé ; signalé par un utilisateur (#40).
 - Nouveau : le conjugueur conjugue aussi les verbes anglais (go, went, gone), à côté des verbes français.
 - Nouveau : clic droit sur un mot sélectionné → « Conjuguer « … » » ouvre le conjugueur sur ce verbe, même conjugué et dans l’une ou l’autre langue (« went » → go, « résolvons » → résoudre, « je suis allé » → aller, « s’asseoir » en forme pronominale).
 - Nouveau : statistiques du texte dans la page Correcteur (section repliable sous le texte) : temps de lecture, nombre de phrases et longueur moyenne, phrases de plus de 30 mots et mots les plus répétés, un clic les montre dans le texte. Aussi sur le correcteur en ligne (bloc déjà ajouté, caché, dans freecorrector-corrector.php ; visible après deploy-web).

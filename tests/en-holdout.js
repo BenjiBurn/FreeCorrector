@@ -77,4 +77,8 @@ module.exports = [
   ["I look forward to summer.", null, null],
   ["I look forward to more updates.", null, null],
   ["We look forward to receive your reply.", "receive", "receiving"],
+  // Signalé depuis l'extension (1.4.0) : « colour, where all references » soulignait « where » (-> we're).
+  ["The central theme guiding my interpretation is colour, where all references to others come back to purple.", null, null],
+  ["This is a town where all the shops close early.", null, null],
+  ["Hurry up, where all late!", "where", "we're"],
 ];

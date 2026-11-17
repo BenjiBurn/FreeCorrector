@@ -254,7 +254,9 @@ export function englishRules(paragraph, existing, frequency = () => 0) {
     if (clauseStart && t.lower === "were" && next && /^(are|is|do|does|did|was|were|can|will|should|have|has)$/.test(next.lower)) {
       add(t.start, t.end, "where", "Did you mean “where” (which place)?");
     }
-    if (clauseStart && t.lower === "where" && next && /^(going|coming|leaving|having|trying|planning|getting|doing|staying|waiting|looking|moving|working|late|here|done|ready|sorry|fine|not|so|all|happy|back|almost|still|always|never|on|off|out|lost|good|okay|ok)$/.test(next.lower)) {
+    // "colour, where all references come back to purple": relative "where", not "we're"
+    const whereAllNoun = next?.lower === "all" && next2 && !isPunct(next2) && !/(ing|ed)$|^(set|done|ready|here|there|good|fine|sorry|together|in|out|back|over|gone|alone|okay|ok|right|wrong|safe|late|home)$/.test(next2.lower);
+    if (clauseStart && t.lower === "where" && next && !whereAllNoun && /^(going|coming|leaving|having|trying|planning|getting|doing|staying|waiting|looking|moving|working|late|here|done|ready|sorry|fine|not|so|all|happy|back|almost|still|always|never|on|off|out|lost|good|okay|ok)$/.test(next.lower)) {
       add(t.start, t.end, "we're", "Did you mean “we're” (we are)?");
     }
 
