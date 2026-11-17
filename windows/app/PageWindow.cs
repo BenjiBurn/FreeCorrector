@@ -20,8 +20,8 @@ namespace FreeCorrector
         {
             if (settings == null)
             {
-                // ?v=: the app's version, shown by the page (options-app.js).
-                settings = new PageWindow(engine, L.T("Réglages · FreeCorrector", "Settings · FreeCorrector"), $"options/settings.html?v={Program.Version}", 760, 820);
+                // ?v=: the app's version, ?fixes=: its fix count (« Vos statistiques »), shown by the page (options-app.js).
+                settings = new PageWindow(engine, L.T("Réglages · FreeCorrector", "Settings · FreeCorrector"), $"options/settings.html?v={Program.Version}&fixes={Review.Fixes}", 760, 820);
                 // The engines stay awake meanwhile: the window's changes reach the app through them.
                 engine.Hold();
                 settings.Closed += (_, _) => { settings = null; engine.Release(); };

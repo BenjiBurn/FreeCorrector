@@ -27,7 +27,7 @@ namespace FreeCorrector
         // notifies when Notify is true (first time, and the one reminder).
         public static event Action<bool>? Due;
 
-        static int Fixes
+        internal static int Fixes
         {
             get => Read("FixCount") is int value ? value : 0;
             set => Write("FixCount", value);

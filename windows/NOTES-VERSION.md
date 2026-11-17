@@ -4,20 +4,26 @@
 dans le champ « Nouveautés de cette version » de la fiche, en français et en anglais
 (1500 caractères au maximum chacune).
 
-## 0.6.0 (prochaine version, pas encore publiée)
+## 0.6.0
 
-Brouillon. 0.6.0 : nouveauté visible (le thème), avec l'extension 1.5.0.
+0.6.0 : nouveautés visibles (le thème, le conjugueur anglais), avec les moteurs de l'extension 1.5.0.
 
 **Français** :
 
 ```text
 - Nouveau : un réglage « Thème » (Automatique, Clair, Sombre) dans les réglages. En automatique, FreeCorrector suit le mode des applications de Windows ; « Sombre » passe la bulle, les fenêtres et leur barre de titre en sombre.
+- Nouveau : le conjugueur conjugue aussi les verbes anglais (go, went, gone).
+- Nouveau : « Vos statistiques » dans les réglages, le nombre de fautes corrigées (compté sur votre ordinateur, rien n'est envoyé).
+- Meilleures corrections en français et en anglais, et de nombreuses corrections suite à vos signalements. Merci à vous !
 ```
 
 **English** :
 
 ```text
 - New: a "Theme" setting (Automatic, Light, Dark). In automatic mode, FreeCorrector follows Windows' app mode; "Dark" turns the bubble, the windows and their title bar dark.
+- New: the conjugator now conjugates English verbs too (go, went, gone).
+- New: "Your statistics" in the settings, the number of mistakes fixed (counted on your computer, nothing is sent).
+- Better corrections in English and French, and many fixes thanks to your reports. Thank you!
 ```
 
 ## 0.5.0
