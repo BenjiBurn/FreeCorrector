@@ -654,6 +654,12 @@ function checkParagraph(paragraph) {
       // "Ces craintes sont à plusieurs égards tout à fait infondées": the adjective goes with
       // the subject, not with the « égards » of the locution.
       if (/(^|[^\p{L}])à\s+(plusieurs|certains|bien\s+des|divers|maints|tous\s+les|de\s+nombreux|nombreux|tous|cet|un\s+certain)\s+égards?\s+(\p{L}+\s+){0,3}$/iu.test(paragraph.slice(Math.max(0, err.nStart - 80), err.nStart))) continue;
+      // "la garantie constructeur", "la relation client", "les pièces constructeur": a noun in
+      // apposition right after another noun, invariable, not an adjective to agree.
+      if (/^(constructeur|fabricant|client|utilisateur|fournisseur|éditeur|opérateur)$/i.test(m.word)) {
+        const lead = /(\p{L}+)\s+$/u.exec(paragraph.slice(Math.max(0, err.nStart - 40), err.nStart))?.[1];
+        if (lead && spellChecker.getMorph(lead.toLowerCase()).some((x) => /:N[^/]*?:([fe]:|[mfe]:[pi])/.test(x))) continue;
+      }
     }
     // "pour ça n’a pas fonctionné": after "n’", "a" is the verb ("n’à" does not exist).
     if (/conf_à_a/.test(m.ruleId) && /^a$/i.test(m.word) && /(^|[^\p{L}])n['’]$/iu.test(paragraph.slice(0, err.nStart))) continue;

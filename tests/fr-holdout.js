@@ -341,4 +341,8 @@ module.exports = [
   ["Les années passées, différents projets se sont esquissés au gré de mes lectures et de mes lubies, mais depuis deux ans, un sujet commence à se dessiner de façon plus claire.", null, null],
   ["Les années passées, plusieurs projets se sont succédé.", null, null],
   ["Les fleurs, cette année, sont arrivés en avance.", "arrivés", "arrivées"],
+  // Signalé depuis l'extension (1.4.0) : « la garantie constructeur » proposait « constructrice ».
+  ["Pourriez-vous m'indiquer les démarches pour bénéficier de la garantie constructeur de cinq ans que vous avez évoquée ?", null, null],
+  ["Les pièces constructeur sont garanties deux ans.", null, null],
+  ["La relation client est essentielle.", null, null],
 ];
