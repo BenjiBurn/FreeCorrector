@@ -2150,7 +2150,10 @@ function fcRoundFourRules(tokens, i, { add, morph, apo, paragraph, spellChecker 
     let k = i - 1;
     while (k > s && /^(ne|n’|pas|plus|jamais|enfin|bien|déjà|toujours|encore|tous|toutes|vraiment|finalement)$/.test(tokens[k].lower)) k--;
     const head = tokens[s + 1];
-    if (/^(sont|étaient|seront|seraient|furent)$/.test(tokens[k].lower) && /^(les|mes|nos|ces|vos|tes|ses|leurs|des)$/.test(tokens[s].lower) &&
+    // "Les années passées, différents projets se sont esquissés": a new masculine subject after the comma
+    const comma = tokens.slice(s, k).findIndex((x) => x.text === ",");
+    const newSubject = comma >= 0 && tokens.slice(s + comma + 1, k).some((x) => fcHas(morph(x), /:N:[me]:[pi]/));
+    if (!newSubject && /^(sont|étaient|seront|seraient|furent)$/.test(tokens[k].lower) && /^(les|mes|nos|ces|vos|tes|ses|leurs|des)$/.test(tokens[s].lower) &&
         head && fcHas(morph(head), /:N:f:p/) && !fcHas(morph(head), /:N:[me]/) && !fcHas(morph(head), /:V/) && k - s <= 9 &&
         !tokens.slice(s, k).some((x) => /^(et|ou|qui|que|qu’)$/.test(x.lower) || fcHas(morph(x), /:V[^/]*:(Ip|Iq|If|K)/) && x !== tokens[k])) {
       const form = String(suggVerbPpas(t.lower, ":f:p") || "").split("|").filter(Boolean)[0];

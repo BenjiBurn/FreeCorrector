@@ -337,4 +337,8 @@ module.exports = [
   ["Ces craintes sont peut-être à plusieurs égards tout à fait infondées, et il ne me reste qu'à me jeter à l'eau.", null, null],
   ["Cette décision est à certains égards tout à fait justifiée.", null, null],
   ["Ces mesures, à bien des égards, restent insuffisantes.", null, null],
+  // Signalé depuis l'extension (1.4.0) : « Les années passées, différents projets se sont esquissés » proposait « esquissées » (accord avec « années »).
+  ["Les années passées, différents projets se sont esquissés au gré de mes lectures et de mes lubies, mais depuis deux ans, un sujet commence à se dessiner de façon plus claire.", null, null],
+  ["Les années passées, plusieurs projets se sont succédé.", null, null],
+  ["Les fleurs, cette année, sont arrivés en avance.", "arrivés", "arrivées"],
 ];
