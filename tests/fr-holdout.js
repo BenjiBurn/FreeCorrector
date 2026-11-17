@@ -345,4 +345,8 @@ module.exports = [
   ["Pourriez-vous m'indiquer les démarches pour bénéficier de la garantie constructeur de cinq ans que vous avez évoquée ?", null, null],
   ["Les pièces constructeur sont garanties deux ans.", null, null],
   ["La relation client est essentielle.", null, null],
+  // Signalé depuis l'extension (1.4.0) : « Certaiment » proposait « Vertement », sans « Certainement ».
+  ["Certaiment pas moi en tout cas.", "Certaiment", "Certainement"],
+  ["Il a certaiment raison.", "certaiment", "certainement"],
+  ["C'est probablment vrai.", "probablment", "probablement"],
 ];

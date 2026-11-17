@@ -79,6 +79,16 @@ function fcWithin(a, b, max) {
   return prev[b.length];
 }
 
+// "certaiment" -> "certainement": a long word with one or two letters in a row left out
+// after a sure start, the rest typed right.
+function fcDroppedLetters(typo, candidate) {
+  const n = candidate.length - typo.length;
+  if (n < 1 || n > 2 || typo.length < 7) return false;
+  let i = 0;
+  while (i < typo.length && typo[i] === candidate[i]) i++;
+  return i >= 4 && i < typo.length && candidate.slice(i + n) === typo.slice(i);
+}
+
 const fcNeighbourCache = new Map();
 
 // Frequent dictionary words within a small typing distance of `word`.
@@ -107,7 +117,7 @@ function fcFrequentNeighbours(spellChecker, word, limit = 3) {
       if (distance > 2.5 && within <= 2) continue;
       // Further than other slips when it sounds the same: "resonnable" -> "raisonnable".
       const sound = soundsLike();
-      if (distance <= 1.6 || sound) {
+      if (distance <= 1.6 || sound || fcDroppedLetters(plain, p)) {
         scored.push([candidate, distance - FC_SOUND_BONUS * sound - FC_FREQ_WEIGHT * fcFrequency(candidate)]);
       }
     }
