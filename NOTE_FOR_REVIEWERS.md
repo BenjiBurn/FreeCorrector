@@ -1,4 +1,4 @@
-# Note for reviewers — FreeCorrector 1.4.0
+# Note for reviewers — FreeCorrector 1.5.0
 
 FreeCorrector is a free, open-source (GPL-3.0) spelling and grammar checker for French and
 English. All checking happens locally in the browser: the extension makes **no network
@@ -18,9 +18,9 @@ To rebuild from the source archive (Node.js 18 or later, no dependencies to inst
 
 ```sh
 node scripts/build.js firefox
-# -> dist/firefox/ and dist/freecorrector-1.4.0-firefox.zip
+# -> dist/firefox/ and dist/freecorrector-1.5.0-firefox.zip
 node scripts/build.js thunderbird
-# -> dist/thunderbird/ and dist/freecorrector-1.4.0-thunderbird.zip
+# -> dist/thunderbird/ and dist/freecorrector-1.5.0-thunderbird.zip
 ```
 
 ## Third-party code (unmodified copies)
@@ -69,6 +69,8 @@ it:
   `conj_data.json`) in a Web Worker of its own (`conj-worker.js`). Opened from the popup, from a
   tab of the editor page, or from the bubble of a conjugation mistake (the content script asks the
   background to open it with `tabs.create`; in Thunderbird, `windows.create`). No network request.
+  Since 1.5.0 it also conjugates English verbs: `en-conj.js` (our code) with `en-verbs.js`, a data
+  file made by `scripts/en-verbs.js` from Harper's dictionary (harper-core, Apache-2.0, fixed commit) and `data/en-freq.txt`.
 - Google Docs (new in 1.4.0): Docs draws its text in a `<canvas>`, so there is no text field to read.
   Docs offers an "annotated canvas" for this: when a page variable names an extension, it adds
   an invisible copy of each line (SVG `rect` elements with an `aria-label` holding the text).
@@ -79,10 +81,11 @@ it:
     draws the underlines over the page, and applies a fix by selecting the word with simulated
     clicks and typing the replacement as key events into Docs' own input iframe, so that Ctrl+Z
     undoes it. The text goes to our background page only, like any other field.
-- `lib/menus.js`: two right-click entries on selected text.
+- `lib/menus.js`: three right-click entries on selected text.
   - "Check with FreeCorrector" stores the selection in `storage.local` and opens the editor page with it.
   - "Report a missed mistake" (new in 1.2.8) opens the same report page as the bubble's "Report" button
     (see below) with the selection in the URL fragment: no request, nothing sent until the user clicks "Send".
+  - "Conjugate …" (new in 1.5.0) opens the conjugator page on the selected word (`tabs.create`).
 - `lib/action-icon.js` (new in 1.3.0): the toolbar icon turns grey, per tab, when checking is off
   on the page. Without the "tabs" permission, the top frame's content script reports its state
   (`{ type: "pageState" }`) and the background sets the icon with `action.setIcon({ tabId })`;

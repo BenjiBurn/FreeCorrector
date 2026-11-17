@@ -52,7 +52,10 @@ function fcSetupMenus() {
     }
     if (info.menuItemId === FC_MENU_CONJ_ID) {
       const w = String(info.selectionText ?? "").trim().slice(0, 100);
-      fcApi.tabs.create({ url: `${fcApi.runtime.getURL("conjugator/conjugator.html")}?w=${encodeURIComponent(w)}` });
+      const url = `${fcApi.runtime.getURL("conjugator/conjugator.html")}?w=${encodeURIComponent(w)}`;
+      // Thunderbird: the conjugator window of the bubble's link (background.js), not a tab.
+      const tbWindow = globalThis.messenger?.windows && globalThis.fcOpenConjugatorWindow;
+      Promise.resolve(tbWindow ? tbWindow(url) : fcApi.tabs.create({ url })).catch(() => {});
       return;
     }
     if (info.menuItemId !== FC_MENU_ID) return;

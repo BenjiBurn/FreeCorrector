@@ -1,8 +1,48 @@
 # Notes de version à coller dans les stores
 
-## 1.5.0 (prochaine version, pas encore publiée)
+## 1.5.0
 
-Brouillon. 1.5.0 : nouveauté visible (le thème).
+1.5.0 : nouveautés visibles (thème, conjugueur anglais, clic droit « Conjuguer », statistiques). Firefox seulement : « Tout corriger » passe à Ctrl+Maj+Espace.
+
+**Français, Firefox** (« Notes de version ») :
+
+```text
+• Changé : dans Firefox, « Tout corriger » passe de Ctrl+Maj+F à Ctrl+Maj+Espace, car Firefox utilise désormais Ctrl+Maj+F pour ouvrir ses extensions. Si vous aviez choisi votre propre raccourci, il est conservé.
+• Nouveau : un réglage « Thème » (Automatique, Clair, Sombre) pour la bulle et les pages de FreeCorrector.
+• Nouveau : le conjugueur conjugue aussi les verbes anglais (go, went, gone).
+• Nouveau : clic droit sur un mot sélectionné → « Conjuguer », même sur une forme conjuguée (« résolvons » → résoudre, « went » → go).
+• Nouveau : des statistiques du texte dans la page Correcteur : temps de lecture, phrases trop longues, mots les plus répétés.
+• Nouveau : « Vos statistiques » dans les options, le nombre de fautes corrigées (compté sur votre ordinateur, rien n’est envoyé).
+• Meilleures corrections en français et en anglais, et de nombreuses corrections suite à vos signalements. Merci à vous !
+```
+
+**Français, Thunderbird** (« Notes de version », à coller à la main ; Chrome : rien à saisir) : les mêmes sans la première ligne.
+
+**English** (Firefox and Thunderbird if an English field is offered; Thunderbird without the first line):
+
+```text
+• Changed: in Firefox, "Fix all" moves from Ctrl+Shift+F to Ctrl+Shift+Space, because Firefox now uses Ctrl+Shift+F to open its add-ons. A shortcut you chose yourself is kept.
+• New: a "Theme" setting (Automatic, Light, Dark) for the bubble and FreeCorrector's pages.
+• New: the conjugator now conjugates English verbs too (go, went, gone).
+• New: right-click a selected word → "Conjugate", even an inflected form ("went" → go).
+• New: text statistics on the Proofreader page: reading time, overlong sentences, most repeated words.
+• New: "Your statistics" in the options, the number of mistakes fixed (counted on your computer, nothing is sent).
+• Better corrections in English and French, and many fixes thanks to your reports. Thank you!
+```
+
+**Notes aux testeurs** (Firefox et Thunderbird, en anglais) :
+
+```text
+No account or login is needed. Everything runs locally (CSP connect-src 'self'): no network requests, no data collected, no remote code. Our own code is neither minified nor bundled; the engines in vendor/ are unmodified copies of Grammalecte 2.3.0 and harper.js 2.10.0 (see NOTE_FOR_REVIEWERS.md).
+
+1.5.0 adds no permission. New: English verbs in the conjugator page (conjugator/en-conj.js, our code, and en-verbs.js, a data file made by scripts/en-verbs.js from Harper's dictionary); a third right-click entry, "Conjugate …", that opens the conjugator page on the selection (tabs.create); text statistics computed in the editor page; a theme setting; the number of fixes, kept in storage.local, shown in the options. In Firefox the suggested shortcut of "fix-all" is Ctrl+Shift+Space (scripts/build.js), as Firefox 159 uses Ctrl+Shift+F.
+
+Build: download https://github.com/BenjiBurn/FreeCorrector/archive/refs/tags/v1.5.0.zip, run "node scripts/build.js firefox" (or "thunderbird"; Node.js 18+, no dependencies), output in dist/freecorrector-1.5.0-firefox.zip (or -thunderbird.zip).
+
+To test: type "Ils peut venir demain." in any text field (in Thunderbird: in the body of a new message) and click "peut". Select "went" in a page and right-click → "Conjugate “went”" opens the conjugator on "go".
+```
+
+**Détail des changements** (pour nous) :
 
 - Nouveau : un réglage « Thème » (Automatique, Clair, Sombre) pour la bulle et les pages de FreeCorrector. En automatique, comme avant, il suit le thème du navigateur ; « Sombre » le force même quand le navigateur est en clair. Demandé par l’auteur (Windows en mode sombre, applications en mode clair).
 - « « La Suède stupéfaite » Peux tu m’en dire plus ? » : le trait d’union manquant est signalé même après un titre entre guillemets français (il ne l’était qu’avec des guillemets droits), et la suggestion n’est plus en majuscules (« PEUX-TU ») après une citation ; repéré par la tâche des signalements (#34).
