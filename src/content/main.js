@@ -31,6 +31,9 @@
 
   // Code editors are contenteditable too, but their text is not prose.
   const CODE_EDITORS = ".CodeMirror, .cm-editor, .monaco-editor, .ace_editor, .code-editor, [data-language]";
+  // Rich text editors that turn the browser's spelling checker off by default
+  // (spellcheck="false"): TinyMCE (in its iframe or inline) and CKEditor 4. Prose all the same.
+  const PROSE_EDITORS = ".mce-content-body, .cke_editable";
 
   // Sign-in, sign-up and identity fields: user names, e-mail addresses, codes,
   // phone and card numbers… never prose, and a badge there is in the way.
@@ -63,8 +66,9 @@
     if (host === document.documentElement) host = document.body;
     if (!host) return null;
     // spellcheck="false": not prose. Except in Thunderbird's compose window,
-    // where it only says that Thunderbird's own spelling checker is off.
-    if ((host.getAttribute("spellcheck") === "false" && !FC_COMPOSE_WINDOW) || host.closest(CODE_EDITORS)) return null;
+    // where it only says that Thunderbird's own spelling checker is off, and in
+    // the rich text editors that set it by default.
+    if ((host.getAttribute("spellcheck") === "false" && !FC_COMPOSE_WINDOW && !host.matches(PROSE_EDITORS)) || host.closest(CODE_EDITORS)) return null;
     return host;
   }
 
