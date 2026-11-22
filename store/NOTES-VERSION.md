@@ -1,5 +1,37 @@
 # Notes de version à coller dans les stores
 
+## 1.5.1
+
+1.5.1 : correctif, Firefox et Chrome seulement (Thunderbird reste en 1.5.0 : sa fenêtre de rédaction n’est pas concernée).
+
+**Français, Firefox** (« Notes de version » ; Chrome : rien à saisir) :
+
+```text
+• Corrigé : FreeCorrector corrige de nouveau dans les éditeurs TinyMCE et CKEditor 4 (sites, forums, outils en ligne), qui coupent le correcteur du navigateur par défaut. Merci pour le signalement !
+```
+
+**English** (Firefox if an English field is offered):
+
+```text
+• Fixed: FreeCorrector checks again in TinyMCE and CKEditor 4 editors (websites, forums, online tools), which turn the browser's spelling checker off by default. Thanks for the report!
+```
+
+**Notes aux testeurs** (Firefox, en anglais) :
+
+```text
+No account or login is needed. Everything runs locally (CSP connect-src 'self'): no network requests, no data collected, no remote code. Our own code is neither minified nor bundled; the engines in vendor/ are unmodified copies of Grammalecte 2.3.0 and harper.js 2.10.0 (see NOTE_FOR_REVIEWERS.md).
+
+1.5.1 changes one line of content/main.js and adds no permission: rich text fields with spellcheck="false" are still skipped (code editors), except TinyMCE (.mce-content-body) and CKEditor 4 (.cke_editable), which set it by default on prose.
+
+Build: download https://github.com/BenjiBurn/FreeCorrector/archive/refs/tags/v1.5.1.zip, run "node scripts/build.js firefox" (Node.js 18+, no dependencies), output in dist/freecorrector-1.5.1-firefox.zip.
+
+To test: open https://www.tiny.cloud/docs/tinymce/latest/basic-example/ (or any page with TinyMCE), type "Ils peut venir demain." in the editor and click "peut".
+```
+
+**Détail des changements** (pour nous) :
+
+- TinyMCE (5, 6 et 7, en iframe ou « inline ») et CKEditor 4 posent `spellcheck="false"` sur leur zone d’écriture par défaut (leur propre correcteur est payant) ; FreeCorrector y voyait un champ qui n’est pas de la prose (comme un éditeur de code) et ne corrigeait rien, depuis la 1.0. Ils sont maintenant corrigés quand même ; les autres champs `spellcheck="false"` restent ignorés. Vérifié dans Edge : soulignements, pastille et correction appliquée (TinyMCE garde le texte corrigé) ; CKEditor 5 marchait déjà. Signalé par un utilisateur (« ça ne marche plus sur TinyMCE » : son site a dû passer aux réglages par défaut).
+
 ## 1.5.0
 
 1.5.0 : nouveautés visibles (thème, conjugueur anglais, clic droit « Conjuguer », statistiques). Firefox seulement : « Tout corriger » passe à Ctrl+Maj+Espace.
