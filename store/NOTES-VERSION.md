@@ -1,5 +1,11 @@
 # Notes de version à coller dans les stores
 
+## 1.5.2 (prochaine version, pas encore publiée)
+
+Brouillon, à compléter jusqu’à la sortie (numéro à confirmer).
+
+- « On trouvera ça et là des notes » : la correction proposée est maintenant « çà et là » (au lieu de « est » pour « et ») ; signalé par un utilisateur.
+
 ## 1.5.1
 
 1.5.1 : correctif, Firefox et Chrome seulement (Thunderbird reste en 1.5.0 : sa fenêtre de rédaction n’est pas concernée).

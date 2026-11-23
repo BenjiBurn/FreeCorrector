@@ -353,4 +353,9 @@ module.exports = [
   ["Si t'en trouve une nickel ça va, mais elles sont juste plus chere pour rien", "chere", "chères"],
   ["Elle est chere.", "chere", "chère"],
   ["Elles sont trop chere.", "chere", "chères"],
+  // Signalé depuis l'extension (1.5.0) : « ça et là des notes » proposait « est » pour « et » au lieu de « çà et là ».
+  ["On trouvera d’ailleurs ça et là des notes laissées par des survivants, plus ou moins désabusés, parfois avec un code ou un indice.", "ça et là", "çà et là"],
+  ["On trouvera çà et là des notes laissées par des survivants.", null, null],
+  ["Des maisons étaient dispersées çà et là dans la vallée.", null, null],
+  ["Il et là depuis hier.", "et", "est"],
 ];

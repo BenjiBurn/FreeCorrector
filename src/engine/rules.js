@@ -680,7 +680,8 @@ function fcCustomRules(paragraph, spellChecker, existing) {
 
     // "Elle et partie", "il et là" -> est ("il", "on", "ça" are never coordinated)
     // ("je corrige ça et je te renvoie": a subject follows, "ça" was an object.)
-    if (t.lower === "et" && prev && next && ((/^(il|on|ça|cela|c’)$/.test(prevLower) &&
+    // ("On trouvera ça et là des notes": the locution "çà et là", which Grammalecte corrects.)
+    if (t.lower === "et" && prev && next && !(prevLower === "ça" && next.lower === "là") && ((/^(il|on|ça|cela|c’)$/.test(prevLower) &&
         !/^(moi|toi|lui|elle|nous|vous|eux|elles|je|j’|tu|t’|il|on|ils)$/.test(next.lower)) ||
         (prevLower === "elle" && fcHas(morph(next), /:(V[^/]*:Q|A|W)/) && !/^(moi|toi|lui|elle|nous|vous|eux|elles|son|sa|ses|mon|ma|mes|ton|ta|tes|un|une|le|la|les|des|leur|leurs)$/.test(next.lower) && /^\p{Ll}/u.test(next.text)))) {
       add(t, "est", "Confusion probable : « est » (verbe être) plutôt que « et ».", true);
