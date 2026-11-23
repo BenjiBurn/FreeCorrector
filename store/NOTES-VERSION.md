@@ -5,6 +5,7 @@
 Brouillon, à compléter jusqu’à la sortie (numéro à confirmer).
 
 - « On trouvera ça et là des notes » : la correction proposée est maintenant « çà et là » (au lieu de « est » pour « et ») ; signalé par un utilisateur.
+- « Pour 7 €, tarif plancher (hors promo), … » : « plancher » (prix plancher, taux plancher) n’est plus souligné (« planché ») ; signalé par un utilisateur.
 
 ## 1.5.1
 

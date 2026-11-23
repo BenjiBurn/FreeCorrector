@@ -358,4 +358,8 @@ module.exports = [
   ["On trouvera çà et là des notes laissées par des survivants.", null, null],
   ["Des maisons étaient dispersées çà et là dans la vallée.", null, null],
   ["Il et là depuis hier.", "et", "est"],
+  // Signalé depuis l'extension (1.5.0) : « tarif plancher (hors promo) » proposait « planché ».
+  ["Pour la modique somme de 7€, tarif plancher (hors promo), pour lequel il est généralement impossible de trouver des FPS de qualité, on nous lance une proposition intéressante.", null, null],
+  ["Pour 2 €, prix plancher, on signe tout de suite.", null, null],
+  ["Le gouvernement a relevé le taux plancher.", null, null],
 ];
