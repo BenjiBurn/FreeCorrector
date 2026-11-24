@@ -482,6 +482,11 @@ async function lintParagraph(paragraph) {
         // ("carefull" -> "care full" is a typo: only a hyphen dropped counts.)
         word.includes("-") && replacements.length && replacements.every((r) => r.replace(/-/g, "").toLowerCase() === word.replace(/-/g, "").toLowerCase()) ||
         EN_PREFIXED.test(word) && frequency(word.toLowerCase().replace(EN_PREFIXED, "$2")) >= 3)) continue;
+      // "prefilled", "prerendered": a known word behind "pre", split by Harper ("pre filled");
+      // "prepair" (short stem), "presense" (a frequent word close by: "presence") stay typos.
+      if (!picky && (kind === "Spelling" || kind === "Typo") && /^pre(\p{L}{5,}|fills?)$/iu.test(word) &&
+          replacements.some((r) => r.toLowerCase() === `pre ${word.slice(3).toLowerCase()}`) &&
+          frequency(word.slice(3).toLowerCase()) >= 3 && !frequentNeighbours(word).length) continue;
       // "Reply YES to confirm or NO to cancel": words in capitals are on purpose.
       if (/^[A-Z]{2,}\s/.test(word) || /^[A-Z]{2,}$/.test(word) && kind !== "Spelling" && kind !== "Typo") continue;
       // A span starting at a space, after an emoji: nothing to fix there.

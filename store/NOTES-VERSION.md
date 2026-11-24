@@ -7,6 +7,7 @@ Brouillon, à compléter jusqu’à la sortie (numéro à confirmer).
 - « On trouvera ça et là des notes » : la correction proposée est maintenant « çà et là » (au lieu de « est » pour « et ») ; signalé par un utilisateur.
 - « Pour 7 €, tarif plancher (hors promo), … » : « plancher » (prix plancher, taux plancher) n’est plus souligné (« planché ») ; signalé par un utilisateur.
 - « Si vous cherchez une praticienne, je serais ravie d’en faire partie » : le conditionnel de politesse (« je serais ravi / heureux de… », « je vous serais reconnaissant de… ») n’est plus corrigé en futur « serai » ; signalé par un utilisateur.
+- Anglais : « prefilled », « prefill », « prerendered » (un mot connu derrière « pre ») ne sont plus soulignés (« pre filled ») ; « presense » reste corrigé en « presence » ; signalé par un utilisateur.
 
 ## 1.5.1
 

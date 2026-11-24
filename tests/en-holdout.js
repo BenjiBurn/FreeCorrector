@@ -86,4 +86,9 @@ module.exports = [
   ["The planned opening was delayed.", null, null],
   ["What was the intended meaning of the poem?", null, null],
   ["We decided going to the beach.", "going", "to go"],
+  // Signalé depuis l'extension (1.5.0) : « prefilled » proposait « pre filled ».
+  ["The Start Date should persist as the one prefilled when the pop up was opened.", null, null],
+  ["Please prefill the form before you submit it.", null, null],
+  ["The prerendered pages load much faster.", null, null],
+  ["His presense of mind saved us.", "presense", "presence"],
 ];
