@@ -362,4 +362,9 @@ module.exports = [
   ["Pour la modique somme de 7€, tarif plancher (hors promo), pour lequel il est généralement impossible de trouver des FPS de qualité, on nous lance une proposition intéressante.", null, null],
   ["Pour 2 €, prix plancher, on signe tout de suite.", null, null],
   ["Le gouvernement a relevé le taux plancher.", null, null],
+  // Signalé depuis l'extension (1.5.1) : « Si vous cherchez une praticienne…, je serais ravie d'en faire partie » proposait « serai » (conditionnel de politesse).
+  ["Si vous cherchez une praticienne de confiance, ou une seconde adresse quand la vôtre est complète en haute saison, je serais ravie d'en faire partie.", null, null],
+  ["Si vous avez des questions, je serais heureux d'y répondre.", null, null],
+  ["Si vous acceptez, je vous serais très reconnaissant de me répondre rapidement.", null, null],
+  ["Si tu viens demain, je serais ravi.", "serais", "serai"],
 ];

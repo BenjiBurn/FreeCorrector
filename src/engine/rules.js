@@ -1286,7 +1286,13 @@ function fcCustomRules(paragraph, spellChecker, existing) {
       const comma = clause.findIndex((x) => x.text === ",");
       const present = si >= 0 && comma > si + 2 && !clause.slice(si + 1, comma).some((x) => fcHas(morph(x), /:V[^/]*:(Iq|K)/));
       const person = morph(t).find((m) => /:K/.test(m))?.match(/:K:([123][sp])/)?.[1];
-      if (present && person) {
+      // "Si vous cherchez une praticienne, je serais ravie d’en faire partie": a polite
+      // conditional ("ravi de", "heureux de", "je vous serais reconnaissant de"), not a condition.
+      const adj = /^(très|vraiment|tellement|particulièrement|absolument)$/.test(next?.lower ?? "") ? next2 : next;
+      const polite = /^ser(ais|ait|ions|iez|aient)$/.test(t.lower) &&
+        /^(ravie?s?|heureux|heureuses?|enchantée?s?|honorée?s?|reconnaissante?s?)$/.test(adj?.lower ?? "") &&
+        /^(de|d’)$/.test(tokens[tokens.indexOf(adj) + 1]?.lower ?? "");
+      if (present && person && !polite) {
         const lemma = morph(t).find((m) => /:K/.test(m)).match(/^>([^/]+)\//)[1];
         let form = "";
         try {
