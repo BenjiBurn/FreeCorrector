@@ -32,8 +32,9 @@
   // Code editors are contenteditable too, but their text is not prose.
   const CODE_EDITORS = ".CodeMirror, .cm-editor, .monaco-editor, .ace_editor, .code-editor, [data-language]";
   // Rich text editors that turn the browser's spelling checker off by default
-  // (spellcheck="false"): TinyMCE (in its iframe or inline) and CKEditor 4. Prose all the same.
-  const PROSE_EDITORS = ".mce-content-body, .cke_editable";
+  // (spellcheck="false"): TinyMCE (in its iframe or inline), CKEditor 4, and CKEditor 5
+  // where the site has its own spelling checker (Microsoft Teams). Prose all the same.
+  const PROSE_EDITORS = ".mce-content-body, .cke_editable, .ck-editor__editable";
 
   // Sign-in, sign-up and identity fields: user names, e-mail addresses, codes,
   // phone and card numbers… never prose, and a badge there is in the way.
