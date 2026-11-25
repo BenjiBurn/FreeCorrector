@@ -482,7 +482,11 @@ function fcCustomRules(paragraph, spellChecker, existing) {
     if (subject && (nounPerson || FC_SUBJECTS.has(subject.lower)) && subject.lower !== "qui" && /^(que|qu’)$/.test(tokens[subj - 1]?.lower ?? "")) {
       const prevLower = subject.lower;
       const trigger = tokens[subj - 2]?.lower ?? "";
-      if (/^(faut|faudrait|faudra|fallait|veux|veut|voulez|voudrais|voudrait|souhaite|souhaites|aimerais|aimerait|pour|avant|afin|sans|bien|attends|attend|préfère|préfères|préférerais|exige|demande|important|nécessaire|essentiel|normal|dommage|possible|peur)$/.test(trigger)) {
+      // "J’imagine bien que vous ne vous engagez plus": "bien" goes with the verb before it
+      // (je sais bien, on voit bien que…), not the conjunction "bien que".
+      const knowBien = trigger === "bien" && morph(tokens[subj - 3]).some((m) =>
+        /^>(imaginer|savoir|voir|comprendre|penser|croire|sentir|douter|dire|remarquer|constater|noter|entendre|sembler|paraître|reconnaître|admettre|avouer|espérer|deviner|rappeler|souvenir|apercevoir|figurer|supposer)\/:V[^/]*:(I|K)/.test(m));
+      if (!knowBien && /^(faut|faudrait|faudra|fallait|veux|veut|voulez|voudrais|voudrait|souhaite|souhaites|aimerais|aimerait|pour|avant|afin|sans|bien|attends|attend|préfère|préfères|préférerais|exige|demande|important|nécessaire|essentiel|normal|dommage|possible|peur)$/.test(trigger)) {
         // "Il faudrait que vous nous confirmer" -> confirmiez: an infinitive in place of the verb
         // (not "Je ne veux que vous aider", where "ne… que" means "only").
         const ind = morph(t).find((m) => /:V.*:Ip/.test(m) && !/:Sp/.test(m)) ??

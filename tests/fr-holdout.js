@@ -367,4 +367,9 @@ module.exports = [
   ["Si vous avez des questions, je serais heureux d'y répondre.", null, null],
   ["Si vous acceptez, je vous serais très reconnaissant de me répondre rapidement.", null, null],
   ["Si tu viens demain, je serais ravi.", "serais", "serai"],
+  // Signalé depuis l'extension (1.5.0) : « J'imagine bien que vous ne vous engagez plus » proposait « engagiez » (« bien » va avec « imagine », ce n'est pas « bien que »).
+  ["J'imagine bien que vous ne vous engagez plus dans l'encadrement de thèses et que j'ai loupé le coche sur ce plan-là.", null, null],
+  ["Je sais bien que tu es fatigué.", null, null],
+  ["On voit bien qu'il a raison.", null, null],
+  ["Il est venu bien qu'il est malade.", "est", "soit"],
 ];

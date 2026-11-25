@@ -7,6 +7,7 @@ Brouillon, à compléter jusqu’à la sortie (numéro à confirmer).
 - « On trouvera ça et là des notes » : la correction proposée est maintenant « çà et là » (au lieu de « est » pour « et ») ; signalé par un utilisateur.
 - « Pour 7 €, tarif plancher (hors promo), … » : « plancher » (prix plancher, taux plancher) n’est plus souligné (« planché ») ; signalé par un utilisateur.
 - « Si vous cherchez une praticienne, je serais ravie d’en faire partie » : le conditionnel de politesse (« je serais ravi / heureux de… », « je vous serais reconnaissant de… ») n’est plus corrigé en futur « serai » ; signalé par un utilisateur.
+- « J’imagine bien que vous ne vous engagez plus… » : « bien » qui va avec le verbe d’avant (j’imagine bien, je sais bien, on voit bien que…) n’est plus pris pour « bien que » + subjonctif (« engagiez ») ; signalé par un utilisateur.
 - Anglais : « prefilled », « prefill », « prerendered » (un mot connu derrière « pre ») ne sont plus soulignés (« pre filled ») ; « presense » reste corrigé en « presence » ; signalé par un utilisateur.
 - Microsoft Teams (version web) : FreeCorrector corrige de nouveau dans la zone de message (éditeur CKEditor 5 où Teams coupe le correcteur du navigateur avec spellcheck="false") ; une ligne de `content/main.js` (`.ck-editor__editable` ajouté aux éditeurs de texte). Signalé sur GitHub (#2).
 
