@@ -377,4 +377,9 @@ module.exports = [
   ["Il y a le pain, le vin, tout ça et c'est tout.", null, null],
   ["On fait ça et c’était réglé.", null, null],
   ["Ça et vraiment nul.", "et", "est"],
+  // Signalé depuis l'extension (1.5.1) : « en format découverte » proposait « découvert » (offre découverte, nom en apposition).
+  ["-30% sur toutes nos routines en format découverte !", null, null],
+  ["Profitez de nos offres découverte.", null, null],
+  ["Le pack surprise est arrivé.", null, null],
+  ["Le trésor découverte hier était caché.", "découverte", "découvert"],
 ];

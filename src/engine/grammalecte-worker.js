@@ -663,6 +663,13 @@ function checkParagraph(paragraph) {
         const lead = /(\p{L}+)\s+$/u.exec(paragraph.slice(Math.max(0, err.nStart - 40), err.nStart))?.[1];
         if (lead && spellChecker.getMorph(lead.toLowerCase()).some((x) => /:N[^/]*?:([fe]:|[mfe]:[pi])/.test(x))) continue;
       }
+      // "-30 % en format découverte", "nos offres découverte", "le pack surprise": the noun in
+      // apposition after an offer, invariable, not the participle "découvert" ("le monde
+      // découverte par…" stays underlined).
+      if (/^(découverte|surprise)$/i.test(m.word) && !/^\s+par(?![\p{L}])/iu.test(paragraph.slice(err.nEnd))) {
+        const lead = /(\p{L}+)\s+$/u.exec(paragraph.slice(Math.max(0, err.nStart - 40), err.nStart))?.[1];
+        if (lead && /^(offres?|formats?|prix|tarifs?|coffrets?|packs?|kits?|lots?|box|séances?|cours|vols?|abonnements?|formules?|visites?|ateliers?|menus?|forfaits?|essais?|versions?|stages?|sessions?|journées?|soirées?|balades?|parcours|circuits?|baptêmes?|colis|cadeaux?|invités?|invitées?|fêtes?|effets?|sacs?|boîtes?|pochettes?|œufs?|paniers?|sachets?|tailles?|cartes?|paquets?|bons?|codes?)$/i.test(lead)) continue;
+      }
     }
     // "pour ça n’a pas fonctionné": after "n’", "a" is the verb ("n’à" does not exist).
     if (/conf_à_a/.test(m.ruleId) && /^a$/i.test(m.word) && /(^|[^\p{L}])n['’]$/iu.test(paragraph.slice(0, err.nStart))) continue;
