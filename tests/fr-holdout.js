@@ -372,4 +372,9 @@ module.exports = [
   ["Je sais bien que tu es fatigué.", null, null],
   ["On voit bien qu'il a raison.", null, null],
   ["Il est venu bien qu'il est malade.", "est", "soit"],
+  // Signalé depuis l'extension (1.5.1) : « tout ça et c'est uniquement jusqu'au 30 novembre » proposait « est » pour « et ».
+  ["Oui, oui, tout ça et c'est uniquement jusqu'au 30 novembre.", null, null],
+  ["Il y a le pain, le vin, tout ça et c'est tout.", null, null],
+  ["On fait ça et c’était réglé.", null, null],
+  ["Ça et vraiment nul.", "et", "est"],
 ];
