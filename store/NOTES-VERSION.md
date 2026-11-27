@@ -1,8 +1,40 @@
 # Notes de version à coller dans les stores
 
-## 1.5.2 (prochaine version, pas encore publiée)
+## 1.5.2
 
-Brouillon, à compléter jusqu’à la sortie (numéro à confirmer).
+1.5.2 : correctifs (Teams web, signalements) et vitesse. Firefox, Chrome et Thunderbird.
+
+**Français, Firefox** (« Notes de version ») :
+
+```text
+• Corrigé : FreeCorrector corrige de nouveau dans Microsoft Teams (version web). Merci pour le signalement !
+• Plus rapide : la vérification pendant la frappe est nettement plus rapide dans les textes qui contiennent des noms ou des mots rares.
+• De nombreuses corrections suite à vos signalements (« çà et là », « je serais ravi de… », « j’imagine bien que… », « prix plancher », « format découverte »…). Merci à vous !
+```
+
+**Français, Thunderbird** (« Notes de version », à coller à la main ; Chrome : rien à saisir) : les mêmes sans la première ligne.
+
+**English** (Firefox and Thunderbird if an English field is offered; Thunderbird without the first line):
+
+```text
+• Fixed: FreeCorrector checks again in Microsoft Teams (web version). Thanks for the report!
+• Faster: checking while you type is much faster in texts with names or rare words.
+• Many fixes thanks to your reports, in French and in English ("prefilled" is no longer flagged…). Thank you!
+```
+
+**Notes aux testeurs** (Firefox et Thunderbird, en anglais) :
+
+```text
+No account or login is needed. Everything runs locally (CSP connect-src 'self'): no network requests, no data collected, no remote code. Our own code is neither minified nor bundled; the engines in vendor/ are unmodified copies of Grammalecte 2.3.0 and harper.js 2.10.0 (see NOTE_FOR_REVIEWERS.md).
+
+1.5.2 adds no permission. content/main.js: CKEditor 5 (.ck-editor__editable) joins TinyMCE and CKEditor 4 among the rich text editors checked even with spellcheck="false" (Microsoft Teams sets it). engine/suggestions.js keeps the dictionary's nearest words per word in memory; engine/english.js runs one more warm-up lint a second after start. The other changes are rules in engine/rules.js, engine/grammalecte-worker.js and engine/english.js.
+
+Build: download https://github.com/BenjiBurn/FreeCorrector/archive/refs/tags/v1.5.2.zip, run "node scripts/build.js firefox" (or "thunderbird"; Node.js 18+, no dependencies), output in dist/freecorrector-1.5.2-firefox.zip (or -thunderbird.zip).
+
+To test: type "Ils peut venir demain." in any text field (in Thunderbird: in the body of a new message) and click "peut".
+```
+
+**Détail des changements** (pour nous) :
 
 - « On trouvera ça et là des notes » : la correction proposée est maintenant « çà et là » (au lieu de « est » pour « et ») ; signalé par un utilisateur.
 - « Pour 7 €, tarif plancher (hors promo), … » : « plancher » (prix plancher, taux plancher) n’est plus souligné (« planché ») ; signalé par un utilisateur.

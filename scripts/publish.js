@@ -355,6 +355,9 @@ async function chromeLogin(finalUrl) {
   }
   if (args[0] === "chrome-login") return chromeLogin(args[1]);
 
+  // An unknown option stops everything: "--help" once sent a real upload.
+  const unknown = args.filter((a) => a.startsWith("-") && a !== "--dry-run");
+  if (unknown.length) throw new Error(`option inconnue : ${unknown.join(" ")} (seule --dry-run existe ; rien n'a été envoyé)`);
   const dry = args.includes("--dry-run");
   const wanted = args.filter((a) => !a.startsWith("--"));
   for (const w of wanted) if (!STORES.includes(w)) throw new Error(`store inconnue : ${w} (${STORES.join(", ")})`);
