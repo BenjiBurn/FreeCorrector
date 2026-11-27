@@ -11,6 +11,7 @@ Brouillon, numéro à confirmer (0.7.0 : un bouton nouveau).
 **Français** :
 
 ```text
+- Nouveau : FreeCorrector corrige dans l'app WhatsApp pour Windows (et les autres apps faites de la même façon).
 - Nouveau : un bouton « Signaler » dans la bulle, comme dans l'extension. Une correction vous semble fausse ? Signalez-la : vous voyez ce qui est envoyé avant de valider.
 - Corrigé : dans Word, un mot pouvait rester souligné à moitié (« touj » dans « toujours ») après une pause au milieu de la frappe. Le mot en cours de frappe n'est plus souligné avant d'être fini.
 ```
@@ -18,6 +19,7 @@ Brouillon, numéro à confirmer (0.7.0 : un bouton nouveau).
 **English** :
 
 ```text
+- New: FreeCorrector now checks in the WhatsApp app for Windows (and other apps built the same way).
 - New: a "Report" button in the bubble, as in the extension. A correction looks wrong? Report it: you see what is sent before sending.
 - Fixed: in Word, half a word could stay underlined ("touj" in "toujours") after a pause while typing. The word being typed is no longer underlined before it is finished.
 ```

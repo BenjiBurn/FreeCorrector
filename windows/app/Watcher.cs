@@ -110,10 +110,48 @@ namespace FreeCorrector
             Publish(new());
         }
 
+        // WinUI 3 applications with a WebView2 (WhatsApp): UI Automation's focus
+        // stops at the XAML island's pane; the page, with the field, is a window
+        // of its own, of the msedgewebview2 process, over that pane. The field
+        // is the element of that window that has the keyboard focus. Looked up
+        // again every 600 ms at most (the user may move to another field).
+        static readonly HashSet<string> WebViewHosts = new() { "Microsoft.UI.Content.DesktopChildSiteBridge", "Microsoft.UI.Xaml.Controls.WebView2" };
+        const int HasKeyboardFocusId = 30008;
+        UIA.IUIAutomationElement? webViewHost, webViewFocus;
+        DateTime webViewAt;
+
+        UIA.IUIAutomationElement InnerFocus(UIA.IUIAutomationElement focused)
+        {
+            if (!WebViewHosts.Contains(focused.CurrentClassName)) { webViewHost = null; return focused; }
+            if (webViewHost != null && webViewFocus != null && uia.CompareElements(focused, webViewHost) != 0 &&
+                (DateTime.UtcNow - webViewAt).TotalMilliseconds < 600) return webViewFocus;
+            webViewHost = focused;
+            webViewAt = DateTime.UtcNow;
+            webViewFocus = WebViewFocus(focused) ?? focused;
+            return webViewFocus;
+        }
+
+        UIA.IUIAutomationElement? WebViewFocus(UIA.IUIAutomationElement host)
+        {
+            var r = host.CurrentBoundingRectangle;
+            foreach (var hwnd in Native.VisibleWindows("Chrome_WidgetWin_1"))
+            {
+                Native.GetWindowThreadProcessId(hwnd, out var pid);
+                if (!string.Equals(ProcessName(pid), "msedgewebview2", StringComparison.OrdinalIgnoreCase)) continue;
+                Native.GetWindowRect(hwnd, out var w);
+                // Inside the host's pane (a few pixels of rounding allowed).
+                if (w.Left < r.left - 4 || w.Top < r.top - 4 || w.Right > r.right + 4 || w.Bottom > r.bottom + 4) continue;
+                var found = uia.ElementFromHandle(hwnd)?.FindFirst(UIA.TreeScope.TreeScope_Descendants, uia.CreatePropertyCondition(HasKeyboardFocusId, true));
+                if (found != null) return found;
+            }
+            return null;
+        }
+
         void Tick()
         {
             var focused = uia.GetFocusedElement();
             if (focused == null) { if (element != null) Reset(null); return; }
+            focused = InnerFocus(focused);
             var pid = focused.CurrentProcessId;
             // The card never takes the focus; the settings window does, and is not
             // to be underlined (nor covered by the marks of the field before). Its

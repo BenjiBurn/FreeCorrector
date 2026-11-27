@@ -31,6 +31,25 @@ namespace FreeCorrector
         [DllImport("dwmapi.dll")] static extern int DwmSetWindowAttribute(IntPtr hwnd, int attribute, ref int value, int size);
 
         // A window's title bar in dark or light (DWMWA_USE_IMMERSIVE_DARK_MODE, Windows 10 20H1 and later).
+        delegate bool EnumWindowsProc(IntPtr hwnd, IntPtr param);
+        [DllImport("user32.dll")] static extern bool EnumWindows(EnumWindowsProc proc, IntPtr param);
+        [DllImport("user32.dll", CharSet = CharSet.Unicode)] static extern int GetClassName(IntPtr hwnd, System.Text.StringBuilder name, int max);
+        [DllImport("user32.dll")] static extern bool IsWindowVisible(IntPtr hwnd);
+
+        // The visible top-level windows of a class.
+        public static List<IntPtr> VisibleWindows(string className)
+        {
+            var found = new List<IntPtr>();
+            var name = new System.Text.StringBuilder(64);
+            EnumWindows((hwnd, _) =>
+            {
+                name.Clear();
+                if (IsWindowVisible(hwnd) && GetClassName(hwnd, name, name.Capacity) > 0 && name.ToString() == className) found.Add(hwnd);
+                return true;
+            }, IntPtr.Zero);
+            return found;
+        }
+
         public static void DarkTitleBar(IntPtr hwnd, bool dark)
         {
             var value = dark ? 1 : 0;
