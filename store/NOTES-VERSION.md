@@ -13,6 +13,7 @@ Brouillon, à compléter jusqu’à la sortie (numéro à confirmer).
 - « Si on ajoute une option, il pourrait tout résilier » : un verbe modal au conditionnel après « si » + présent (pourrait, devrait, faudrait, voudrait, aimerait) n’est plus corrigé en futur (« pourra ») ; « si tu viens, on mangerait » reste corrigé ; signalé par un utilisateur.
 - Anglais : « prefilled », « prefill », « prerendered » (un mot connu derrière « pre ») ne sont plus soulignés (« pre filled ») ; « presense » reste corrigé en « presence » ; signalé par un utilisateur.
 - Microsoft Teams (version web) : FreeCorrector corrige de nouveau dans la zone de message (éditeur CKEditor 5 où Teams coupe le correcteur du navigateur avec spellcheck="false") ; une ligne de `content/main.js` (`.ck-editor__editable` ajouté aux éditeurs de texte). Signalé sur GitHub (#2).
+- Plus rapide : les suggestions d'un mot inconnu sont gardées en mémoire (une phrase avec « kougelhopf » revérifiée pendant la frappe : 340 → 55 ms) ; en anglais, le premier mot long inconnu ne coûte plus 2,5 s (amorçage de Harper fait juste après le démarrage).
 
 ## 1.5.1
 

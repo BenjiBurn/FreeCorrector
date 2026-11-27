@@ -111,6 +111,10 @@ export async function init(options = {}) {
     // Harper's first spelling suggestions are slower: done now, not on the
     // user's first typo.
     await lintCount("Thsi sentense has typos.");
+    // The first unknown word of ten letters or more costs Harper about 2.5 s,
+    // once ("Ludwigsvorstadt", "Zorblaxian"): paid a moment after start, while
+    // the user has not typed yet, rather than on their first long name or typo.
+    setTimeout(() => lintCount("Zorblaxian").catch(() => {}), 1000);
   }
   return true;
 }

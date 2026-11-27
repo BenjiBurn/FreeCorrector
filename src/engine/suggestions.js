@@ -251,15 +251,26 @@ function fcMatchCase(model, word) {
   return word;
 }
 
+// The dictionary's nearest words cost up to 150 ms for a long unknown word
+// ("kougelhopf"), and a paragraph is checked again at each pause while the
+// user types: they are kept, per word (a copy is returned, callers may change it).
+const fcSuggestCache = new Map();
+const FC_SUGGEST_CACHE_SIZE = 1000;
+
 function fcSpellSuggestions(spellChecker, word, limit) {
+  const key = `${limit}\u0000${word}`;
+  const cached = fcSuggestCache.get(key);
+  if (cached) return [...cached];
   const out = [];
-  for (const list of spellChecker.suggest(word, limit)) {
+  fill: for (const list of spellChecker.suggest(word, limit)) {
     for (const s of list) {
       if (!out.includes(s)) out.push(s);
-      if (out.length >= limit) return out;
+      if (out.length >= limit) break fill;
     }
   }
-  return out;
+  if (fcSuggestCache.size >= FC_SUGGEST_CACHE_SIZE) fcSuggestCache.clear();
+  fcSuggestCache.set(key, out);
+  return [...out];
 }
 
 // "jai" -> "j’ai", "lecole" -> "l’école", "dabitude" -> "d’habitude".
