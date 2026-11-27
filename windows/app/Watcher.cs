@@ -43,10 +43,14 @@ namespace FreeCorrector
         UIA.IUIAutomation uia = null!;
         UIA.IUIAutomationElement? element;
         IField? field;
-        string? text;
+        volatile string? text;
+        // The text of the field, as last read (the report page needs the sentence).
+        public string? Text => text;
         DateTime changedAt;
         string? asked;
         bool fresh;
+        // Where the last edit ended in the text (-1: none seen yet).
+        int editEnd = -1;
         (string Text, List<Match> Found)? answer;
         List<Match> matches = new();
         List<IAnchor?> anchors = new();
@@ -100,6 +104,7 @@ namespace FreeCorrector
             text = null;
             asked = null;
             fresh = false;
+            editEnd = -1;
             matches = new();
             anchors = new();
             Publish(new());
@@ -123,10 +128,10 @@ namespace FreeCorrector
             }
             if (field == null) return;
 
-            var raw = field.Text(MaxChars);
+            var raw = Whole(field.Text(MaxChars));
             if (raw != text)
             {
-                if (text != null) Shift(text, raw);
+                editEnd = text != null ? Shift(text, raw) : -1;
                 text = raw;
                 changedAt = DateTime.UtcNow;
                 fresh = false;
@@ -165,6 +170,11 @@ namespace FreeCorrector
                 if (anchors[i] is not { } anchor) continue;
                 // No final period asked for while the user is still writing the sentence.
                 if (matches[i].RuleId == FinalPunctRule && !field.CaretBefore(anchor)) continue;
+                // Nor a word the user is still typing: a pause in the middle of
+                // "toujours" gets "touj" checked, and Word hands its text over late,
+                // so the mark could stay under the finished word.
+                var end = matches[i].Offset + matches[i].Length;
+                if (end == editEnd && IsWordChar(text!, end - 1)) continue;
                 var boxes = anchor.Boxes().Where(b => b.IntersectsWith(bounds)).ToArray();
                 if (boxes.Length > 0) marks.Add(new Mark(matches[i], boxes));
             }
@@ -173,7 +183,8 @@ namespace FreeCorrector
 
         // While the user types: the marks before and after the edit stay (moved
         // by the length typed), the ones it touches go until the next check.
-        void Shift(string before, string now)
+        // Returns where the edit ends in the new text.
+        int Shift(string before, string now)
         {
             var max = Math.Min(before.Length, now.Length);
             var prefix = 0;
@@ -204,6 +215,7 @@ namespace FreeCorrector
             }
             matches = keptMatches;
             anchors = keptAnchors;
+            return now.Length - suffix;
         }
 
         static bool IsWordChar(string s, int i) => i >= 0 && i < s.Length && (char.IsLetterOrDigit(s[i]) || s[i] == '-' || s[i] == (char)0x2019 || s[i] == '\'');
@@ -247,6 +259,20 @@ namespace FreeCorrector
             return processNames[pid] = name;
         }
 
+        // A text read up to MaxChars may stop in the middle of a word (a long
+        // document: "échographie" read as "échogr", underlined as a mistake). It
+        // then ends at the last paragraph, or failing that the last sentence or space.
+        static string Whole(string raw)
+        {
+            if (raw.Length < MaxChars) return raw;
+            var end = raw.LastIndexOfAny(new[] { '\r', '\n', '\v', (char)0x2029 });
+            if (end < MaxChars / 2)
+                for (var i = raw.Length - 2; i >= MaxChars / 2 && end < MaxChars / 2; i--)
+                    if (".!?".Contains(raw[i]) && char.IsWhiteSpace(raw[i + 1])) end = i;
+            if (end < MaxChars / 2) end = raw.LastIndexOfAny(new[] { ' ', '\t' });
+            return end > 0 ? raw[..(end + 1)] : raw;
+        }
+
         // Same length as the original, so offsets hold: line and paragraph
         // breaks of any kind become the engines' paragraph separator.
         static string Normalize(string s)
@@ -287,7 +313,7 @@ namespace FreeCorrector
             field = Usable(el, el.CurrentProcessId);
             Log.Write($"probe: {ProcessName(el.CurrentProcessId)} / type {el.CurrentControlType} / " + (field?.GetType().Name ?? "skipped"));
             if (field == null) return;
-            var raw = field.Text(MaxChars);
+            var raw = Whole(field.Text(MaxChars));
             var found = check(Normalize(raw)).GetAwaiter().GetResult() ?? new();
             foreach (var m in found)
             {

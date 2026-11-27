@@ -16,7 +16,7 @@ namespace FreeCorrector
         public Mark? Mark { get; private set; }
         public IntPtr Handle { get; private set; }
         public Action<Match, string>? Replace;
-        public Action<Match>? Ignore, AddWord, DisableRule, Conjugate;
+        public Action<Match>? Ignore, AddWord, DisableRule, Conjugate, Report;
 
         public Card()
         {
@@ -79,6 +79,9 @@ namespace FreeCorrector
                 actions.Children.Add(Pill(L.T("Ajouter au dictionnaire", "Add to dictionary"), false, () => AddWord?.Invoke(match)));
             else
                 actions.Children.Add(Pill(L.T("Désactiver cette règle", "Turn off this rule"), false, () => DisableRule?.Invoke(match)));
+            var report = Pill(L.T("Signaler", "Report"), false, () => Report?.Invoke(match));
+            report.ToolTip = L.T("Cette correction est fausse ? Signalez-la : vous verrez ce qui est envoyé avant de valider.", "Is this wrong? Report it: you will see what is sent before sending.");
+            actions.Children.Add(report);
             panel.Children.Add(actions);
             panel.Children.Add(new TextBlock { Text = "FreeCorrector", FontSize = 11, Foreground = Theme.Muted, Margin = new Thickness(0, 6, 0, 0) });
 

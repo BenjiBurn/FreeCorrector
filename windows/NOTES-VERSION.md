@@ -4,6 +4,24 @@
 dans le champ « Nouveautés de cette version » de la fiche, en français et en anglais
 (1500 caractères au maximum chacune).
 
+## 0.7.0 (prochaine version, pas encore publiée)
+
+Brouillon, numéro à confirmer (0.7.0 : un bouton nouveau).
+
+**Français** :
+
+```text
+- Nouveau : un bouton « Signaler » dans la bulle, comme dans l'extension. Une correction vous semble fausse ? Signalez-la : vous voyez ce qui est envoyé avant de valider.
+- Corrigé : dans Word, un mot pouvait rester souligné à moitié (« touj » dans « toujours ») après une pause au milieu de la frappe. Le mot en cours de frappe n'est plus souligné avant d'être fini.
+```
+
+**English** :
+
+```text
+- New: a "Report" button in the bubble, as in the extension. A correction looks wrong? Report it: you see what is sent before sending.
+- Fixed: in Word, half a word could stay underlined ("touj" in "toujours") after a pause while typing. The word being typed is no longer underlined before it is finished.
+```
+
 ## 0.6.0
 
 0.6.0 : nouveautés visibles (le thème, le conjugueur anglais), avec les moteurs de l'extension 1.5.0.

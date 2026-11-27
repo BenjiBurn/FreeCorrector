@@ -115,6 +115,7 @@ namespace FreeCorrector
             card.AddWord = async match => { await engine.AddWordAsync(match.Word); watcher.Recheck(); };
             card.DisableRule = async match => { await engine.DisableRuleAsync(match); watcher.Recheck(); };
             card.Conjugate = match => PageWindow.Conjugator(engine, match.Verb);
+            card.Report = match => { if (watcher.Text is { } text) Reports.Open(text, match); };
             var settings = await engine.GetSettingsAsync();
             Theme.Mode = ThemeOf(settings);
             watcher.Enabled = settings.GetProperty("enabled").GetBoolean();

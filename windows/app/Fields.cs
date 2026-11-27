@@ -67,12 +67,32 @@ namespace FreeCorrector
                 var range = RangeAt(start, m.Length);
                 if (range != null && range.GetText(m.Length + 1) == m.Word) return new Anchor(range);
             }
-            // Last resort: the word, searched from a little before.
+            // Last resort: the word, searched from a little before. A whole word
+            // only: "échogr" is not to be found in "échographie".
             var from = RangeAt(Math.Max(0, m.Offset - crlf - 20), 0);
             if (from == null) return null;
             from.MoveEndpointByRange(End, pattern.DocumentRange, End);
-            var found = from.FindText(m.Word, 0, 0);
-            return found == null ? null : new Anchor(found);
+            for (var tries = 0; tries < 20; tries++)
+            {
+                var found = from.FindText(m.Word, 0, 0);
+                if (found == null) return null;
+                if (WholeWord(found)) return new Anchor(found);
+                from.MoveEndpointByRange(Start, found, End);
+            }
+            return null;
+        }
+
+        // No letter or digit right before or after the range.
+        static bool WholeWord(UIA.IUIAutomationTextRange range)
+        {
+            var before = range.Clone();
+            before.MoveEndpointByRange(End, before, Start);
+            before.MoveEndpointByUnit(Start, Character, -1);
+            var after = range.Clone();
+            after.MoveEndpointByRange(Start, after, End);
+            after.MoveEndpointByUnit(End, Character, 1);
+            static bool Letter(string s) => s.Length > 0 && char.IsLetterOrDigit(s[0]);
+            return !Letter(before.GetText(1)) && !Letter(after.GetText(1));
         }
 
         UIA.IUIAutomationTextRange? RangeAt(int start, int length)
