@@ -382,4 +382,10 @@ module.exports = [
   ["Profitez de nos offres découverte.", null, null],
   ["Le pack surprise est arrivé.", null, null],
   ["Le trésor découverte hier était caché.", "découverte", "découvert"],
+  // Signalé depuis l'extension (1.5.1) : « si on ajoute une option, il pourrait profiter… » proposait « pourra » (verbe modal au conditionnel : éventualité, conseil).
+  ["Si on ajoute une option, il pourrait profiter de cette proposition de devis pour finalement tout résilier.", null, null],
+  ["Si tu as mal, tu devrais consulter un médecin.", null, null],
+  ["S'il pleut demain, il faudrait rentrer les chaises.", null, null],
+  ["Si tu as le temps, je voudrais te parler.", null, null],
+  ["Si tu viens ce soir, on mangerait ensemble.", "mangerait", "mangera"],
 ];

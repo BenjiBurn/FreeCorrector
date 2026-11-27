@@ -1297,8 +1297,11 @@ function fcCustomRules(paragraph, spellChecker, existing) {
       const polite = /^ser(ais|ait|ions|iez|aient)$/.test(t.lower) &&
         /^(ravie?s?|heureux|heureuses?|enchantée?s?|honorée?s?|reconnaissante?s?)$/.test(adj?.lower ?? "") &&
         /^(de|d’)$/.test(tokens[tokens.indexOf(adj) + 1]?.lower ?? "");
-      if (present && person && !polite) {
-        const lemma = morph(t).find((m) => /:K/.test(m)).match(/^>([^/]+)\//)[1];
+      // "Si on ajoute une option, il pourrait tout résilier", "si tu as mal, tu devrais consulter":
+      // a modal in the conditional (possibility, advice, wish) is fine after "si" + present.
+      const lemma = morph(t).find((m) => /:K/.test(m))?.match(/^>([^/]+)\//)?.[1];
+      const modal = /^(pouvoir|devoir|falloir|vouloir|aimer)$/.test(lemma ?? "");
+      if (present && person && !polite && !modal) {
         let form = "";
         try {
           form = conj.getConj(lemma, ":If", `:${person}`) || "";
